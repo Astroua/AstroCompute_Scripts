@@ -95,7 +95,7 @@ runClean =T
 #do you want to only save a cutout? Is the data set large? If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval rather then clean all, fit all, then delete (saves disk space but may be slower;cutout='T' & big_data='F').
 cutout='T'
 cut_reg='2962,2917,3017,2967'
-big_data='F'
+big_data='T'
 
 #If runClean=F set fit_cutout='T' if you have only cutout images but want to refit.
 fit_cutout='F'
@@ -426,16 +426,16 @@ if runClean:
 						uv_fiterr.append(fit.result['Uncertainties'])
 					else:
 						print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
-	    		#if cutout== 'T':#and os.path.exists(outputPath+label+intervalString+imSuffix):
-	    			immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp.image')
-				immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox1,outfile=outputPath+label+intervalString+'_rms1.image')
-				immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
-				immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
+	    			if cutout== 'T':#and os.path.exists(outputPath+label+intervalString+imSuffix):
+	    				immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp.image')
+					immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox1,outfile=outputPath+label+intervalString+'_rms1.image')
+					immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
+					immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
 				
-				comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
-				comm_and2='mv '+outputPath+label+intervalString+'_temp.image '+outputPath+label+intervalString+'.image'
-				os.system(comm_and1)
-				os.system(comm_and2)
+					comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
+					comm_and2='mv '+outputPath+label+intervalString+'_temp.image '+outputPath+label+intervalString+'.image'
+					os.system(comm_and1)
+					os.system(comm_and2)
 			
 #        else:
 #            clean(vis=visibility, imagename=outputPath+label+interval, mask=maskPath, selectdata=T, timerange=interval, field='', spw='0~26', mode='frequency', interpolation='nearest', width=1, nchan=1, chaniter=F, niter=1000, gain=0.1, threshold=myThreshold)

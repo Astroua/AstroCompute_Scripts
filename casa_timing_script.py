@@ -8,7 +8,7 @@
 #Original version written by C. Gough (student of J. Miller-Jones)--> 09/01/2012
 #Last updated by A. Tetarenko--> 09/23/2015
 #################################################################################
-#                                               
+#Import modules                                         
 #
 #The module jdcal can be downloaded from http://pypi.python.org/pypi/jdcal, or
 #to ensure all other modules used in this script are callable, download the casa-python 

@@ -310,7 +310,7 @@ uv_fiterr=[]
 mjdTimes_uv=mjdTimes
 timeIntervals_uv=timeIntervals
 
-print 'Clean is starting-->'
+print 'Clean is starting--> '
 ############################################################################################
 # Clean each chunk individually.
 ############################################################################################

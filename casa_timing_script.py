@@ -29,7 +29,7 @@ from matplotlib import pyplot as pp
 from scipy.stats import norm
 
 def is_power2(num):
-	return(num !=0 and ((num & (num-1)) ==0)
+	return(num !=0 and ((num & (num-1)) ==0))
 #######################################################################
 #The following variables need to be changed for each new data set --> need to make these command line input
 #######################################################################
@@ -62,17 +62,17 @@ intervalSizeS = 2
 # running script on a new data set.
 # The following arguments will be passed to casa's clean, imfit or imstat functions:-->need to
 #determine these automatically from whole data set
-maskPath = '/home/ubuntu/v404_jun22B_K21_clean_psc1.mask'
+maskPath = '/home/ubuntu/data/v404_jun22B_K21_clean_psc1.mask'
 # target position
 targetBox = '2982,2937,2997,2947'        # check source position
 imageSize = [6000,6000]
 if is_power2(imageSize[0])==False:
 	print 'Clean will run faster if image size is 2^n'
-	imS=raw_input('Do you want to optimize image size?, y or n'
+	imS=raw_input('Do you want to optimize image size?, y or n? ')
 	if imS == 'y':
 		imageSize=[int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2)))),int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
-        print 'imagesize is now set to ', imageSize
-    print 'imagesize remains at ',imageSize, 'due to user request'
+        	print 'imagesize is now set to ', imageSize
+    	print 'imagesize remains at ',imageSize, 'due to user request'
 numberIters = 5000
 cellSize = ['0.02arcsec','0.02arcsec']
 taylorTerms = 1

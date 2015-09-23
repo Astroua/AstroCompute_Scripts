@@ -55,7 +55,7 @@ visibility_uv = '/home/ubuntu/data/swj17_jun22_B_K_k21.ms'
 # Length of time bins (H,M,S); see below if you want manual input
 intervalSizeH = 0
 intervalSizeM = 0
-intervalSizeS = 2
+intervalSizeS = 30
 
 
 # The clean command (line 322) should be inspected closely to ensure all arguments are appropriate before 

@@ -54,8 +54,8 @@ visibility = '/home/ubuntu/data/swj17_jun22_B_K_k21.ms'
 visibility_uv = '/home/ubuntu/data/swj17_jun22_B_K_k21.ms'
 # Length of time bins (H,M,S); see below if you want manual input
 intervalSizeH = 0
-intervalSizeM = 0
-intervalSizeS = 2
+intervalSizeM = 2
+intervalSizeS = 0
 
 
 # The clean command (line 322) should be inspected closely to ensure all arguments are appropriate before 
@@ -103,7 +103,7 @@ if fit_cutout=='T':
 	rmsbox1='0,0,'+str(float(rmsbox1.split(',')[2])-float(rmsbox1.split(',')[0]))+','+str(float(rmsbox1.split(',')[3])-float(rmsbox1.split(',')[1]))
 	rmsbox2='0,0,'+str(float(rmsbox2.split(',')[2])-float(rmsbox2.split(',')[0]))+','+str(float(rmsbox2.split(',')[3])-float(rmsbox2.split(',')[1]))
 	rmsbox3='0,0,'+str(float(rmsbox3.split(',')[2])-float(rmsbox3.split(',')[0]))+','+str(float(rmsbox3.split(',')[3])-float(rmsbox3.split(',')[1]))
-	targetBox = '17,17,41,40'
+	targetBox = str(float(targetBox.split(',')[0])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[1])-float(cut_reg.split(',')[1]))+','+str(float(targetBox.split(',')[2])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[3])-float(cut_reg.split(',')[1]))
 #do you want to fix parameters in fits from full data set fit? (T of F)
 fix_pos='T'
 #if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
@@ -1012,11 +1012,11 @@ if uv_fit == 'T':
 	pp.ylabel(y_label_name)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	pp.xlim(0, minutesElapsed_uv[len(minutesElapsed_uv)-1]+intervalSizeS/(60.0))
-	savestring = target+lab+str(intervalSizeH)+'hour'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
+	savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
 	pp.savefig(savestring)
 	print savestring, ' is saved'
 	#pp.show()
-	#pp.close(fig3)
+	pp.close(fig3)
 if integ_fit == 'B':
 	fig1=pp.figure()
 	pp.errorbar(minutesElapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
@@ -1025,11 +1025,11 @@ if integ_fit == 'B':
 	pp.ylabel(y_label_name)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	pp.xlim(0, minutesElapsed[len(minutesElapsed)-1]+intervalSizeS/(60.0))
-	savestring = target+lab+str(intervalSizeH)+'hour'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_integ.eps'
+	savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_integ.eps'
 	pp.savefig(savestring)
 	print savestring, ' is saved'
 	#pp.show()
-	#pp.close(fig1)
+	pp.close(fig1)
 	fig2=pp.figure()
 	pp.errorbar(minutesElapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
 	pp.xlabel('Time since start of observation (mins)')
@@ -1037,12 +1037,13 @@ if integ_fit == 'B':
 	pp.ylabel(y_label_name2)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	pp.xlim(0, minutesElapsed[len(minutesElapsed)-1]+intervalSizeS/(60.0))
-	savestring2 = target+lab+str(intervalSizeH)+'hour'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_peak.eps'
+	savestring2 = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_peak.eps'
 	pp.savefig(savestring2)
 	print savestring2, ' is saved'
 	#pp.show()
-	#pp.close(fig2)
+	pp.close(fig2)
 else:
+	fig5=pp.figure()
 	pp.errorbar(minutesElapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
 	#pp.errorbar(mjdTimes, fluxDensity, yerr=fluxError, fmt='ro',)
 	#pp.errorbar(range(len(timeIntervals)), fluxDensity, yerr=fluxError, fmt='ro',)
@@ -1056,8 +1057,9 @@ else:
 	#pp.xlim(-1, len(timeIntervals))
 	#pp.ylim(25.0,30.0)
 
-	savestring = target+lab+str(intervalSizeH)+'hour'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc.eps'
+	savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc.eps'
 	pp.savefig(savestring)
 	print savestring, ' is saved'
 	#pp.show()
+	pp.close(fig5)
 

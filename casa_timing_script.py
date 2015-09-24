@@ -55,7 +55,7 @@ visibility_uv = '/home/ubuntu/data/swj17_jun22_B_K_k21.ms'
 # Length of time bins (H,M,S); see below if you want manual input
 intervalSizeH = 0
 intervalSizeM = 0
-intervalSizeS = 30
+intervalSizeS = 2
 
 
 # The clean command (line 322) should be inspected closely to ensure all arguments are appropriate before 
@@ -310,7 +310,7 @@ uv_fiterr=[]
 mjdTimes_uv=mjdTimes
 timeIntervals_uv=timeIntervals
 
-print 'Clean is starting--> '
+print 'Clean is starting-->'
 ############################################################################################
 # Clean each chunk individually.
 ############################################################################################
@@ -1014,8 +1014,8 @@ if uv_fit == 'T':
 	pp.xlim(0, minutesElapsed_uv[len(minutesElapsed_uv)-1]+intervalSizeS/(60.0))
 	savestring = target+lab+str(intervalSizeH)+'hour'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
 	pp.savefig(savestring)
-	print savestring
-	pp.show()
+	print savestring, ' is saved'
+	#pp.show()
 	#pp.close(fig3)
 if integ_fit == 'B':
 	fig1=pp.figure()
@@ -1027,8 +1027,8 @@ if integ_fit == 'B':
 	pp.xlim(0, minutesElapsed[len(minutesElapsed)-1]+intervalSizeS/(60.0))
 	savestring = target+lab+str(intervalSizeH)+'hour'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_integ.eps'
 	pp.savefig(savestring)
-	print savestring
-	pp.show()
+	print savestring, ' is saved'
+	#pp.show()
 	#pp.close(fig1)
 	fig2=pp.figure()
 	pp.errorbar(minutesElapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
@@ -1039,8 +1039,8 @@ if integ_fit == 'B':
 	pp.xlim(0, minutesElapsed[len(minutesElapsed)-1]+intervalSizeS/(60.0))
 	savestring2 = target+lab+str(intervalSizeH)+'hour'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_peak.eps'
 	pp.savefig(savestring2)
-	print savestring2
-	pp.show()
+	print savestring2, ' is saved'
+	#pp.show()
 	#pp.close(fig2)
 else:
 	pp.errorbar(minutesElapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
@@ -1058,6 +1058,6 @@ else:
 
 	savestring = target+lab+str(intervalSizeH)+'hour'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc.eps'
 	pp.savefig(savestring)
-	print savestring
-	pp.show()
+	print savestring, ' is saved'
+	#pp.show()
 

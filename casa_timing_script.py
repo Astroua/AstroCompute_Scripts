@@ -120,20 +120,34 @@ nsim=100
 #[value,error] from fit of full data set
 par_fix='xyabp'
 
-#print 'Cleaning Full Data Set to determine fit parameters-->'
-#clean(vis=visibility, imagename=outputPath+label+'whole_dataset', mask=maskPath, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
-#print 'Fitting full data set-->'
-#full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox)
+print 'Cleaning Full Data Set to determine fit parameters-->'
+clean(vis=visibility, imagename=outputPath+label+'whole_dataset', mask=maskPath, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
+print 'Fitting full data set-->'
+full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_dataset.txt')
+s=au.imfitparse(full_fit,showpixels=T)
+pixpos=s.split(' ')
+posnew=[x for x in pixpos if x!='']
+imfitFilefull=open(outputPath+label+'whole_dataset.txt','r')
+for line in imfitFilefull:
+    if ('--- ra:' in line) & ('pixels' in line):
+        ra_string=line
+    if ('--- dec:' in line) & ('pixels' in line):
+        dec_string=line
+pmra=ra_string.find('+/-')
+pmdec=dec_string.find('+/-')
+pixra=ra_string.find('pixels')
+pixdec=dec_string.find('pixels')
 
-
-peak_x=[2988.63,0.02]#au.imfitparse(full_fit,showpixels=T), pixpos=s.split(','),posnew=[x for x in pixpos if x!=''],posnew[11]
-peak_y=[2942.09,0.01]#posnew[12]
+peak_x=[float(ra_string[16:pmra]),float(ra_string[29:pixra])]#[2988.63,0.02]
+peak_y=[float(dec_string[16:pmdec-1]),float(dec_string[29:pixdec-1])]#[2942.09,0.01]
+print peak_x,peak_y
+raw_input()
 if fit_cutout=='T':
     peak_x=[peak_x[0]-float(cut_reg.split(',')[0]),peak_x[1]]
     peak_y=[peak_y[0]-float(cut_reg.split(',')[1]),peak_y[1]]
-b_maj=[0.154,0.001]#full_fit['results']['component0']['shape']['majoraxis']['value']
-b_min=[0.099,0.0005]#full_fit['results']['component0']['shape']['minoraxis']['value']
-pos_ang=[67.41,0.42]#full_fit['results']['component0']['shape']['positionangle']['value']
+b_maj=[full_fit['results']['component0']['shape']['majoraxis']['value'],full_fit['results']['component0']['shape']['majoraxiserror']['value']]#[0.154,0.001]
+b_min=[full_fit['results']['component0']['shape']['minoraxis']['value'],full_fit['results']['component0']['shape']['minoraxiserror']['value']]#[0.099,0.0005]
+pos_ang=[full_fit['results']['component0']['shape']['positionangle']['value'],full_fit['results']['component0']['shape']['positionangleerror']['value']]#[67.41,0.42]
 
 #do you want peak (mJy/beam; F) or integrated (mJy; T), or both(B) in lightcurve file?
 integ_fit='B'

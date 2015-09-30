@@ -54,8 +54,8 @@ visibility = '/home/ubuntu/data/swj17_jun22_B_K_k21.ms'
 visibility_uv = '/home/ubuntu/data/swj17_jun22_B_K_k21.ms'
 # Length of time bins (H,M,S); see below if you want manual input
 intervalSizeH = 0
-intervalSizeM = 2
-intervalSizeS = 0
+intervalSizeM = 0
+intervalSizeS = 2
 
 
 # The clean command (line 322) should be inspected closely to ensure all arguments are appropriate before 
@@ -119,22 +119,32 @@ nsim=100
 #a, b, p convolved with beam values not deconvolved values!!!
 #[value,error] from fit of full data set
 par_fix='xyabp'
-peak_x=[2988.63,0.02]
-peak_y=[2942.09,0.01]
-b_maj=[0.154,0.001]
-b_min=[0.099,0.0005]
-pos_ang=[67.41,0.42]
+
+#print 'Cleaning Full Data Set to determine fit parameters-->'
+#clean(vis=visibility, imagename=outputPath+label+'whole_dataset', mask=maskPath, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
+#print 'Fitting full data set-->'
+#full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox)
+
+
+peak_x=[2988.63,0.02]#au.imfitparse(full_fit,showpixels=T), pixpos=s.split(','),posnew=[x for x in pixpos if x!=''],posnew[11]
+peak_y=[2942.09,0.01]#posnew[12]
+if fit_cutout=='T':
+    peak_x=[peak_x[0]-float(cut_reg.split(',')[0]),peak_x[1]]
+    peak_y=[peak_y[0]-float(cut_reg.split(',')[1]),peak_y[1]]
+b_maj=[0.154,0.001]#full_fit['results']['component0']['shape']['majoraxis']['value']
+b_min=[0.099,0.0005]#full_fit['results']['component0']['shape']['minoraxis']['value']
+pos_ang=[67.41,0.42]#full_fit['results']['component0']['shape']['positionangle']['value']
 
 #do you want peak (mJy/beam; F) or integrated (mJy; T), or both(B) in lightcurve file?
 integ_fit='B'
 
 #do you want to do uv fitting (T or F)? Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy); if want to fix parameters put number insted of p[x] in uv_var
 uv_fit='F'
-only_uv='F'
+#only_uv='F'
 do_monte_uv='F'
-uv_var='-0.48257424 -0.72436426,p[2]'
-src_uv_init=[-0.48257424, -0.72436426 , 0.02960138]
-src_uv_err=[0.36603357 , 0.25478064 , 0.00206251]
+uv_var='2.8194e-02,8.5502e-03,p[2]'
+src_uv_init=[2.8194e-02,8.5502e-03 , 1.3508e-01]
+src_uv_err=[4.7722e-05 , 3.7205e-05, 1.1192e-04]
 #var_uv=[T,F,F]
 #niter_uv=5
 comp_uv='delta'
@@ -285,7 +295,7 @@ for element in range(numIntervals):
 
 # If the remainder of observation time is greater than sixty minutes it should be used, and is appended 
 # to timeIntervals and mjdTimes.
-if remainder >= 60:
+if remainder >= 5:
     if float(startDateMJD[1]) != float(endDateMJD[1]):
     	timeIntervals = timeIntervals + [str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat(endTime))]
     	mjdTimes = mjdTimes + [endDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ long(endTime.second)/24.0/60.0/60.0]
@@ -339,7 +349,7 @@ if runClean:
 
 		    		# For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
 		   		 # An if statement is used to pass over these intervals, avoiding runtime errors.
-		    		if os.path.exists(outputPath+label+intervalString+imSuffix) and only_uv=='F':
+		    		if os.path.exists(outputPath+label+intervalString+imSuffix):
 					# In most cases imhead returns a dictionary with the value located by the key 'value'
 					beamMajor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beammajor')
 					beamMajor = str(beamMajor['value'])+'arcsec'
@@ -408,7 +418,9 @@ if runClean:
 					# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
 					timeIntervals.remove(interval)
 					mjdTimes.remove(time)
-		    		if uv_fit =='T':
+					#timeIntervals_uv.remove(interval_uv)
+					#mjdTimes_uv.remove(time_uv)
+		    		if uv_fit =='T' and os.path.exists(outputPath+label+intervalString+imSuffix):
 					if do_monte_uv == 'T':
 						monte_uvval=[]
 						samp_x_uv=np.random.normal(0,1,nsim)
@@ -416,14 +428,24 @@ if runClean:
 						for i in range(0,len(samp_x_uv)):
 							x_uv1=(samp_x_uv[i]*src_uv_err[1])+src_uv[1]
 							y_uv1=(samp_y_uv[i]*src_uv_err[2])+src_uv[2]
-							fit=uvm.uvmultifit(vis=visibility_uv, MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]'], p_ini=[x_uv2,y_uv1,src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'_'+str(i)+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
-							monte_uvval.append(fit.result['Parameters'])
+							if np.where(np.array(timeIntervals)==interval)[0][0]==0:
+								fit=uvm.uvmultifit(vis=visibility_uv, MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]'], p_ini=[x_uv1,y_uv1,src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'_'+str(i)+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+							else:
+								fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
+								fit.var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]']
+								fit.p_ini=[x_uv1,y_uv1,src_uv_init[2]]
+								fit.fit(redo_fixed=False,reinit_model=False)
+							monte_uvval.append(fit.result['Parameters'][2])
 						uv_fitval.append(monte_uvval)
 							
 					elif do_monte_uv =='F':
-						fit=uvm.uvmultifit(vis=visibility_uv, MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[uv_var], p_ini=[src_uv_init[0],src_uv_init[1],src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
-						uv_fitval.append(fit.result['Parameters'])
-						uv_fiterr.append(fit.result['Uncertainties'])
+						if np.where(np.array(timeIntervals)==interval)[0][0]==0:
+							fit=uvm.uvmultifit(vis=visibility_uv, MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[uv_var], p_ini=[src_uv_init[0],src_uv_init[1],src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+						else:
+							fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
+							fit.fit(redo_fixed=False,reinit_model=False)
+						uv_fitval.append(fit.result['Parameters'][2])
+						uv_fiterr.append(fit.result['Uncertainties'][2])
 					else:
 						print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
 	    			if cutout== 'T':#and os.path.exists(outputPath+label+intervalString+imSuffix):
@@ -466,7 +488,7 @@ if big_data=='F' or runClean==F:
 
 	    # For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
 	    # An if statement is used to pass over these intervals, avoiding runtime errors.
-	    if os.path.exists(outputPath+label+intervalString+imSuffix)and only_uv=='F':
+	    if os.path.exists(outputPath+label+intervalString+imSuffix):
 		# In most cases imhead returns a dictionary with the value located by the key 'value'
 		beamMajor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beammajor')
 		beamMajor = str(beamMajor['value'])+'arcsec'
@@ -543,7 +565,9 @@ if big_data=='F' or runClean==F:
 		# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
 		timeIntervals.remove(interval)
 		mjdTimes.remove(time)
-	    if uv_fit =='T':
+		#timeIntervals_uv.remove(interval)
+		#mjdTimes_uv.remove(time)
+	    if uv_fit =='T' and os.path.exists(outputPath+label+intervalString+imSuffix):
 		if do_monte_uv == 'T':
 			monte_uvval=[]
 			samp_x_uv=np.random.normal(0,1,nsim)
@@ -551,13 +575,23 @@ if big_data=='F' or runClean==F:
 			for i in range(0,len(samp_x_uv)):
 				x_uv1=(samp_x_uv[i]*src_uv_err[1])+src_uv[1]
 				y_uv1=(samp_y_uv[i]*src_uv_err[2])+src_uv[2]
-				fit=uvm.uvmultifit(vis=visibility_uv, MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]'], p_ini=[x_uv2,y_uv1,src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'_'+str(i)+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
-				monte_uvval.append(fit.result['Parameters'])
+				if np.where(np.array(timeIntervals)==interval)[0][0]==0:
+					fit=uvm.uvmultifit(vis=visibility_uv, MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]'], p_ini=[x_uv2,y_uv1,src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'_'+str(i)+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				else:
+					fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
+					fit.var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]']
+					fit.p_ini=[x_uv2,y_uv1,src_uv_init[2]]
+					fit.fit(redo_fixed=False,reinit_model=False)
+				monte_uvval.append(fit.result['Parameters'][2])
 			uv_fitval.append(monte_uvval)
 		elif do_monte_uv =='F':
-			fit=uvm.uvmultifit(vis=visibility_uv,MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv], spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[uv_var], p_ini=[src_uv_init[0],src_uv_init[1],src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
-			uv_fitval.append(fit.result['Parameters'])
-			uv_fiterr.append(fit.result['Uncertainties'])
+			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
+				fit=uvm.uvmultifit(vis=visibility_uv,MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv], spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[uv_var], p_ini=[src_uv_init[0],src_uv_init[1],src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+			else:
+				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
+				fit.fit(redo_fixed=False,reinit_model=False)
+			uv_fitval.append(fit.result['Parameters'][2])
+			uv_fiterr.append(fit.result['Uncertainties'][2])
 		else:
 			print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
 	    if cutout== 'T':
@@ -571,8 +605,8 @@ if big_data=='F' or runClean==F:
 		os.system(comm_and2)
 
 
-
-
+uv_fitval_arr=np.array(uv_fitval)
+uv_fiterr_arr=np.array(uv_fiterr)
 # Plot lightcurve
 ############################################################################################
 # Initialise lists.
@@ -838,9 +872,9 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 	print 'Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)'
     GaussPer=norm.cdf(1)
     if uv_fit == 'T'and do_monte_uv=='T': 
-		median3=np.percentile(fit_uvval[np.where(timeIntervals==interval)[0]],50)
-		pct153=np.percentile(fit_uvval[np.where(timeIntervals==interval)[0]],(1-GaussPer)*100.0)
-		pct853=np.percentile(fit_uvval[np.where(timeIntervals==interval)[0]],GaussPer*100.0)
+		median3=np.percentile(uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0],50)
+		pct153=np.percentile(uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0],(1-GaussPer)*100.0)
+		pct853=np.percentile(uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0],GaussPer*100.0)
 		upp_err3=pct853-median3
 		low_err3=median3-pct153
 		era3=(upp_err3+low_err3)/2.
@@ -848,15 +882,15 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 		fluxError3 = fluxError3 + [era3]
 		suffix3 = suffix3 + [' ']
 
-		if len(fit_uvval[np.where(timeIntervals==interval)[0]]) < nsim/2.:
+		if len(uv_fitval[np.where(np.array(timeIntervals)==interval)[0]]) < nsim/2.:
 			print '\nUV Fit failed on interval ' + interval
         		# The corresponding time intervals need to be removed from the
-        		timeIntervals_uv.remove(interval_uv)
-        		mjdTimes_uv.remove(time_uv)
+        		#timeIntervals_uv.remove(interval_uv)
+        		#mjdTimes_uv.remove(time_uv)
 
     if uv_fit == 'T'and do_monte_uv=='F':  
-		flux_uv1=fit_uvval[np.where(timeIntervals==interval)[0]]
-		fluxerr_uv1=fit_uverr[np.where(timeIntervals==interval)[0]]
+		flux_uv1=uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0]
+		fluxerr_uv1=uv_fiterr_arr[np.where(np.array(timeIntervals)==interval)[0]][0]
 		fluxDensity3 = fluxDensity3 + [flux_uv1]
 		fluxError3 = fluxError3 + [fluxerr_uv1]
 		suffix3 = suffix3 + [' ']
@@ -881,36 +915,23 @@ if integ_fit == 'B':
 	print suffix2
 	print '\nRealistic Error from regions (Jy):'
 	print fluxError_real
-elif uv_fit == 'T':
-	print '\nFlux desities extracted from imfit (integ):'
-	print fluxDensity
-	print '\nFlux errors extracted from imfit (integ):'
-	print fluxError
-	print '\nUnits extracted from imfit (integ):'
-	print suffix
-	print '\nFlux desities extracted from imfit (peak):'
-	print fluxDensity2
-	print '\nFlux errors extracted from imfit (peak):'
-	print fluxError2
-	print '\nUnits extracted from imfit:'
-	print suffix2
+else:
+    print '\nFlux desities extracted from imfit:'
+    print fluxDensity
+    print '\nFlux errors extracted from imfit:'
+    print fluxError
+    print '\nUnits extracted from imfit:'
+    print suffix
+    print '\nRealistic Error from regions (Jy):'
+    print fluxError_real
+if uv_fit == 'T':
 	print '\nFlux desities extracted from uvmodelfit:'
 	print fluxDensity3
 	print '\nFlux errors extracted from uvmodelfit:'
 	print fluxError3
 	print '\nUnits extracted from uvmodelfit:'
 	print suffix3
-	print '\nRealistic Error from regions (Jy):'
-	print fluxError_real
-else:
-	print '\nFlux desities extracted from imfit:'
-	print fluxDensity
-	print '\nFlux errors extracted from imfit:'
-	print fluxError
-	print '\nUnits extracted from imfit:'
-	print suffix
-	print '\nRealistic Error from regions (Jy):'
-	print fluxError_real
+
 
 # The flux values will be plotted in uJy/bm, however the imfit outputs will not necessarily be in these
 # units. To get around this the units for each value are recorded in the suffix list created in the above
@@ -989,34 +1010,34 @@ if integ_fit == 'B':
 if uv_fit == 'T':
 	data.write(obsDate + '_fluxDensity(uv peak): ' + str(fluxDensity3) + '\n')
 	data.write(obsDate + '_fluxError(uv peak): ' + str(fluxError3) + '\n')
-	data.write(obsDate + '_mjdTimes uv: ' + str(mjdTimes_uv) + '\n')
-data.write(obsDate + '_realisticerror: ' + str(fluxError_real) + '\n')
+	#data.write(obsDate + '_mjdTimes uv: ' + str(mjdTimes) + '\n')
+#data.write(obsDate + '_realisticerror: ' + str(fluxError_real) + '\n')
 data.close()
 
 # Now we have the lists required to generate a plot of flux density against time with error bars.
 
 minutesElapsed=[]
 secondsElapsed=[]
-minutesElapsed_uv=[]
-secondsElapsed_uv=[]
+#minutesElapsed_uv=[]
+#secondsElapsed_uv=[]
 for i in range(len(mjdTimes)):
     minutesElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60+intervalSizeS/(60.0*2.0))
     secondsElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60*60+intervalSizeS/2.0)
-    minutesElapsed_uv.append((mjdTimes_uv[i]-mjdTimes_uv[0])*24*60+intervalSizeS/(60.0*2.0))
-    secondsElapsed_uv.append((mjdTimes_uv[i]-mjdTimes_uv[0])*24*60*60+intervalSizeS/2.0)
+    #minutesElapsed_uv.append((mjdTimes_uv[i]-mjdTimes_uv[0])*24*60+intervalSizeS/(60.0*2.0))
+    #secondsElapsed_uv.append((mjdTimes_uv[i]-mjdTimes_uv[0])*24*60*60+intervalSizeS/2.0)
 if uv_fit == 'T':
 	fig3=pp.figure()
-	pp.errorbar(minutesElapsed_uv, fluxDensity3, yerr=fluxError3, fmt='ro',)
+	pp.errorbar(minutesElapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
 	pp.xlabel('Time since start of observation (mins)')
 	y_label_name='Flux Density (mJy/beam)'
 	pp.ylabel(y_label_name)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	pp.xlim(0, minutesElapsed_uv[len(minutesElapsed_uv)-1]+intervalSizeS/(60.0))
+	pp.xlim(0, minutesElapsed[len(minutesElapsed)-1]+intervalSizeS/(60.0))
 	savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
 	pp.savefig(savestring)
 	print savestring, ' is saved'
 	#pp.show()
-	pp.close(fig3)
+	#pp.close(fig3)
 if integ_fit == 'B':
 	fig1=pp.figure()
 	pp.errorbar(minutesElapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
@@ -1029,7 +1050,7 @@ if integ_fit == 'B':
 	pp.savefig(savestring)
 	print savestring, ' is saved'
 	#pp.show()
-	pp.close(fig1)
+	#pp.close(fig1)
 	fig2=pp.figure()
 	pp.errorbar(minutesElapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
 	pp.xlabel('Time since start of observation (mins)')
@@ -1041,9 +1062,8 @@ if integ_fit == 'B':
 	pp.savefig(savestring2)
 	print savestring2, ' is saved'
 	#pp.show()
-	pp.close(fig2)
+	#pp.close(fig2)
 else:
-	fig5=pp.figure()
 	pp.errorbar(minutesElapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
 	#pp.errorbar(mjdTimes, fluxDensity, yerr=fluxError, fmt='ro',)
 	#pp.errorbar(range(len(timeIntervals)), fluxDensity, yerr=fluxError, fmt='ro',)
@@ -1061,5 +1081,4 @@ else:
 	pp.savefig(savestring)
 	print savestring, ' is saved'
 	#pp.show()
-	pp.close(fig5)
 

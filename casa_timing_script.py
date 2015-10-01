@@ -26,18 +26,22 @@ import numpy as np
 import math as m
 from jdcal import gcal2jd,jd2gcal
 import pyfits
-from photoutils import detect_threshold,detect_sources, segment_properties,properties_table,EllipticalAperture
+import astropy
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from photutils import detect_threshold,detect_sources, segment_properties,properties_table,EllipticalAperture
+import skimage.measure
 from datetime import time
 from datetime import timedelta
 from datetime import datetime
 from matplotlib import pyplot as pp
 from scipy.stats import norm
 
-def object_detect():
+def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre):
     print 'Cleaning Full Data Set to detect objects-->'
     clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
     print 'Converting to fits-->'
-    exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',hostory=False)
+    exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',history=False)
     fits_file=outputPath+label+'whole_dataset.fits'
     #basic info on fits file
     info_data=pyfits.info(fits_file)
@@ -45,6 +49,7 @@ def object_detect():
     header_primary0 = pyfits.getheader(fits_file)
     #get data from cube
     data = pyfits.getdata(fits_file,0)
+    data=data[0,0,0:imageSize[0],0:imageSize[1]]
     #check you get a numpy nd array
     ty=type(data)
     #check what dimensions are (ra,dec)
@@ -52,20 +57,27 @@ def object_detect():
     #create detection threashold image
     threshold_im=detect_threshold(data,snr=3.)
     #first make segmentation image
-    segm=detect_sources(data,threshold,npixels=5)
+    segm=detect_sources(data,threshold_im,npixels=10)
     #identify sources in segmentation image
-    props=segment_properties(data,segm)
+    w=astropy.wcs.WCS(header=header_primary0,fobj=data)
+    props=segment_properties(data,segm,wcs=w)
     columns=['id','xcentroid','ycentroid','icrs_centroid','bbox']
-    tbl=properties_table(props)
-    #define isophotal ellipses for each object
-    r=3.
-    aperatures=[]
-    for prop in props:
-        position=(prop.xcentroid.value,prop.ycentroid.value)
-        a=prop.semimajor_axes_sigma.value*r
-        b=prop.semiminor_axes_sigma.value*r
-        theta=orientation.value
-        aperatures.append(EllipticalAperature(position,a,b,theta=theta))
+    tbl=properties_table(props,columns=columns)
+    ra_list=[]
+    dec_list=[]
+    bbox_list=[]
+    ind_list=[]
+    for i in range(0,len(tbl['id'])):
+        t=tbl['icrs_centroid'][i]
+        b=tbl['bbox'][i]
+        c=SkyCoord(ra=t.ra.value*u.degree,dec=t.dec.value*u.degree,frame='icrs')
+        ra_list.append(str(c.ra.hms.h)+':'+str(c.ra.hms.m)+':'+str(c.ra.hms.s))
+        dec_list.append(str(c.dec.deg))
+        bbox_list.append(str(b[0])+','+str(b[1])+','+str(b[2])+','+str(b[3]))
+        ind_list.append(tbl['id'][i])
+    return(ra_list,dec_list,bbox_listind_list)
+
+    
 
 
 #Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
@@ -112,9 +124,6 @@ visibility_uv = path_dir+'data/swj17_jun22_B_K_k21.ms'
 # running script on a new data set.
 # The following arguments will be passed to casa's clean, imfit or imstat functions:
 
-# target position
-targetBox = '2982,2937,2997,2947'# check source position--> maybe implement source detection algorithm here
-maskPath = 'box [['+targetBox.split(',')[0]+','+targetBox.split(',')[1]+'],['+targetBox.split(',')[2]+','+targetBox.split(',')[3]+']]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 imageSize = [6000,6000]
 if is_power2(imageSize[0])==False:
 	print 'Clean will run faster if image size is 2^n'
@@ -129,6 +138,16 @@ taylorTerms = 1
 myStokes = 'I'
 thre='10mJy'
 spw_choice='0~7:5~58'
+#object detection
+ral,decl,bboxl,indl=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre)
+if len(bboxl)>1:
+    ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?')
+else:
+    ind=1
+
+# target position
+targetBox = bboxl[ind-1]#'2982,2937,2997,2947'
+maskPath = 'box [['+targetBox.split(',')[0]+','+targetBox.split(',')[1]+'],['+targetBox.split(',')[2]+','+targetBox.split(',')[3]+']]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 
 #Is the data set large enough that you only want to save a cutout? 
 #If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval 

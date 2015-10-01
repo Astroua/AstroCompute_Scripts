@@ -1,19 +1,22 @@
-#################################################################################
+############################################################################################################
 #CASA Timing script 
 #Input: Calibrated and Split MS
 #Output: Produces a lightcurve with a user specified time bin (plot + data file)
 #Note: This script is theoretically compatible with any data that can be imported 
-#into CASA, but has only been tested on continuum data from the VLA, SMA, and NOEMA.             
-#################################################################################
-#Original version written by C. Gough (student of J. Miller-Jones)--> 09/01/2012
-#Last updated by A. Tetarenko--> 09/23/2015
-#################################################################################
+#into CASA, but has only been tested on continuum data from the VLA, SMA, and NOEMA
+#(import NOEMA data into CASA: http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf).             
+#############################################################################################################
+#Original version written by C. Gough (student of J. Miller-Jones)--> 09/2012
+#Last modified by A. Tetarenko--> 10/2015
+#############################################################################################################
 #Import modules                                         
 #
-#The module jdcal can be downloaded from http://pypi.python.org/pypi/jdcal, or
-#to ensure all other modules used in this script are callable, download the casa-python 
+#To ensure all modules used in this script are callable, download the casa-python 
 #executable wrapper package and then you can install any python package to use in CASA 
-#with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python
+#with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils)
+#Also need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
+#(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
+#and analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
 import tempfile
 import os
 import linecache
@@ -22,17 +25,58 @@ from os import path
 import numpy as np
 import math as m
 from jdcal import gcal2jd,jd2gcal
+import pyfits
+from photoutils import detect_threshold,detect_sources, segment_properties,properties_table,EllipticalAperture
 from datetime import time
 from datetime import timedelta
 from datetime import datetime
 from matplotlib import pyplot as pp
 from scipy.stats import norm
 
+def object_detect():
+    print 'Cleaning Full Data Set to detect objects-->'
+    clean(vis=visibility, imagename=outputPath+label+'whole_dataset', mask=maskPath, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
+    print 'Converting to fits-->'
+    exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',hostory=False)
+    fits_file=outputPath+label+'whole_dataset.fits'
+    #basic info on fits file
+    info_data=pyfits.info(fits_file)
+    #header info
+    header_primary0 = pyfits.getheader(fits_file)
+    #get data from cube
+    data = pyfits.getdata(fits_file,0)
+    #check you get a numpy nd array
+    ty=type(data)
+    #check what dimensions are (ra,dec)
+    dim=data.shape
+    #create detection threashold image
+    threshold_im=detect_threshold(data,snr=3.)
+    #first make segmentation image
+    segm=detect_sources(data,threshold,npixels=5)
+    #identify sources in segmentation image
+    props=segment_properties(data,segm)
+    columns=['id','xcentroid','ycentroid','icrs_centroid','bbox']
+    tbl=properties_table(props)
+    #define isophotal ellipses for each object
+    r=3.
+    aperatures=[]
+    for prop in props:
+        position=(prop.xcentroid.value,prop.ycentroid.value)
+        a=prop.semimajor_axes_sigma.value*r
+        b=prop.semiminor_axes_sigma.value*r
+        theta=orientation.value
+        aperatures.append(EllipticalAperature(position,a,b,theta=theta))
+
+
+#Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
 	return(num !=0 and ((num & (num-1)) ==0))
-#######################################################################
+#set path to where output is to be stored-->need to set up file system so have data and data_products directory in this path
+path_dir='/home/ubuntu/'
+
+################################################################################################################
 #The following variables need to be changed for each new data set --> need to make these command line input
-#######################################################################
+################################################################################################################
 # Target name.
 target = 'V404Cyg'
 # Date of observation.
@@ -41,30 +85,32 @@ obsDate = '2015jun22'
 refFrequency ='21GHz'
 # Label for casa output directories and files.
 label = target + '_' + refFrequency + '_' + obsDate + '_'
-
-#!!!!REMEMBER TO MAKE OUTPUT DIRECTORY BEFORE RUNNING SCRIPT!!!!!
-# Path to directory where all output from this script is saved (except data for phaseanal).
-outputPath = '/home/ubuntu/data_products/test_images_v404_21ghz/'
-# dataPath contains the path and filename in which data for phaseanal will be saved. 
-# This script can be run on several epochs of data from the same observation without changing this path.
-# In this case the data file will be appended each time.
-dataPath = '/home/ubuntu/data_products/test_lc_v404_21_check.txt'
-# Name of visibliity - should include full path if script is not being run from vis location.
-visibility = '/home/ubuntu/data/swj17_jun22_B_K_k21.ms'
-visibility_uv = '/home/ubuntu/data/swj17_jun22_B_K_k21.ms'
-# Length of time bins (H,M,S); see below if you want manual input
+# Length of time bins (H,M,S); see below if you want manual input (line 214)
 intervalSizeH = 0
 intervalSizeM = 0
 intervalSizeS = 2
+#make data_products directory before start script
+mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+intervalSizeH+'hours'+intervalSizeM+'min'+intervalSizeS+'sec'
+os.system(mkdir_string)
+# Path to directory where all output from this script is saved.
+outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+intervalSizeH+'hours'+intervalSizeM+'min'+intervalSizeS+'sec'+'/'
+# dataPath contains the path and filename in which data file will be saved. 
+# This script can be run on several epochs of data from the same observation without changing this path.
+# In this case the data file will be appended each time.
+dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+intervalSizeH+'hours'+intervalSizeM+'min'+intervalSizeS+'sec.txt'
+# Name of visibliity - should include full path if script is not being run from vis location.
+visibility = path_dir+'data/swj17_jun22_B_K_k21.ms'
+visibility_uv = path_dir+'data/swj17_jun22_B_K_k21.ms'
 
 
-# The clean command (line 322) should be inspected closely to ensure all arguments are appropriate before 
+
+# The clean command (line 351) should be inspected closely to ensure all arguments are appropriate before 
 # running script on a new data set.
-# The following arguments will be passed to casa's clean, imfit or imstat functions:-->need to
-#determine these automatically from whole data set
-maskPath = '/home/ubuntu/data/v404_jun22B_K21_clean_psc1.mask'
+# The following arguments will be passed to casa's clean, imfit or imstat functions:
+
 # target position
-targetBox = '2982,2937,2997,2947'        # check source position
+targetBox = '2982,2937,2997,2947'# check source position--> maybe implement source detection algorithm here
+maskPath = 'box [['+targetBox.split(',')[0]+','+targetBox.split(',')[1]+'],['+targetBox.split(',')[2]+','+targetBox.split(',')[3]+']]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 imageSize = [6000,6000]
 if is_power2(imageSize[0])==False:
 	print 'Clean will run faster if image size is 2^n'
@@ -80,10 +126,26 @@ myStokes = 'I'
 thre='10mJy'
 spw_choice='0~7:5~58'
 
-#define rms boxes for realistic error calculation--> only works if target is centered, need better option!
-rmsbox1=str(imageSize[0]/6.)+','+str(imageSize[1]/6.)+','+str(imageSize[0]*2./6.)+','+str(imageSize[1]*2./6.)
-rmsbox2=str(imageSize[0]*4./6.)+','+str(imageSize[1]/6.)+','+str(imageSize[0]*5./6.)+','+str(imageSize[1]*2./6.)
-rmsbox3=str(imageSize[0]*2./6.)+','+str(imageSize[1]*4./6.)+','+str(imageSize[0]*4./6.)+','+str(imageSize[1]*5./6.)
+#Is the data set large enough that you only want to save a cutout? 
+#If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval 
+#If cutout='T' & big_data='F' --> clean all, fit all, then delete.
+#If cutout='F' & big_data='F' --> clean all full size, fit all full size, no delete
+#pix_shift_cutout is how many pixels past target bx you want in cutout images
+cutout='T'
+pix_shift_cutout=20
+cut_reg=str(float(targetBox.split(',')[0])-pix_shift_cutout)+','+str(float(targetBox.split(',')[1])-pix_shift_cutout)+','+str(float(targetBox.split(',')[2])+pix_shift_cutout)+','+str(float(targetBox.split(',')[3])+pix_shift_cutout)#'2962,2917,3017,2967'
+big_data='T'
+x_size=float(cut_reg.split(',')[2])-float(cut_reg.split(',')[0])
+y_size=float(cut_reg.split(',')[3])-float(cut_reg.split(',')[1])
+#define rms boxes for realistic error calculation
+#local rms
+rmsbox1=str(x_size/6.)+','+str(y_size/6.)+','+str(x_size*2./6.)+','+str(y_size*2./6.)
+rmsbox2=str(x_size*4./6.)+','+str(y_size/6.)+','+str(x_size*5./6.)+','+str(y_size*2./6.)
+rmsbox3=str(x_size*2./6.)+','+str(y_size*4./6.)+','+str(x_size*4./6.)+','+str(y_size*5./6.)
+#global rms
+#rmsbox1=str(imageSize[0]/6.)+','+str(imageSize[1]/6.)+','+str(imageSize[0]*2./6.)+','+str(imageSize[1]*2./6.)
+#rmsbox2=str(imageSize[0]*4./6.)+','+str(imageSize[1]/6.)+','+str(imageSize[0]*5./6.)+','+str(imageSize[1]*2./6.)
+#rmsbox3=str(imageSize[0]*2./6.)+','+str(imageSize[1]*4./6.)+','+str(imageSize[0]*4./6.)+','+str(imageSize[1]*5./6.)
 
 # If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
 # also need to be set if outlier file is to be used.
@@ -92,17 +154,12 @@ outlierFile = ''
 # Clean can be toggled on/off here (T/F). 
 runClean =T
 
-#do you want to only save a cutout? Is the data set large? If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval rather then clean all, fit all, then delete (saves disk space but may be slower;cutout='T' & big_data='F').
-cutout='T'
-cut_reg='2962,2917,3017,2967'
-big_data='T'
-
-#If runClean=F set fit_cutout='T' if you have only cutout images but want to refit.
+#If runClean=F set fit_cutout='T' if you have only cutout images but want to refit without cleaning again, make sure rms boxes are set to local.
 fit_cutout='F'
 if fit_cutout=='T':
-	rmsbox1='0,0,'+str(float(rmsbox1.split(',')[2])-float(rmsbox1.split(',')[0]))+','+str(float(rmsbox1.split(',')[3])-float(rmsbox1.split(',')[1]))
-	rmsbox2='0,0,'+str(float(rmsbox2.split(',')[2])-float(rmsbox2.split(',')[0]))+','+str(float(rmsbox2.split(',')[3])-float(rmsbox2.split(',')[1]))
-	rmsbox3='0,0,'+str(float(rmsbox3.split(',')[2])-float(rmsbox3.split(',')[0]))+','+str(float(rmsbox3.split(',')[3])-float(rmsbox3.split(',')[1]))
+	#rmsbox1='0,0,'+str(float(rmsbox1.split(',')[2])-float(rmsbox1.split(',')[0]))+','+str(float(rmsbox1.split(',')[3])-float(rmsbox1.split(',')[1]))
+	#rmsbox2='0,0,'+str(float(rmsbox2.split(',')[2])-float(rmsbox2.split(',')[0]))+','+str(float(rmsbox2.split(',')[3])-float(rmsbox2.split(',')[1]))
+	#rmsbox3='0,0,'+str(float(rmsbox3.split(',')[2])-float(rmsbox3.split(',')[0]))+','+str(float(rmsbox3.split(',')[3])-float(rmsbox3.split(',')[1]))
 	targetBox = str(float(targetBox.split(',')[0])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[1])-float(cut_reg.split(',')[1]))+','+str(float(targetBox.split(',')[2])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[3])-float(cut_reg.split(',')[1]))
 #do you want to fix parameters in fits from full data set fit? (T of F)
 fix_pos='T'
@@ -110,73 +167,69 @@ fix_pos='T'
 do_monte='F'
 if do_monte == 'T':
 #add appropriate label to final lightcurve file name
-	lab='_mctest_'
+	lab='_mc_'
 else:
-	lab='_test_'
+	lab='_bestfit_'
 nsim=100
 
-#what parameters do you want and which do you want to fix in fits? f= peak flux, x=peak x pos, y=peak y pos, a=major axis (arcsec), b=minor axis (arcsec), p=position angle (deg)
+#if fixing parameters, what parameters do you want to fix in fits? f= peak flux, x=peak x pos, y=peak y pos, a=major axis (arcsec), b=minor axis (arcsec), p=position angle (deg)
 #a, b, p convolved with beam values not deconvolved values!!!
-#[value,error] from fit of full data set
-par_fix='xyabp'
+#format is [value,error] from fit of full data set
+if fix_pos=='T':
+    par_fix='xyabp'
 
-print 'Cleaning Full Data Set to determine fit parameters-->'
-clean(vis=visibility, imagename=outputPath+label+'whole_dataset', mask=maskPath, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
-print 'Fitting full data set in Image Plane-->'
-full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_dataset.txt')
-s=au.imfitparse(full_fit,showpixels=T)
-pixpos=s.split(' ')
-posnew=[x for x in pixpos if x!='']
-imfitFilefull=open(outputPath+label+'whole_dataset.txt','r')
-for line in imfitFilefull:
-    if ('--- ra:' in line) & ('pixels' in line):
-        ra_string=line
-    if ('--- dec:' in line) & ('pixels' in line):
-        dec_string=line
-pmra=ra_string.find('+/-')
-pmdec=dec_string.find('+/-')
-pixra=ra_string.find('pixels')
-pixdec=dec_string.find('pixels')
+    print 'Fitting full data set in Image Plane-->'
+    full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_dataset.txt')
+    #s=au.imfitparse(full_fit,showpixels=T)
+    #pixpos=s.split(' ')
+    #posnew=[x for x in pixpos if x!='']
+    imfitFilefull=open(outputPath+label+'whole_dataset.txt','r')
+    for line in imfitFilefull:
+        if ('--- ra:' in line) & ('pixels' in line):
+            ra_string=line
+        if ('--- dec:' in line) & ('pixels' in line):
+            dec_string=line
+    pmra=ra_string.find('+/-')
+    pmdec=dec_string.find('+/-')
+    pixra=ra_string.find('pixels')
+    pixdec=dec_string.find('pixels')
 
-peak_x=[float(ra_string[16:pmra]),float(ra_string[29:pixra])]#[2988.63,0.02]
-peak_y=[float(dec_string[16:pmdec-1]),float(dec_string[29:pixdec-1])]#[2942.09,0.01]
-if fit_cutout=='T':
-    peak_x=[peak_x[0]-float(cut_reg.split(',')[0]),peak_x[1]]
-    peak_y=[peak_y[0]-float(cut_reg.split(',')[1]),peak_y[1]]
-b_maj=[full_fit['results']['component0']['shape']['majoraxis']['value'],full_fit['results']['component0']['shape']['majoraxiserror']['value']]#[0.154,0.001]
-b_min=[full_fit['results']['component0']['shape']['minoraxis']['value'],full_fit['results']['component0']['shape']['minoraxiserror']['value']]#[0.099,0.0005]
-pos_ang=[full_fit['results']['component0']['shape']['positionangle']['value'],full_fit['results']['component0']['shape']['positionangleerror']['value']]#[67.41,0.42]
+    peak_x=[float(ra_string[16:pmra]),float(ra_string[29:pixra])]#[2988.63,0.02]
+    peak_y=[float(dec_string[16:pmdec-1]),float(dec_string[29:pixdec-1])]#[2942.09,0.01]
+    if fit_cutout=='T':
+        peak_x=[peak_x[0]-float(cut_reg.split(',')[0]),peak_x[1]]
+        peak_y=[peak_y[0]-float(cut_reg.split(',')[1]),peak_y[1]]
+    b_maj=[full_fit['results']['component0']['shape']['majoraxis']['value'],full_fit['results']['component0']['shape']['majoraxiserror']['value']]#[0.154,0.001]
+    b_min=[full_fit['results']['component0']['shape']['minoraxis']['value'],full_fit['results']['component0']['shape']['minoraxiserror']['value']]#[0.099,0.0005]
+    pos_ang=[full_fit['results']['component0']['shape']['positionangle']['value'],full_fit['results']['component0']['shape']['positionangleerror']['value']]#[67.41,0.42]
 
-#do you want peak (mJy/beam; F) or integrated (mJy; T), or both(B) in lightcurve file?
+#do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
 integ_fit='B'
 
-#do you want to do uv fitting (T or F)? Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy); if want to fix parameters put number insted of p[x] in uv_var
+#do you want to do uv fitting (T or F) as well? Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy); if want to fix parameters put number insted of p[x] in uv_var
 uv_fit='F'
 do_monte_uv='F'
 comp_uv='delta'
 stokes_param='I' #from listobs-- always LL in SMA data
-#only_uv='F'
 if uv_fit=='T':
     print 'Fitting full data set in UV Plane-->'
     fitfulluv=uvm.uvmultifit(vis=visibility_uv, spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=['p[0],p[1],p[2]'],outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
     uv_var=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+',p[2]'#'2.8194e-02,8.5502e-03,p[2]'
     src_uv_init=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+','+str(fitfulluv.result['Parameters'][2])#[2.8194e-02,8.5502e-03 , 1.3508e-01]
     src_uv_err=str(fitfulluv.result['Uncertainties'][0])+','+str(fitfulluv.result['Uncertainties'][1])+','+str(fitfulluv.result['Uncertainties'][2])#[4.7722e-05 , 3.7205e-05, 1.1192e-04]
-#var_uv=[T,F,F]
-#niter_uv=5
-#uv_bound=[None,None,None] 
-########################################################
+ 
+############################################################################################################
 #End of user input section
-########################################################
+############################################################################################################
 
 
     
 # Run listobs and store as a text file.
 listobs(vis=visibility, listfile=outputPath + label + 'listobs.text')
 
-###################################################################################################
+############################################################################################################
 # Get time range of observation from listobs and generate timeIntervals vector.
-###################################################################################################
+############################################################################################################
 # Extract start and end times and start date from listobs. The first few lines of listobs output
 # are identical between listobs executions. Therefore we can be confident that the time info will
 # always be located at the same position.

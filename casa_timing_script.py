@@ -148,7 +148,7 @@ else:
 
 # target position
 targetBox = bboxl[int(ind)-1]#'2982,2937,2997,2947'
-maskPath = 'box [['+targetBox.split(',')[0]+','+targetBox.split(',')[1]+'],['+targetBox.split(',')[2]+','+targetBox.split(',')[3]+']]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
+maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 
 #Is the data set large enough that you only want to save a cutout? 
 #If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval 

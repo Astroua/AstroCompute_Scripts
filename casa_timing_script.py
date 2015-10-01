@@ -37,7 +37,8 @@ from datetime import datetime
 from matplotlib import pyplot as pp
 from scipy.stats import norm
 
-def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre):
+#function to detect objects in fits image
+def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr,npixels):
     print 'Cleaning Full Data Set to detect objects-->'
     clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
     print 'Converting to fits-->'
@@ -55,9 +56,9 @@ def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre):
     #check what dimensions are (ra,dec)
     dim=data.shape
     #create detection threashold image
-    threshold_im=detect_threshold(data,snr=3.)
+    threshold_im=detect_threshold(data,snr=snr)
     #first make segmentation image
-    segm=detect_sources(data,threshold_im,npixels=10)
+    segm=detect_sources(data,threshold_im,npixels=npixels)
     #identify sources in segmentation image
     w=astropy.wcs.WCS(header=header_primary0,fobj=data)
     props=segment_properties(data,segm,wcs=w)
@@ -71,15 +72,11 @@ def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre):
         t=tbl['icrs_centroid'][i]
         b=tbl['bbox'][i]
         c=SkyCoord(ra=t.ra.value*u.degree,dec=t.dec.value*u.degree,frame='icrs')
-        ra_list.append(str(c.ra.hms.h)+':'+str(c.ra.hms.m)+':'+str(c.ra.hms.s))
-        dec_list.append(str(c.dec.deg))
+        ra_list.append(str(c.ra.hms.h)+'h'+str(c.ra.hms.m)+'m'+str(c.ra.hms.s)+'s')
+        dec_list.append(str(c.dec.deg+'deg'))
         bbox_list.append(str(b[0])+','+str(b[1])+','+str(b[2])+','+str(b[3]))
         ind_list.append(tbl['id'][i])
-    return(ra_list,dec_list,bbox_listind_list)
-
-    
-
-
+    return(ra_list,dec_list,bbox_list,ind_list)
 #Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
 	return(num !=0 and ((num & (num-1)) ==0))
@@ -97,10 +94,10 @@ obsDate = '2015jun22'
 refFrequency ='21GHz'
 # Label for casa output directories and files.
 label = target + '_' + refFrequency + '_' + obsDate + '_'
-# Length of time bins (H,M,S); see below if you want manual input (line 214)
+# Length of time bins (H,M,S); see below if you want manual input (line 288)
 intervalSizeH = 0
-intervalSizeM = 0
-intervalSizeS = 2
+intervalSizeM = 2
+intervalSizeS = 0
 #make data_products directory before start script
 mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
@@ -120,10 +117,9 @@ visibility_uv = path_dir+'data/swj17_jun22_B_K_k21.ms'
 
 
 
-# The clean command (line 351) should be inspected closely to ensure all arguments are appropriate before 
+# The clean command (line 425) should be inspected closely to ensure all arguments are appropriate before 
 # running script on a new data set.
 # The following arguments will be passed to casa's clean, imfit or imstat functions:
-
 imageSize = [6000,6000]
 if is_power2(imageSize[0])==False:
 	print 'Clean will run faster if image size is 2^n'
@@ -138,10 +134,15 @@ taylorTerms = 1
 myStokes = 'I'
 thre='10mJy'
 spw_choice='0~7:5~58'
-#object detection
-ral,decl,bboxl,indl=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre)
+
+#object detection-- snr=5. is limit for detecting sources and npix=10 is size of sources
+ral,decl,bboxl,indl=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
+print 'Objects Detected-->'
+print 'Object #, RA, DEC, Pixel Bounding Box'
+for i in range(0,len(indl)):
+    print indl[i],ral[i],decl[i],bboxl[i]
 if len(bboxl)>1:
-    ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?')
+    ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?--> ')
 else:
     ind=1
 
@@ -200,7 +201,6 @@ nsim=100
 #format is [value,error] from fit of full data set
 if fix_pos=='T':
     par_fix='xyabp'
-
     print 'Fitting full data set in Image Plane-->'
     full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_dataset.txt')
     #s=au.imfitparse(full_fit,showpixels=T)

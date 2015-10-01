@@ -35,7 +35,7 @@ from scipy.stats import norm
 
 def object_detect():
     print 'Cleaning Full Data Set to detect objects-->'
-    clean(vis=visibility, imagename=outputPath+label+'whole_dataset', mask=maskPath, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
+    clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
     print 'Converting to fits-->'
     exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',hostory=False)
     fits_file=outputPath+label+'whole_dataset.fits'

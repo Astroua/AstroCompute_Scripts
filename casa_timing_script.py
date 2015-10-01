@@ -90,14 +90,14 @@ intervalSizeH = 0
 intervalSizeM = 0
 intervalSizeS = 2
 #make data_products directory before start script
-mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+intervalSizeH+'hours'+intervalSizeM+'min'+intervalSizeS+'sec'
+mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 os.system(mkdir_string)
 # Path to directory where all output from this script is saved.
-outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+intervalSizeH+'hours'+intervalSizeM+'min'+intervalSizeS+'sec'+'/'
+outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
 # dataPath contains the path and filename in which data file will be saved. 
 # This script can be run on several epochs of data from the same observation without changing this path.
 # In this case the data file will be appended each time.
-dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+intervalSizeH+'hours'+intervalSizeM+'min'+intervalSizeS+'sec.txt'
+dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec.txt'
 # Name of visibliity - should include full path if script is not being run from vis location.
 visibility = path_dir+'data/swj17_jun22_B_K_k21.ms'
 visibility_uv = path_dir+'data/swj17_jun22_B_K_k21.ms'

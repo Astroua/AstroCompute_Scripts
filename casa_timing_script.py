@@ -138,7 +138,7 @@ spw_choice='0~7:5~58'
 #object detection-- snr=5. is limit for detecting sources and npix=10 is size of sources
 ral,decl,bboxl,indl=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
 print 'Objects Detected-->'
-print 'Object #, RA, DEC, Pixel Bounding Box'
+print 'Object, RA, DEC, Pixel Bounding Box'
 for i in range(0,len(indl)):
     print indl[i],ral[i],decl[i],bboxl[i]
 if len(bboxl)>1:

@@ -74,7 +74,7 @@ def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr
         c=SkyCoord(ra=t.ra.value*u.degree,dec=t.dec.value*u.degree,frame='icrs')
         ra_list.append(str(c.ra.hms.h)+'h'+str(c.ra.hms.m)+'m'+str(c.ra.hms.s)+'s')
         dec_list.append(str(c.dec.deg+'deg'))
-        bbox_list.append(str(b[0])+','+str(b[1])+','+str(b[2])+','+str(b[3]))
+        bbox_list.append(str(b[1])+','+str(b[0])+','+str(b[3])+','+str(b[2]))
         ind_list.append(tbl['id'][i])
     return(ra_list,dec_list,bbox_list,ind_list)
 #Function to find next power of 2^n closest to chosen imsize value to optimize cleaning

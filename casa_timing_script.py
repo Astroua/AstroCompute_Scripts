@@ -138,14 +138,26 @@ thre='10mJy'
 spw_choice='0~7:5~58'
 
 #object detection-- snr=5. is limit for detecting sources and npix=10 is size of sources
-ral,decl,bboxl,indl,data_array,segm_im=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
+ral,decl,bboxl,indl,data,segm=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
 print 'Number of Objects Detected is ', len(indl)
 show_im=raw_input('Would you like to show detection image?y or n')
 if show_im=='y':
-	norm = ImageNormalize(stretch=SqrtStretch())
+	#norm = ImageNormalize(stretch=SqrtStretch())
 	fig, (ax1, ax2) = pp.subplots(2, 1, figsize=(8, 8))
-	ax1.imshow(data, origin='lower', cmap='Greys_r', norm=norm)
-	ax2.imshow(segm, origin='lower', cmap='jet')
+	im1=ax1.imshow(data, origin='lower', cmap='hot',vmin=0.0,vmax=0.001)
+	ax2.imshow(segm, origin='lower', cmap='hot')
+	ax1.set_xlabel('RA (pixels)')
+	ax1.set_ylabel('DEC (pixels)')
+	ax2.set_xlabel('RA (pixels)')
+	ax2.set_ylabel('DEC (pixels)')
+	ax1.set_title('Original Image')
+	ax2.set_title('Segmentation Image')
+	fig.subplots_adjust(right=0.95)
+	cbar_ax = fig.add_axes([0.75, 0.60, 0.02, 0.30])
+	cbar=fig.colorbar(im1, cax=cbar_ax,ticks=[0.0,0.0002,0.0004,0.0006,0.0008,0.001])
+	cbar.ax.set_ylabel('Jy/beam', rotation=270)
+	fig.subplots_adjust(hspace=.5)
+	pp.savefig('object_detect_image.eps')
 	#pp.show()
 print 'Objects Detected-->'
 print 'Object, RA, DEC, Pixel Bounding Box'

@@ -36,6 +36,8 @@ from datetime import timedelta
 from datetime import datetime
 from matplotlib import pyplot as pp
 from scipy.stats import norm
+from astropy.visualization import SqrtStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
 
 #function to detect objects in fits image
 def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr,npixels):
@@ -76,7 +78,7 @@ def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr
         dec_list.append(str(c.dec.deg)+'deg')
         bbox_list.append(str(b[1])+','+str(b[0])+','+str(b[3])+','+str(b[2]))
         ind_list.append(tbl['id'][i])
-    return(ra_list,dec_list,bbox_list,ind_list)
+    return(ra_list,dec_list,bbox_list,ind_list,data,segm)
 #Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
 	return(num !=0 and ((num & (num-1)) ==0))
@@ -136,7 +138,15 @@ thre='10mJy'
 spw_choice='0~7:5~58'
 
 #object detection-- snr=5. is limit for detecting sources and npix=10 is size of sources
-ral,decl,bboxl,indl=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
+ral,decl,bboxl,indl,data_array,segm_im=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
+print 'Number of Objects Detected is ', len(indl)
+show_im=raw_input('Would you like to show detection image?y or n')
+if show_im=='y':
+	norm = ImageNormalize(stretch=SqrtStretch())
+	fig, (ax1, ax2) = pp.subplots(2, 1, figsize=(8, 8))
+	ax1.imshow(data, origin='lower', cmap='Greys_r', norm=norm)
+	ax2.imshow(segm, origin='lower', cmap='jet')
+	#pp.show()
 print 'Objects Detected-->'
 print 'Object, RA, DEC, Pixel Bounding Box'
 for i in range(0,len(indl)):

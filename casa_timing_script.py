@@ -38,6 +38,7 @@ from matplotlib import pyplot as pp
 from scipy.stats import norm
 from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
+import subprocess
 
 #function to detect objects in fits image
 def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr,npixels):
@@ -79,6 +80,33 @@ def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr
         bbox_list.append(str(b[1])+','+str(b[0])+','+str(b[3])+','+str(b[2]))
         ind_list.append(tbl['id'][i])
     return(ra_list,dec_list,bbox_list,ind_list,data,segm)
+def run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed,flood,tele,lat):
+	print 'Cleaning Full Data Set to detect objects-->'
+	clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
+	print 'Converting to fits-->'
+	exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',history=False)
+	fits_file=outputPath+label+'whole_dataset.fits'
+	out_file=outputPath+label+'whole_dataset_aegean.txt'
+	tab_file=outputPath+label+'whole_dataset_tab.tab'
+	ra_list=[]
+	dec_list=[]
+	maj_list=[]
+	min_list=[]
+	pos_list=[]
+	src_list=[]
+	print 'Running Aegean Object Detection -->'
+	subprocess.call(['python','aegean.py','--out='+out_file,'--table='+tab_file,'--seedclip='+str(seed),'--floodclip='+str(flood),'--telescope='+tele,'--lat='+str(lat),fits_file])
+	with open(tab_file) as f:
+		lines=f.readlines()
+	for i in range(1,len(lines)):
+		lin_split=lines[i].split('\t')
+		src_list.append(lin_split[0])
+		ra_list.append(lin_split[6])#deg
+		dec_list.append(lin_split[8])#deg
+		maj_list.append(lin_split[14])#arcsec
+		min_list.append(lin_split[16])#arcsec
+		pos_list.append(lin_split[18])#deg
+	return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
 #Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
 	return(num !=0 and ((num & (num-1)) ==0))
@@ -137,10 +165,15 @@ myStokes = 'I'
 thre='10mJy'
 spw_choice='0~7:5~58'
 
-#object detection-- snr=5. is limit for detecting sources and npix=10 is size of sources
-ral,decl,bboxl,indl,data,segm=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
-print 'Number of Objects Detected is ', len(indl)
-show_im=raw_input('Would you like to show detection image?y or n')
+#object detection old version-- snr=5. is limit for detecting sources and npix=10 is size of sources
+#ral,decl,bboxl,indl,data,segm=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
+
+#seed thresh is 10 sigma, flood thresh is 4 sigma, telescope is VLA, latitude os 34 deg at VLA
+src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,10,4,'VLA',34):
+print 'Number of Objects Detected is ', len(src_l)
+
+#for old version of object detection
+'''show_im=raw_input('Would you like to show detection image?y or n')
 if show_im=='y':
 	#norm = ImageNormalize(stretch=SqrtStretch())
 	fig, (ax1, ax2) = pp.subplots(2, 1, figsize=(8, 8))
@@ -158,17 +191,17 @@ if show_im=='y':
 	cbar.ax.set_ylabel('Jy/beam', rotation=270)
 	fig.subplots_adjust(hspace=.5)
 	pp.savefig('object_detect_image.eps')
-	#pp.show()
+	#pp.show()'''
 print 'Objects Detected-->'
-print 'Object, RA, DEC, Pixel Bounding Box'
-for i in range(0,len(indl)):
-    print indl[i],ral[i],decl[i],bboxl[i]
-if len(bboxl)>1:
+print 'Object, RA, DEC, Maj(arcsec), Min(arcsec), PA(deg)'
+for i in range(0,len(src_l)):
+    print src_l[i],ra_l[i],dec_l[i],maj_l[i],min_l[i],pos_l[i]
+if len(src_l)>1:
     ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?--> ')
 else:
     ind=1
 
-# target position
+# target position-->need to calculate bounding box from ellipse here
 targetBox = bboxl[int(ind)-1]#'2982,2937,2997,2947'
 maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 

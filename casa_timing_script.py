@@ -13,10 +13,11 @@
 #
 #To ensure all modules used in this script are callable, download the casa-python 
 #executable wrapper package and then you can install any python package to use in CASA 
-#with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils)
+#with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils,lmfit)
 #Also need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
 #(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
 #and analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
+#Need Aegean for object detection-->https://github.com/PaulHancock/Aegean; import as module and use only functions I need.
 import tempfile
 import os
 import linecache
@@ -38,9 +39,12 @@ from matplotlib import pyplot as pp
 from scipy.stats import norm
 from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
-import subprocess
+#import subprocess--> not cheating anymore
+import aegean
+from AegeanTools.catalogs import save_catalog
+import multiprocessing
 
-#function to detect objects in fits image
+#simple function to detect objects in fits image
 def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr,npixels):
     print 'Cleaning Full Data Set to detect objects-->'
     clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
@@ -80,45 +84,63 @@ def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr
         bbox_list.append(str(b[1])+','+str(b[0])+','+str(b[3])+','+str(b[2]))
         ind_list.append(tbl['id'][i])
     return(ra_list,dec_list,bbox_list,ind_list,data,segm)
-def run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed,flood):
-	print 'Cleaning Full Data Set to detect objects-->'
-	clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
-	print 'Converting to fits-->'
-	exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',history=False)
-	fits_file=outputPath+label+'whole_dataset.fits'
-	out_file=outputPath+label+'whole_dataset_aegean.txt'
-	tab_file=outputPath+label+'whole_dataset_tab.tab'
-	ra_list=[]
-	dec_list=[]
-	maj_list=[]
-	min_list=[]
-	pos_list=[]
-	src_list=[]
-	if tele=='VLA':
-		lat=34
-	elif tele=='SMA':
-		lat=20
+#use Aegean object detection algorithm--> import as module
+def run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed,flood,tele):
+    print 'Cleaning Full Data Set to detect objects-->'
+    clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
+    print 'Converting to fits-->'
+    exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',history=False)
+    fits_file=outputPath+label+'whole_dataset.fits'
+    out_file0=outputPath+label+'whole_dataset_aegean.txt'
+    tab_file=outputPath+label+'whole_dataset_tab.tab'
+    ra_list=[]
+    dec_list=[]
+    maj_list=[]
+    min_list=[]
+    pos_list=[]
+    src_list=[]
+    sources=[]
+    lat=aegean.scope2lat(tele)
+    if lat==None:
+	if tele=='SMA':
+		lat=19.8243
 	elif tele=='NOEMA':
-		lat=44
-	elif tele=='ATCA':
-		lat=-30
+		lat=44.6339
 	else:
-		tele=raw_input('Enter telescope name-->')
 		lat_string=raw_input('Enter latitude of telescope-->')
 		lat=float(lat_string)
-	print 'Running Aegean Object Detection -->'
-	subprocess.call(['python',path_dir+'Aegean/aegean.py','--out='+out_file,'--table='+tab_file,'--seedclip='+str(seed),'--floodclip='+str(flood),'--telescope='+tele,'--lat='+str(lat),fits_file])
-	with open(tab_file) as f:
-		lines=f.readlines()
-	for i in range(1,len(lines)):
-		lin_split=lines[i].split('\t')
-		src_list.append(lin_split[0])
-		ra_list.append(lin_split[4])#string
-		dec_list.append(lin_split[5])#string
-		maj_list.append(float(lin_split[14])/cellSize)#pix
-		min_list.append(float(lin_split[16])/cellSize)#pix
-		pos_list.append(float(lin_split[18]))#deg
-	return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
+    out_file= open(out_file0, 'w')
+    tables=tab_file
+    print 'Running Aegean Object Detection -->'
+    detections=aegean.find_sources_in_image(fits_file, outfile=out_file, hdu_index=0,
+                                           rms=None,
+                                           max_summits=None,
+                                           innerclip=seed,
+                                           outerclip=flood, cores=multiprocessing.cpu_count(), rmsin=None,
+                                           bkgin=None, beam=None,
+                                           doislandflux=False,
+                                           nonegative=not False, nopositive=False,
+                                           mask=None, lat=lat, imgpsf=None)
+    out_file.close()
+    if len(detections) == 0:
+	print 'No sources detected'
+    sources.extend(detections)
+    if len(sources) > 0:
+    	save_catalog(tables, sources)
+    #cheat using subprocess module
+    #subprocess.call(['python',path_dir+'Aegean/aegean.py','--out='+out_file,'--table='+tab_file,'--seedclip='+str(seed),'--floodclip='+str(flood),'--telescope='+tele,'--lat='+str(lat),fits_file])
+    
+    with open(tables) as f:
+    	lines=f.readlines()
+    for i in range(1,len(lines)):
+    	lin_split=lines[i].split('\t')
+    	src_list.append(lin_split[0])
+    	ra_list.append(lin_split[4])#string
+    	dec_list.append(lin_split[5])#string
+    	maj_list.append(float(lin_split[14])/cellSize)#pix
+    	min_list.append(float(lin_split[16])/cellSize)#pix
+    	pos_list.append(float(lin_split[18]))#deg
+    return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
 #Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
 	return(num !=0 and ((num & (num-1)) ==0))
@@ -183,7 +205,8 @@ spw_choice='0~7:5~58'
 #seed thresh is 10 sigma, flood thresh is 4 sigma, telescope is VLA, latitude os 34 deg at VLA
 seed_thresh=10
 flood_thresh=4
-src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh):
+telescope='VLA'
+src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh,telescope):
 print 'Number of Objects Detected is ', len(src_l)
 
 #for old version of object detection

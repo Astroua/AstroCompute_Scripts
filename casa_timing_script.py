@@ -80,7 +80,7 @@ def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr
         bbox_list.append(str(b[1])+','+str(b[0])+','+str(b[3])+','+str(b[2]))
         ind_list.append(tbl['id'][i])
     return(ra_list,dec_list,bbox_list,ind_list,data,segm)
-def run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed,flood,tele,lat):
+def run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed,flood):
 	print 'Cleaning Full Data Set to detect objects-->'
 	clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
 	print 'Converting to fits-->'
@@ -94,8 +94,20 @@ def run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed,f
 	min_list=[]
 	pos_list=[]
 	src_list=[]
+	if tele=='VLA':
+		lat=34
+	elif tele=='SMA':
+		lat=20
+	elif tele=='NOEMA':
+		lat=44
+	elif tele=='ATCA':
+		lat=-30
+	else:
+		tele=raw_input('Enter telescope name-->')
+		lat_string=raw_input('Enter latitude of telescope-->')
+		lat=float(lat_string)
 	print 'Running Aegean Object Detection -->'
-	subprocess.call(['python','aegean.py','--out='+out_file,'--table='+tab_file,'--seedclip='+str(seed),'--floodclip='+str(flood),'--telescope='+tele,'--lat='+str(lat),fits_file])
+	subprocess.call(['python',path_dir+'Aegean/aegean.py','--out='+out_file,'--table='+tab_file,'--seedclip='+str(seed),'--floodclip='+str(flood),'--telescope='+tele,'--lat='+str(lat),fits_file])
 	with open(tab_file) as f:
 		lines=f.readlines()
 	for i in range(1,len(lines)):
@@ -169,7 +181,9 @@ spw_choice='0~7:5~58'
 #ral,decl,bboxl,indl,data,segm=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
 
 #seed thresh is 10 sigma, flood thresh is 4 sigma, telescope is VLA, latitude os 34 deg at VLA
-src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,10,4,'VLA',34):
+seed_thresh=10
+flood_thresh=4
+src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh):
 print 'Number of Objects Detected is ', len(src_l)
 
 #for old version of object detection
@@ -193,7 +207,7 @@ if show_im=='y':
 	pp.savefig('object_detect_image.eps')
 	#pp.show()'''
 print 'Objects Detected-->'
-print 'Object, RA, DEC, Maj(arcsec), Min(arcsec), PA(deg)'
+print 'Object, RA, DEC'
 for i in range(0,len(src_l)):
     print src_l[i],ra_l[i],dec_l[i]
 if len(src_l)>1:
@@ -201,10 +215,11 @@ if len(src_l)>1:
 else:
     ind=1
 
-# target position-->
-tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1],round=True)
-bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)
-bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)
+# target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
+#use with rest of script
+tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
+bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
+bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
 #targetBox = bboxl[int(ind)-1]#'2982,2937,2997,2947'
 targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
 maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'

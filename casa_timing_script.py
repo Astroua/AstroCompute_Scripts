@@ -101,11 +101,11 @@ def run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed,f
 	for i in range(1,len(lines)):
 		lin_split=lines[i].split('\t')
 		src_list.append(lin_split[0])
-		ra_list.append(lin_split[6])#deg
-		dec_list.append(lin_split[8])#deg
-		maj_list.append(lin_split[14])#arcsec
-		min_list.append(lin_split[16])#arcsec
-		pos_list.append(lin_split[18])#deg
+		ra_list.append(lin_split[4])#string
+		dec_list.append(lin_split[5])#string
+		maj_list.append(float(lin_split[14])/cellSize)#pix
+		min_list.append(float(lin_split[16])/cellSize)#pix
+		pos_list.append(float(lin_split[18]))#deg
 	return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
 #Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
@@ -195,14 +195,18 @@ if show_im=='y':
 print 'Objects Detected-->'
 print 'Object, RA, DEC, Maj(arcsec), Min(arcsec), PA(deg)'
 for i in range(0,len(src_l)):
-    print src_l[i],ra_l[i],dec_l[i],maj_l[i],min_l[i],pos_l[i]
+    print src_l[i],ra_l[i],dec_l[i]
 if len(src_l)>1:
     ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?--> ')
 else:
     ind=1
 
-# target position-->need to calculate bounding box from ellipse here
-targetBox = bboxl[int(ind)-1]#'2982,2937,2997,2947'
+# target position-->
+tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1],round=True)
+bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)
+bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)
+#targetBox = bboxl[int(ind)-1]#'2982,2937,2997,2947'
+targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
 maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 
 #Is the data set large enough that you only want to save a cutout? 

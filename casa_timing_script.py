@@ -223,31 +223,34 @@ if show_im=='y':
 	pp.savefig('object_detect_image.eps')
 	#pp.show()'''
 
-#object detection with Aegean algorithm
-#seed thresh is 10 sigma, flood thresh is 4 sigma, telescope is VLA
-seed_thresh=10
-flood_thresh=4
-telescope='VLA'
-src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh,telescope):
-print 'Number of Objects Detected is ', len(src_l)
+#flag to run object detection
+runObj='T'
+if runObj=='T':
+    #object detection with Aegean algorithm
+    #seed thresh is 10 sigma, flood thresh is 4 sigma, telescope is VLA
+    seed_thresh=10
+    flood_thresh=4
+    telescope='VLA'
+    src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh,telescope):
+    print 'Number of Objects Detected is ', len(src_l)
+    print 'Objects Detected-->'
+    print 'Object, RA, DEC'
+    for i in range(0,len(src_l)):
+    	print src_l[i],ra_l[i],dec_l[i]
+    if len(src_l)>1:
+    	ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?--> ')
+    else:
+    	ind=1
+    # target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
+    #use with rest of script
+    tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
+    bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
+    bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
+    #targetBox = bboxl[int(ind)-1]#'2982,2937,2997,2947'
+    targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
+elif runObj=='F':
+    targetBox ='2982,2937,2997,2947'
 
-
-print 'Objects Detected-->'
-print 'Object, RA, DEC'
-for i in range(0,len(src_l)):
-    print src_l[i],ra_l[i],dec_l[i]
-if len(src_l)>1:
-    ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?--> ')
-else:
-    ind=1
-
-# target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
-#use with rest of script
-tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
-bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
-bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
-#targetBox = bboxl[int(ind)-1]#'2982,2937,2997,2947'
-targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
 maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 
 #Is the data set large enough that you only want to save a cutout? 
@@ -301,6 +304,9 @@ nsim=100
 #format is [value,error] from fit of full data set
 if fix_pos=='T':
     par_fix='xyabp'
+    if runObj=='F':
+    	print 'Cleaning Full Data Set-->'
+    	clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
     print 'Fitting full data set in Image Plane-->'
     full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_dataset.txt')
     #s=au.imfitparse(full_fit,showpixels=T)

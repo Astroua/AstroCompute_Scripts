@@ -11,13 +11,14 @@
 #############################################################################################################
 #Import modules                                         
 #
-#To ensure all modules used in this script are callable, download the casa-python 
-#executable wrapper package and then you can install any python package to use in CASA 
+#To ensure all modules used in this script are callable:
+#1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
 #with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils,lmfit)
-#Also need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
+#2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
 #(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
-#and analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
-#Need Aegean for object detection-->https://github.com/PaulHancock/Aegean; import as module and use only functions I need.
+#3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
+#4. Need Aegean for object detection-->https://github.com/PaulHancock/Aegean;import as module and 
+#use only functions I need.
 import tempfile
 import os
 import linecache
@@ -39,7 +40,7 @@ from matplotlib import pyplot as pp
 from scipy.stats import norm
 from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
-#import subprocess--> not cheating anymore
+#import subprocess--> not cheating with aegean anymore don't need
 import aegean
 from AegeanTools.catalogs import save_catalog
 import multiprocessing
@@ -199,18 +200,10 @@ myStokes = 'I'
 thre='10mJy'
 spw_choice='0~7:5~58'
 
-#object detection old version-- snr=5. is limit for detecting sources and npix=10 is size of sources
+'''#object detection old version-- snr=5. is limit for detecting sources and npix=10 is size of sources
 #ral,decl,bboxl,indl,data,segm=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
-
-#seed thresh is 10 sigma, flood thresh is 4 sigma, telescope is VLA, latitude os 34 deg at VLA
-seed_thresh=10
-flood_thresh=4
-telescope='VLA'
-src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh,telescope):
-print 'Number of Objects Detected is ', len(src_l)
-
 #for old version of object detection
-'''show_im=raw_input('Would you like to show detection image?y or n')
+show_im=raw_input('Would you like to show detection image?y or n')
 if show_im=='y':
 	#norm = ImageNormalize(stretch=SqrtStretch())
 	fig, (ax1, ax2) = pp.subplots(2, 1, figsize=(8, 8))
@@ -229,6 +222,16 @@ if show_im=='y':
 	fig.subplots_adjust(hspace=.5)
 	pp.savefig('object_detect_image.eps')
 	#pp.show()'''
+
+#object detection with Aegean algorithm
+#seed thresh is 10 sigma, flood thresh is 4 sigma, telescope is VLA
+seed_thresh=10
+flood_thresh=4
+telescope='VLA'
+src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh,telescope):
+print 'Number of Objects Detected is ', len(src_l)
+
+
 print 'Objects Detected-->'
 print 'Object, RA, DEC'
 for i in range(0,len(src_l)):

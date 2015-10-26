@@ -128,7 +128,7 @@ def run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed,f
     sources.extend(detections)
     if len(sources) > 0:
     	save_catalog(tables, sources)
-    #cheat using subprocess module
+    #cheat using subprocess module-may need to use this as find_sources not working
     #subprocess.call(['python',path_dir+'Aegean/aegean.py','--out='+out_file,'--table='+tab_file,'--seedclip='+str(seed),'--floodclip='+str(flood),'--telescope='+tele,'--lat='+str(lat),fits_file])
     
     with open(tables) as f:

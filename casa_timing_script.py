@@ -231,7 +231,7 @@ if runObj=='T':
     seed_thresh=10
     flood_thresh=4
     telescope='VLA'
-    src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh,telescope):
+    src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh,telescope)
     print 'Number of Objects Detected is ', len(src_l)
     print 'Objects Detected-->'
     print 'Object, RA, DEC'

@@ -1,5 +1,5 @@
 ############################################################################################################
-#CASA Timing script 
+#CASA Script #2-->Timing script 
 #Input: Calibrated and Split MS
 #Output: Produces a lightcurve with a user specified time bin (plot + data file)
 #Note: This script is theoretically compatible with any data that can be imported 

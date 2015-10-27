@@ -12,20 +12,33 @@ import aegean
 from AegeanTools.catalogs import save_catalog
 import numpy as np
 import multiprocessing
+import imp
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
 path_dir='/home/ubuntu/'
 
+def getVar(filename):
+    f=open(filename)
+    global data_params
+    data_params=imp.load_source('data_params','',f)
+    f.close()
+
 ###########################################################
-#USER INPUT SECTION--> will make parameter file eventually
+#USER INPUT SECTION--> read in from parameters file
 ###########################################################
+getVar(path_dir+'param.txt')
+
 # Target name.
-target = 'V404Cyg'
+target = data_params.target
 # Date of observation.
-obsDate = '2015jun22'
+obsDate = data_params.obsDate
 # Observation frequency. 
-refFrequency ='21GHz'
+refFrequency =data_params.refFrequency
+# Length of time bins (H,M,S)
+intervalSizeH = data_params.intervalSizeH
+intervalSizeM = data_params.intervalSizeM
+intervalSizeS = data_params.intervalSizeS
 # Label for casa output directories and files.
 label = target + '_' + refFrequency + '_' + obsDate + '_'
 outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
@@ -33,9 +46,9 @@ outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(in
 fits_file=outputPath+label+'whole_dataset.fits'
 out_file0=outputPath+label+'whole_dataset_aegean.txt'
 tab_file=outputPath+label+'whole_dataset_objdet.tab'
-seed=10
-flood=4
-tele='VLA'
+seed=data_params.seed
+flood=data_params.flood
+tele=data_params.tele
 
 ###########################################################
 #END OF USER INPUT SECTION

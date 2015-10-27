@@ -10,7 +10,7 @@
 #############################################################################################################
 #Import modules                                         
 #
-#None needed
+import imp
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
@@ -19,23 +19,30 @@ path_dir='/home/ubuntu/'
 #Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
 	return(num !=0 and ((num & (num-1)) ==0))
+def getVar(filename):
+	f=open(filename)
+	global data_params
+	data_params=imp.load_source('data_params','',f)
+	f.close()
 
 
 ###########################################################
-#USER INPUT SECTION--> will make parameter file eventually
+#USER INPUT SECTION-->read in from parameters file
 ###########################################################
+getVar(path_dir+'param.txt')
+
 # Target name.
-target = 'V404Cyg'
+target = data_params.target
 # Date of observation.
-obsDate = '2015jun22'
+obsDate = data_params.obsDate
 # Observation frequency. 
-refFrequency ='21GHz'
+refFrequency = data_params.refFrequency
 # Label for casa output directories and files.
 label = target + '_' + refFrequency + '_' + obsDate + '_'
-# Length of time bins (H,M,S); see below if you want manual input (line 288)
-intervalSizeH = 0
-intervalSizeM = 2
-intervalSizeS = 0
+# Length of time bins (H,M,S)
+intervalSizeH = data_params.intervalSizeH
+intervalSizeM = data_params.intervalSizeM
+intervalSizeS = data_params.intervalSizeS
 #make data_products directory before start script
 mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
@@ -50,12 +57,12 @@ outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(in
 # In this case the data file will be appended each time.
 dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec.txt'
 # Name of visibliity - should include full path if script is not being run from vis location.
-visibility = path_dir+'data/swj17_jun22_B_K_k21.ms'
+visibility = path_dir+'data/'+ data_params.visibility
 
 # The clean command (line 425) should be inspected closely to ensure all arguments are appropriate before 
 # running script on a new data set.
 # The following arguments will be passed to casa's clean, imfit or imstat functions:
-imageSize = [6000,6000]
+imageSize = [data_params.imageSize,data_params.imageSize]
 if is_power2(imageSize[0])==False:
 	print 'Clean will run faster if image size is 2^n'
 	imS=raw_input('Do you want to optimize image size?, y or n? ')
@@ -63,12 +70,12 @@ if is_power2(imageSize[0])==False:
 		imageSize=[int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2)))),int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
         	print 'imagesize is now set to ', imageSize
     	print 'imagesize remains at ',imageSize, 'due to user request'
-numberIters = 5000
-cellSize = ['0.02arcsec','0.02arcsec']
-taylorTerms = 1
-myStokes = 'I'
-thre='10mJy'
-spw_choice='0~7:5~58'
+numberIters = data_params.numberIters
+cellSize = [data_params.cellSize,data_params.cellSize]
+taylorTerms = data_params.taylorTerms
+myStokes = data_params.myStokes
+thre=data_params.thre
+spw_choice=data_params.spw_choice
 ###########################################################
 #END OF USER INPUT SECTION
 ###########################################################

@@ -117,13 +117,15 @@ label = target + '_' + refFrequency + '_' + obsDate + '_'
 intervalSizeH = 0
 intervalSizeM = 2
 intervalSizeS = 0
-#make data_products directory before start script
-mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-mkdir_perm2='sudo chmod -R 777 '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-os.system(mkdir_string)
-os.system(mkdir_perm1)
-os.system(mkdir_perm2)
+#make data_products directory before start script--> done in initial clean, but check if didn't run that
+if not os.path.isdir(path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'):
+	mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_perm2='sudo chmod -R 777 '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	os.system(mkdir_string)
+	os.system(mkdir_perm1)
+	os.system(mkdir_perm2)
+
 # Path to directory where all output from this script is saved.
 outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
 # dataPath contains the path and filename in which data file will be saved. 

@@ -17,8 +17,6 @@
 #2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
 #(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
 #3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
-#4. Need Aegean for object detection-->https://github.com/PaulHancock/Aegean;import as module and 
-#use only functions I need.
 import tempfile
 import os
 import linecache
@@ -85,52 +83,8 @@ def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr
         bbox_list.append(str(b[1])+','+str(b[0])+','+str(b[3])+','+str(b[2]))
         ind_list.append(tbl['id'][i])
     return(ra_list,dec_list,bbox_list,ind_list,data,segm)
-#use Aegean object detection algorithm--> import as module
-def run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed,flood,tele):
-    print 'Cleaning Full Data Set to detect objects-->'
-    clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
-    print 'Converting to fits-->'
-    exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',history=False)
-    fits_file=outputPath+label+'whole_dataset.fits'
-    out_file0=outputPath+label+'whole_dataset_aegean.txt'
-    tab_file=outputPath+label+'whole_dataset_tab.tab'
-    ra_list=[]
-    dec_list=[]
-    maj_list=[]
-    min_list=[]
-    pos_list=[]
-    src_list=[]
-    sources=[]
-    lat=aegean.scope2lat(tele)
-    if lat==None:
-	if tele=='SMA':
-		lat=19.8243
-	elif tele=='NOEMA':
-		lat=44.6339
-	else:
-		lat_string=raw_input('Enter latitude of telescope-->')
-		lat=float(lat_string)
-    out_file= open(out_file0, 'w')
-    tables=tab_file
-    print 'Running Aegean Object Detection -->'
-    detections=aegean.find_sources_in_image(fits_file, outfile=out_file, hdu_index=0,
-                                           rms=None,
-                                           max_summits=None,
-                                           innerclip=seed,
-                                           outerclip=flood, cores=multiprocessing.cpu_count(), rmsin=None,
-                                           bkgin=None, beam=None,
-                                           doislandflux=False,
-                                           nonegative=not False, nopositive=False,
-                                           mask=None, lat=lat, imgpsf=None)
-    out_file.close()
-    if len(detections) == 0:
-	print 'No sources detected'
-    sources.extend(detections)
-    if len(sources) > 0:
-    	save_catalog(tables, sources)
-    #cheat using subprocess module-may need to use this as find_sources not working
-    #subprocess.call(['python',path_dir+'Aegean/aegean.py','--out='+out_file,'--table='+tab_file,'--seedclip='+str(seed),'--floodclip='+str(flood),'--telescope='+tele,'--lat='+str(lat),fits_file])
-    
+#use Aegean object detection algorithm
+def run_aegean(tables,cellSize):
     with open(tables) as f:
     	lines=f.readlines()
     for i in range(1,len(lines)):
@@ -180,6 +134,9 @@ dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+str(in
 visibility = path_dir+'data/swj17_jun22_B_K_k21.ms'
 visibility_uv = path_dir+'data/swj17_jun22_B_K_k21.ms'
 
+#Object detection file-->output from Aegean_ObjDet.py
+tables=outputPath+label+'whole_dataset_objdet.tab'
+
 
 
 # The clean command (line 425) should be inspected closely to ensure all arguments are appropriate before 
@@ -226,12 +183,9 @@ if show_im=='y':
 #flag to run object detection
 runObj='T'
 if runObj=='T':
-    #object detection with Aegean algorithm
-    #seed thresh is 10 sigma, flood thresh is 4 sigma, telescope is VLA
-    seed_thresh=10
-    flood_thresh=4
-    telescope='VLA'
-    src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,seed_thresh,flood_thresh,telescope)
+    #object detection with Aegean algorithm--> Need to run initial_clean.py in CASA, and Aegean_ObjDet.py outside
+    #CASA first
+    src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(tables,cellSize)
     print 'Number of Objects Detected is ', len(src_l)
     print 'Objects Detected-->'
     print 'Object, RA, DEC'
@@ -249,6 +203,7 @@ if runObj=='T':
     #targetBox = bboxl[int(ind)-1]#'2982,2937,2997,2947'
     targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
 elif runObj=='F':
+#input target box in pixels if not running object detection	
     targetBox ='2982,2937,2997,2947'
 
 maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'

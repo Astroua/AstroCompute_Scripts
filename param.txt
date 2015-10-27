@@ -1,0 +1,19 @@
+# example param file for initial_clean.py and Aegean_ObjDet.py
+target = 'V404Cyg'
+obsDate = '2015jun22' 
+refFrequency ='21GHz'
+intervalSizeH = 0
+intervalSizeM = 2
+intervalSizeS = 0
+visibility = 'swj17_jun22_B_K_k21.ms'
+imageSize = 6000
+numberIters = 5000
+cellSize = '0.02arcsec'
+taylorTerms = 1
+myStokes = 'I'
+thre ='10mJy'
+spw_choice ='0~7:5~58'
+#only for Aegean_ObjDet.py
+seed = 10
+flood = 4
+tele = 'VLA'

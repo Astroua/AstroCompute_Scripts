@@ -29,63 +29,23 @@ import pyfits
 import astropy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-#from photutils import detect_threshold,detect_sources, segment_properties,properties_table,EllipticalAperture
-#import skimage.measure
 from datetime import time
 from datetime import timedelta
 from datetime import datetime
 from matplotlib import pyplot as pp
 from scipy.stats import norm
-#from astropy.visualization import SqrtStretch
-#from astropy.visualization.mpl_normalize import ImageNormalize
-#import subprocess--> not cheating with aegean anymore don't need
-#import aegean--> in Aegean_ObjDet.py
-#from AegeanTools.catalogs import save_catalog--> in Aegean_ObjDet.py
-#import multiprocessing--> in Aegean_ObjDet.py
 import imp
-
-'''#simple function to detect objects in fits image
-def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr,npixels):
-    print 'Cleaning Full Data Set to detect objects-->'
-    clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
-    print 'Converting to fits-->'
-    exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',history=False)
-    fits_file=outputPath+label+'whole_dataset.fits'
-    #basic info on fits file
-    info_data=pyfits.info(fits_file)
-    #header info
-    header_primary0 = pyfits.getheader(fits_file)
-    #get data from cube
-    data = pyfits.getdata(fits_file,0)
-    data=data[0,0,0:imageSize[0],0:imageSize[1]]
-    #check you get a numpy nd array
-    ty=type(data)
-    #check what dimensions are (ra,dec)
-    dim=data.shape
-    #create detection threashold image
-    threshold_im=detect_threshold(data,snr=snr)
-    #first make segmentation image
-    segm=detect_sources(data,threshold_im,npixels=npixels)
-    #identify sources in segmentation image
-    w=astropy.wcs.WCS(header=header_primary0,fobj=data)
-    props=segment_properties(data,segm,wcs=w)
-    columns=['id','xcentroid','ycentroid','icrs_centroid','bbox']
-    tbl=properties_table(props,columns=columns)
-    ra_list=[]
-    dec_list=[]
-    bbox_list=[]
-    ind_list=[]
-    for i in range(0,len(tbl['id'])):
-        t=tbl['icrs_centroid'][i]
-        b=tbl['bbox'][i]
-        c=SkyCoord(ra=t.ra.value*u.degree,dec=t.dec.value*u.degree,frame='icrs')
-        ra_list.append(str(c.ra.hms.h)+'h'+str(c.ra.hms.m)+'m'+str(c.ra.hms.s)+'s')
-        dec_list.append(str(c.dec.deg)+'deg')
-        bbox_list.append(str(b[1])+','+str(b[0])+','+str(b[3])+','+str(b[2]))
-        ind_list.append(tbl['id'][i])
-    return(ra_list,dec_list,bbox_list,ind_list,data,segm)'''
-#use Aegean object detection algorithm-->parse data file output from Aegean_ObjDet.py
+ 
 def run_aegean(tables,cellSize):
+    '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),
+    to extract positional information on sources in field
+    
+    tables: data file output form Aegean_ObjDet.py
+    cellSize: imaging parameter, arcsec/pix
+    
+    return: lists of source #, RA, DEC, semi-major axis, semi-minor axis, and position angle
+    for all detected sources
+    '''
     with open(tables) as f:
     	lines=f.readlines()
     for i in range(1,len(lines)):
@@ -100,18 +60,27 @@ def run_aegean(tables,cellSize):
     
 #Find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
-	return(num !=0 and ((num & (num-1)) ==0))
+    ''' Find next power of 2^n closest to chosen image size value in order to
+    optimize cleaning speed
+	
+    num: image size in pixels
+	
+    return: image size that corresponds to next closest 2^n power
+    '''
+    return(num !=0 and ((num & (num-1)) ==0))
 	
 #Read in variables from parameter file
 def getVar(filename):
-	f=open(filename)
-	global data_params
-	data_params=imp.load_source('data_params','',f)
-	f.close()
+    '''Easy way to read in variables from parameter file
+    '''
+    f=open(filename)
+    global data_params
+    data_params=imp.load_source('data_params','',f)
+    f.close()
 	
 #set initial path to where input/output is to be stored
-#MS's need to be in path_dir/data, all output needs to be in path_dir/data_products
-#NOTE:both directories need to be created beforhand
+#NOTE: MS's need to be in path_dir/data, all output needs to be in path_dir/data_products,
+#both directories need to be created beforehand
 path_dir='/home/ubuntu/'
 
 
@@ -123,7 +92,7 @@ path_dir='/home/ubuntu/'
 #get input parameters from file
 getVar(path_dir+'param.txt')
 
-#DATA SET PARAMETERS
+'''DATA SET PARAMETERS'''
 # Target name
 target = data_params.target
 # Date of observation
@@ -140,7 +109,7 @@ intervalSizeS = data_params.intervalSizeS
 visibility = path_dir+'data/'+ data_params.visibility
 visibility_uv = path_dir+'data/'+ data_params.visibility
 
-#DIRECTORY AND FILE NAME PARAMETERS
+'''DIRECTORY AND FILE NAME PARAMETERS'''
 # Set path to directory where all output from this script is saved.
 outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
 
@@ -161,7 +130,7 @@ if not os.path.isdir(path_dir+'data_products/images_'+target+'_'+refFrequency+'_
 #Object detection file-->output from Aegean_ObjDet.py
 tables=outputPath+label+'whole_dataset_objdet.tab'
 
-#CLEAN PARAMETERS
+'''CLEAN PARAMETERS'''
 # The clean command (line 505) should be inspected closely to ensure all arguments are appropriate before 
 # running script on a new data set.
 # The following arguments will be passed to casa's clean, imfit or imstat functions:
@@ -179,33 +148,42 @@ taylorTerms = data_params.taylorTerms
 myStokes = data_params.myStokes
 thre=data_params.thre
 spw_choice=data_params.spw_choice
+# If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
+# also need to be set if outlier file is to be used.
+# If not, set outlierFile to ''.
+outlierFile = data_params.outlierFile
 
-'''#object detection old version-- snr=5. is limit for detecting sources and npix=10 is size of sources
-#ral,decl,bboxl,indl,data,segm=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
-#for old version of object detection
-show_im=raw_input('Would you like to show detection image?y or n')
-if show_im=='y':
-	#norm = ImageNormalize(stretch=SqrtStretch())
-	fig, (ax1, ax2) = pp.subplots(2, 1, figsize=(8, 8))
-	im1=ax1.imshow(data, origin='lower', cmap='hot',vmin=0.0,vmax=0.001)
-	ax2.imshow(segm, origin='lower', cmap='hot')
-	ax1.set_xlabel('RA (pixels)')
-	ax1.set_ylabel('DEC (pixels)')
-	ax2.set_xlabel('RA (pixels)')
-	ax2.set_ylabel('DEC (pixels)')
-	ax1.set_title('Original Image')
-	ax2.set_title('Segmentation Image')
-	fig.subplots_adjust(right=0.95)
-	cbar_ax = fig.add_axes([0.75, 0.60, 0.02, 0.30])
-	cbar=fig.colorbar(im1, cax=cbar_ax,ticks=[0.0,0.0002,0.0004,0.0006,0.0008,0.001])
-	cbar.ax.set_ylabel('Jy/beam', rotation=270)
-	fig.subplots_adjust(hspace=.5)
-	pp.savefig('object_detect_image.eps')
-	#pp.show()'''
-
-#OBJECT DETECTION AND SELECTION PARAMETERS
+'''FLAGS'''
 #flag to run object detection
 runObj=data_params.runObj
+#Is the data set large enough that you only want to save a cutout? 
+#If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval 
+#If cutout='T' & big_data='F' --> clean all, fit all, then delete.
+#If cutout='F' & big_data='F' --> clean all full size, fit all full size, no delete
+cutout=data_params.cutout
+big_data=data_params.big_data
+# Clean can be toggled on/off here (T/F). 
+runClean =data_params.runClean
+#do you want to fix parameters in fits from full data set fit? (T of F)
+fix_pos=data_params.fix_pos
+#if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
+do_monte=data_params.do_monte
+#do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
+integ_fit=data_params.integ_fit
+#do you want to do uv fitting (T or F) as well? 
+#Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy); 
+uv_fit=data_params.uv_fit
+#if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
+do_monte_uv=data_params.do_monte_uv
+#fix position in UV
+uv_fix=data_params.uv_fix
+#If runClean=F set fit_cutout='T' if you have only cutout images but want to refit without cleaning again, 
+fit_cutout=data_params.fit_cutout
+#define start and end time yourself
+def_times=data_params.def_times
+
+
+'''OBJECT DETECTION AND SELECTION PARAMETERS'''
 if runObj=='T':
     #object detection with Aegean algorithm--> Need to run initial_clean.py in CASA, and Aegean_ObjDet.py outside
     #CASA first
@@ -230,24 +208,16 @@ if runObj=='T':
 elif runObj=='F':
 #input target box in pixels if not running object detection	
     targetBox =data_params.targetBox#'2982,2937,2997,2947'
-
+#mask for clean based on target box
 maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 
-#OUTPUT IMAGE PRODUCT PARAMETERS
-#Is the data set large enough that you only want to save a cutout? 
-#If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval 
-#If cutout='T' & big_data='F' --> clean all, fit all, then delete.
-#If cutout='F' & big_data='F' --> clean all full size, fit all full size, no delete
-cutout=data_params.cutout
-big_data=data_params.big_data
-
-#RMS/ERROR IN IMAGE PLANE HANDLING PARAMETERS
-#pix_shift_cutout is how many pixels past target bx you want in cutout images
+'''IMAGE PRODUCT PARAMETERS: CUTOUT AND RMS/ERROR IN IMAGE PLANE HANDLING'''
+#define rms boxes for realistic error calculation
+#pix_shift_cutout is how many pixels past target bx you want in cutout images rms calculation
 pix_shift_cutout=data_params.pix_shift_cutout
 cut_reg=str(float(targetBox.split(',')[0])-pix_shift_cutout)+','+str(float(targetBox.split(',')[1])-pix_shift_cutout)+','+str(float(targetBox.split(',')[2])+pix_shift_cutout)+','+str(float(targetBox.split(',')[3])+pix_shift_cutout)#'2962,2917,3017,2967'
 x_size=float(cut_reg.split(',')[2])-float(cut_reg.split(',')[0])
 y_size=float(cut_reg.split(',')[3])-float(cut_reg.split(',')[1])
-#define rms boxes for realistic error calculation
 #local rms
 rmsbox1=str(x_size/6.)+','+str(y_size/6.)+','+str(x_size*2./6.)+','+str(y_size*2./6.)
 rmsbox2=str(x_size*4./6.)+','+str(y_size/6.)+','+str(x_size*5./6.)+','+str(y_size*2./6.)
@@ -256,32 +226,35 @@ rmsbox3=str(x_size*2./6.)+','+str(y_size*4./6.)+','+str(x_size*4./6.)+','+str(y_
 #rmsbox1=str(imageSize[0]/6.)+','+str(imageSize[1]/6.)+','+str(imageSize[0]*2./6.)+','+str(imageSize[1]*2./6.)
 #rmsbox2=str(imageSize[0]*4./6.)+','+str(imageSize[1]/6.)+','+str(imageSize[0]*5./6.)+','+str(imageSize[1]*2./6.)
 #rmsbox3=str(imageSize[0]*2./6.)+','+str(imageSize[1]*4./6.)+','+str(imageSize[0]*4./6.)+','+str(imageSize[1]*5./6.)
+#what unit do you want light curve
+lc_scale_unit=data_params.lc_scale_unit
+if lc_scale_unit=='m':
+	lc_scale_factor=1.0e03
+elif lc_scale_unit=='u':
+	lc_scale_factor=1.0e06
+elif lc_scale_unit=='':
+	lc_scale_factor=1.0
+#what time scale do you want in light curve
+lc_scale_time=data_params.lc_scale_time
+#if remainder of obstime/interval > this # then it is included in time intervals (in minutes)
+rem_int=data_params.rem_int
 
-# If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
-# also need to be set if outlier file is to be used.
-# If not, set outlierFile to ''.
-outlierFile = data_params.outlierFile
-# Clean can be toggled on/off here (T/F). 
-runClean =data_params.runClean
-
-#If runClean=F set fit_cutout='T' if you have only cutout images but want to refit without cleaning again, make sure rms boxes are set to local.
-fit_cutout=data_params.fit_cutout
+'''REFITTTING WITHOUT CLEANING PARAMETERS'''
+#make sure rms boxes are set to local.
 if fit_cutout=='T':
 	#rmsbox1='0,0,'+str(float(rmsbox1.split(',')[2])-float(rmsbox1.split(',')[0]))+','+str(float(rmsbox1.split(',')[3])-float(rmsbox1.split(',')[1]))
 	#rmsbox2='0,0,'+str(float(rmsbox2.split(',')[2])-float(rmsbox2.split(',')[0]))+','+str(float(rmsbox2.split(',')[3])-float(rmsbox2.split(',')[1]))
 	#rmsbox3='0,0,'+str(float(rmsbox3.split(',')[2])-float(rmsbox3.split(',')[0]))+','+str(float(rmsbox3.split(',')[3])-float(rmsbox3.split(',')[1]))
 	targetBox = str(float(targetBox.split(',')[0])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[1])-float(cut_reg.split(',')[1]))+','+str(float(targetBox.split(',')[2])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[3])-float(cut_reg.split(',')[1]))
-#do you want to fix parameters in fits from full data set fit? (T of F)
-fix_pos=data_params.fix_pos
-#if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
-do_monte=data_params.do_monte
+
+'''IMAGE FITTING PARAMETERS'''
 if do_monte == 'T':
 #add appropriate label to final lightcurve file name
 	lab='_mc_'
 else:
 	lab='_bestfit_'
+# number of MC simulations if MC position sampling chosen
 nsim=100
-
 #if fixing parameters, what parameters do you want to fix in fits? f= peak flux, x=peak x pos, y=peak y pos, a=major axis (arcsec), b=minor axis (arcsec), p=position angle (deg)
 #a, b, p convolved with beam values not deconvolved values!!!
 #format is [value,error] from fit of full data set
@@ -292,9 +265,6 @@ if fix_pos=='T':
     	clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
     print 'Fitting full data set in Image Plane-->'
     full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_dataset.txt')
-    #s=au.imfitparse(full_fit,showpixels=T)
-    #pixpos=s.split(' ')
-    #posnew=[x for x in pixpos if x!='']
     imfitFilefull=open(outputPath+label+'whole_dataset.txt','r')
     for line in imfitFilefull:
         if ('--- ra:' in line) & ('pixels' in line):
@@ -315,18 +285,18 @@ if fix_pos=='T':
     b_min=[full_fit['results']['component0']['shape']['minoraxis']['value'],full_fit['results']['component0']['shape']['minoraxiserror']['value']]#[0.099,0.0005]
     pos_ang=[full_fit['results']['component0']['shape']['positionangle']['value'],full_fit['results']['component0']['shape']['positionangleerror']['value']]#[67.41,0.42]
 
-#do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
-integ_fit=data_params.integ_fit
-
-#do you want to do uv fitting (T or F) as well? Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy); if want to fix parameters put number insted of p[x] in uv_var
-uv_fit=data_params.uv_fit
-do_monte_uv=data_params.do_monte_uv
+'''UV FITTING PARAMETERS'''
+#only point sources right now
 comp_uv='delta'
-stokes_param=data_params.stokes_param #from listobs-- always LL in SMA data
+#Not tested on anything other than I; for VLA 'I', for SMA 'LL' (from listobs)
+stokes_param=data_params.stokes_param
 if uv_fit=='T':
     print 'Fitting full data set in UV Plane-->'
     fitfulluv=uvm.uvmultifit(vis=visibility_uv, spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=['p[0],p[1],p[2]'],outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
-    uv_var=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+',p[2]'#'2.8194e-02,8.5502e-03,p[2]'
+    if uv_fix=='F':
+    	uv_var='p[0],p[1],p[2]'#'2.8194e-02,8.5502e-03,p[2]'
+    elif uv_fix=='T':
+    	uv_var=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+',p[2]'#'2.8194e-02,8.5502e-03,p[2]'
     src_uv_init=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+','+str(fitfulluv.result['Parameters'][2])#[2.8194e-02,8.5502e-03 , 1.3508e-01]
     src_uv_err=str(fitfulluv.result['Uncertainties'][0])+','+str(fitfulluv.result['Uncertainties'][1])+','+str(fitfulluv.result['Uncertainties'][2])#[4.7722e-05 , 3.7205e-05, 1.1192e-04]
  
@@ -334,14 +304,14 @@ if uv_fit=='T':
 #End of User Input Section and Setup
 ############################################################################################################
 
+############################################################################################################
+#Calculate time bins
+############################################################################################################
 
-    
 # Run listobs and store as a text file.
 listobs(vis=visibility, listfile=outputPath + label + 'listobs.text')
 
-############################################################################################################
 # Get time range of observation from listobs and generate timeIntervals vector.
-############################################################################################################
 # Extract start and end times and start date from listobs. The first few lines of listobs output
 # are identical between listobs executions. Therefore we can be confident that the time info will
 # always be located at the same position.
@@ -358,29 +328,28 @@ startDate = listobsLine7[19:30]
 endDate = listobsLine7[49:60]
 
 # The data will be plotted against MJD time, so we need startDate in this format also.
+# Convert month to integer.
 year = startDate[7:11]
 month = startDate[3:6]
 day = startDate[0:2]
-# Convert month to integer.
 monthInt = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}[month]
 startDateMJD = gcal2jd(year,monthInt,day)
 yeare = endDate[7:11]
 monthe = endDate[3:6]
 daye = endDate[0:2]
-# Convert month to integer.
 monthInte = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}[monthe]
 endDateMJD = gcal2jd(yeare,monthInte,daye)
 
 ####################################################################################################
-# Optional: Define start and end times manually (i.e., if script quit :( )
-# 			                             
-#startTimeH = input('Enter start time hour >| ')
-#startTimeM = input('Enter start time minute >| ')
-#startTimeS = input('Enter start time seconds >| ')
-#endTimeH = input('Enter finish time hour >| ')
-#endTimeM = input('Enter finish time minute >| ')
-#endTimeS = input('Enter start time seconds >| ')
-#
+# Optional: Define start and end times manually (i.e., if only want subset of observation )
+# 	
+if def_times=='T':
+	startTimeH = data_params.startTimeH#input('Enter start time hour >| ')
+	startTimeM = data_params.startTimeM#input('Enter start time minute >| ')
+	startTimeS = data_params.startTimeS#input('Enter start time seconds >| ')
+	endTimeH = data_params.endTimeH#input('Enter finish time hour >| ')
+	endTimeM = data_params.endTimeM#input('Enter finish time minute >| ')
+	endTimeS = data_params.endTimeS#input('Enter start time seconds >| ')
 ####################################################################################################
 
 # We require a list of time interval strings to pass to the clean function.
@@ -390,7 +359,8 @@ endDateMJD = gcal2jd(yeare,monthInte,daye)
 # First the start and end times are converted to datetime.time objects.
 startTime = time(startTimeH,startTimeM,startTimeS)
 endTime = time(endTimeH,endTimeM,endTimeS)
-#the following is used to enable input of multi-day observations
+#the following is used to enable input of multi-day observations, essentially both dates and
+#times are recorded
 testTime = time(23,59,59)
 test2Time = time(00,00,01)
 #
@@ -426,7 +396,7 @@ intervalSeconds = (intervalSize.hour)*3600 + (intervalSize.minute)*60 + (interva
 numIntervals = durationSeconds / intervalSeconds
 print numIntervals
 
-# The remaining observation time is calculated. This will be used if it is > 5 mins.
+# The remaining observation time is calculated. This will be used if it is > rem_int.
 remainder = durationSeconds % intervalSeconds
 
 # The time intervals are generated by a for loop as a list of strings. 
@@ -473,9 +443,9 @@ for element in range(numIntervals):
     	print 'Something is wrong, please review input'
     
 
-# If the remainder of observation time is greater than sixty minutes it should be used, and is appended 
+# If the remainder of observation time is greater than this # of minutes it should be used, and is appended 
 # to timeIntervals and mjdTimes.
-if remainder >= 5:
+if remainder >= rem_int:
     if float(startDateMJD[1]) != float(endDateMJD[1]):
     	timeIntervals = timeIntervals + [str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat(endTime))]
     	mjdTimes = mjdTimes + [endDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ long(endTime.second)/24.0/60.0/60.0]
@@ -489,6 +459,17 @@ print timeIntervals
 print '\nmjdTimes'
 print mjdTimes
 
+############################################################################################
+# Clean each chunk individually and fit.
+############################################################################################
+# Imfit will be run on each image with a given set of estimates. These estimates need to be
+# given as a text file with a particular layout.
+# The estimates can be gathered from the output of running imhead() on each image.
+# For each image the for loop runs imhead(), creates a temporary estimates text file from its
+#output, and then runs imfit() using these estimates. The resulting imfits are saved as 
+#text files.
+############################################################################################
+
 #initialize lists
 result_box1rms=[]
 result_box2rms=[]
@@ -501,9 +482,6 @@ mjdTimes_uv=mjdTimes
 timeIntervals_uv=timeIntervals
 
 print 'Clean is starting-->'
-############################################################################################
-# Clean each chunk individually.
-############################################################################################
 if runClean:
 	for interval, time, interval_uv, time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
 		print 'cleaning interval:', interval
@@ -638,18 +616,8 @@ if runClean:
 					comm_and2='mv '+outputPath+label+intervalString+'_temp.image '+outputPath+label+intervalString+'.image'
 					os.system(comm_and1)
 					os.system(comm_and2)
-			
-#        else:
-#            clean(vis=visibility, imagename=outputPath+label+interval, mask=maskPath, selectdata=T, timerange=interval, field='', spw='0~26', mode='frequency', interpolation='nearest', width=1, nchan=1, chaniter=F, niter=1000, gain=0.1, threshold=myThreshold)
-#        viewer(outputPath+label+interval+'.image.tt0')
 
-############################################################################################
-# Imfit will be run on each image with a given set of estimates. These estimates need to be
-# given as a text file with a particular layout.
-# The estimates can be gathered from the output of running imhead() on each image.
 
-# For each image the for loop runs imhead(), creates a temporary estimates text file from its output, 
-# and then runs imfit() using these estimates. The resulting imfits are saved as text files.
 if big_data=='F' or runClean==F:
 	for interval, time, interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
 	    # Get beam parameters using imhead.
@@ -787,7 +755,9 @@ if big_data=='F' or runClean==F:
 
 uv_fitval_arr=np.array(uv_fitval)
 uv_fiterr_arr=np.array(uv_fiterr)
-# Plot lightcurve
+
+############################################################################################
+# Read values from all fitting files into lists for plotting and creating output data file
 ############################################################################################
 # Initialise lists.
 fluxDensity = []
@@ -1075,11 +1045,11 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 		fluxError3 = fluxError3 + [fluxerr_uv1]
 		suffix3 = suffix3 + [' ']
     
-		
-		
-    
-
-
+########################################################################
+#Print results to stdout for user--> probably should get rid of this,
+#maybe just a 'script successful' message?
+#########################################################################		
+#print image plane fitting results for user
 if integ_fit == 'B':
 	print '\nFlux desities extracted from imfit (integ):'
 	print fluxDensity
@@ -1091,19 +1061,21 @@ if integ_fit == 'B':
 	print fluxDensity2
 	print '\nFlux errors extracted from imfit (peak):'
 	print fluxError2
-	print '\nUnits extracted from imfit:'
+	print '\nUnits extracted from imfit (peak):'
 	print suffix2
 	print '\nRealistic Error from regions (Jy):'
 	print fluxError_real
 else:
-    print '\nFlux desities extracted from imfit:'
-    print fluxDensity
-    print '\nFlux errors extracted from imfit:'
-    print fluxError
-    print '\nUnits extracted from imfit:'
-    print suffix
-    print '\nRealistic Error from regions (Jy):'
-    print fluxError_real
+	print '\nFlux desities extracted from imfit:'
+	print fluxDensity
+	print '\nFlux errors extracted from imfit:'
+	print fluxError
+	print '\nUnits extracted from imfit:'
+	print suffix
+	print '\nRealistic Error from regions (Jy):'
+	print fluxError_real
+
+#print uv fitting results for user, if requested
 if uv_fit == 'T':
 	print '\nFlux desities extracted from uvmodelfit:'
 	print fluxDensity3
@@ -1112,7 +1084,9 @@ if uv_fit == 'T':
 	print '\nUnits extracted from uvmodelfit:'
 	print suffix3
 
-
+########################################################################
+#Make sure verything is in the right units
+#########################################################################
 # The flux values will be plotted in uJy/bm, however the imfit outputs will not necessarily be in these
 # units. To get around this the units for each value are recorded in the suffix list created in the above
 # for loop. The following loop will use this list to create a multiplier list, which will be used to
@@ -1152,7 +1126,9 @@ if uv_fit=='T':
     		elif x == 'n':
 			multiplier3 = multiplier3 + [1.0e-9]
 	print 'uv peak', multiplier3
-# Multiplier should now contain a list of multiplication factors ready to be applied to the flux data.
+	
+# Multiplier() should now contain a list of multiplication factors ready to be applied to the flux data. The
+#end result is in Jy
 length = range(len(fluxDensity))
 for n in length:
     if integ_fit == 'B':
@@ -1164,101 +1140,115 @@ for n in length:
     fluxDensity[n] = fluxDensity[n] * multiplier[n]
     fluxError[n] = fluxError[n] * multiplier[n]
 
-# The flux values will be plotted in mJy, so they are scaled here, along with error values.
+# The flux values will be plotted in a user specified unit, so they are scaled here, 
+#along with error values.
 for k in length:
     if integ_fit == 'B':
-	fluxDensity2[k] = fluxDensity2[k]*1e03
-    	fluxError2[k] = fluxError2[k]*1.0e3
+	fluxDensity2[k] = fluxDensity2[k]*lc_scale_factor
+    	fluxError2[k] = fluxError2[k]*lc_scale_factor
     if uv_fit == 'T':
-	fluxDensity3[k] = fluxDensity3[k]*1e03
-    	fluxError3[k] = fluxError3[k]*1.0e3
-    fluxDensity[k] = fluxDensity[k]*1e03
-    fluxError[k] = fluxError[k]*1.0e3
-    fluxError_real[k]=fluxError_real[k]*1.0e03
+	fluxDensity3[k] = fluxDensity3[k]*lc_scale_factor
+    	fluxError3[k] = fluxError3[k]*lc_scale_factor
+    fluxDensity[k] = fluxDensity[k]*lc_scale_factor
+    fluxError[k] = fluxError[k]*lc_scale_factor
+    fluxError_real[k]=fluxError_real[k]*lc_scale_factor
 	
 
-# The flux density and error lists from each epoch will be used by the phase analasys script. They
-# are therefore written to a text file here.
+########################################################################
+#Write results to data file
+#########################################################################
 data = open(dataPath, 'w')
-data.write(obsDate + '_fluxDensity: ' + str(fluxDensity) + '\n')
-data.write(obsDate + '_fluxError: ' + str(fluxError) + '\n')
-data.write(obsDate + '_mjdTimes: ' + str(mjdTimes) + '\n')
-data.write(obsDate + '_realisticerror: ' + str(fluxError_real) + '\n')
-if integ_fit == 'B':
-	data.write(obsDate + '_fluxDensity(peak): ' + str(fluxDensity2) + '\n')
-	data.write(obsDate + '_fluxError(peak): ' + str(fluxError2) + '\n')
-if uv_fit == 'T':
-	data.write(obsDate + '_fluxDensity(uv peak): ' + str(fluxDensity3) + '\n')
-	data.write(obsDate + '_fluxError(uv peak): ' + str(fluxError3) + '\n')
-	#data.write(obsDate + '_mjdTimes uv: ' + str(mjdTimes) + '\n')
-#data.write(obsDate + '_realisticerror: ' + str(fluxError_real) + '\n')
+for i in range(0,len(fluxDensity)):
+	if integ_fit == 'B':
+		data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
+		data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxError_real))
+		if uv_fit == 'T':
+			data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
+			data.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real))
+	elif integ_fit =='T':
+		data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
+		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real))
+		if uv_fit=='T':
+			data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
+			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real))
+	elif integ_fit =='F':
+		data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
+		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real))
+		if uv_fit=='T':
+			data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
+			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real))
 data.close()
 
-# Now we have the lists required to generate a plot of flux density against time with error bars.
-
+########################################################################
+#Plot Lightcurves
+#########################################################################
 minutesElapsed=[]
 secondsElapsed=[]
-#minutesElapsed_uv=[]
-#secondsElapsed_uv=[]
+
 for i in range(len(mjdTimes)):
+    hoursElapsed.append((mjdTimes[i]-mjdTimes[0])*24+intervalSizeS/(60.0*60.0*2.0))
     minutesElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60+intervalSizeS/(60.0*2.0))
     secondsElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60*60+intervalSizeS/2.0)
-    #minutesElapsed_uv.append((mjdTimes_uv[i]-mjdTimes_uv[0])*24*60+intervalSizeS/(60.0*2.0))
-    #secondsElapsed_uv.append((mjdTimes_uv[i]-mjdTimes_uv[0])*24*60*60+intervalSizeS/2.0)
-if uv_fit == 'T':
-	fig3=pp.figure()
-	pp.errorbar(minutesElapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-	pp.xlabel('Time since start of observation (mins)')
-	y_label_name='Flux Density (mJy/beam)'
-	pp.ylabel(y_label_name)
-	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	pp.xlim(0, minutesElapsed[len(minutesElapsed)-1]+intervalSizeS/(60.0))
-	savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
-	pp.savefig(savestring)
-	print savestring, ' is saved'
-	#pp.show()
-	#pp.close(fig3)
+
+if lc_scale_time=='M':
+	Elapsed=minutesElapsed
+elif lc_scale_time='S':
+	Elapsed=secondsElapsed
+elif lc_scale_time='H':
+	Elapsed=hoursElapsed
+
 if integ_fit == 'B':
 	fig1=pp.figure()
-	pp.errorbar(minutesElapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
 	pp.xlabel('Time since start of observation (mins)')
-	y_label_name='Flux Density (mJy'+plot_label_unit
+	y_label_name='Flux Density (mJy'+plot_label_unit+')'
 	pp.ylabel(y_label_name)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	pp.xlim(0, minutesElapsed[len(minutesElapsed)-1]+intervalSizeS/(60.0))
+	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_integ.eps'
 	pp.savefig(savestring)
 	print savestring, ' is saved'
-	#pp.show()
-	#pp.close(fig1)
 	fig2=pp.figure()
-	pp.errorbar(minutesElapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
+	pp.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
 	pp.xlabel('Time since start of observation (mins)')
-	y_label_name2='Flux Density (mJy'+plot_label_unit2
+	y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
 	pp.ylabel(y_label_name2)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	pp.xlim(0, minutesElapsed[len(minutesElapsed)-1]+intervalSizeS/(60.0))
+	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	savestring2 = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_peak.eps'
 	pp.savefig(savestring2)
 	print savestring2, ' is saved'
-	#pp.show()
-	#pp.close(fig2)
+	if uv_fit=='T':
+		fig3=pp.figure()
+		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+		pp.xlabel('Time since start of observation (mins)')
+		y_label_name='Flux Density (mJy/beam)'
+		pp.ylabel(y_label_name)
+		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+		savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
+		pp.savefig(savestring)
+		print savestring, ' is saved'
+	
 else:
-	pp.errorbar(minutesElapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-	#pp.errorbar(mjdTimes, fluxDensity, yerr=fluxError, fmt='ro',)
-	#pp.errorbar(range(len(timeIntervals)), fluxDensity, yerr=fluxError, fmt='ro',)
+	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
 	pp.xlabel('Time since start of observation (mins)')
-	y_label_name='Flux Density (mJy'+plot_label_unit
+	y_label_name='Flux Density (mJy'+plot_label_unit+')'
 	pp.ylabel(y_label_name)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	pp.xlim(0, minutesElapsed[len(minutesElapsed)-1]+intervalSizeS/(60.0))
-	#pp.xlim(0.16,2)
-	#pp.xlim(mjdTimes[0]-(10.0/60.0/24.0), mjdTimes[len(mjdTimes)-1]+(10.0/60.0/24.0))
-	#pp.xlim(-1, len(timeIntervals))
-	#pp.ylim(25.0,30.0)
-
+	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc.eps'
 	pp.savefig(savestring)
 	print savestring, ' is saved'
-	#pp.show()
+	if uv_fit=='T':
+		fig3=pp.figure()
+		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+		pp.xlabel('Time since start of observation (mins)')
+		y_label_name='Flux Density (mJy/beam)'
+		pp.ylabel(y_label_name)
+		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+		savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
+		pp.savefig(savestring)
+		print savestring, ' is saved'
 

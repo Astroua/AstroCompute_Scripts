@@ -29,21 +29,22 @@ import pyfits
 import astropy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from photutils import detect_threshold,detect_sources, segment_properties,properties_table,EllipticalAperture
-import skimage.measure
+#from photutils import detect_threshold,detect_sources, segment_properties,properties_table,EllipticalAperture
+#import skimage.measure
 from datetime import time
 from datetime import timedelta
 from datetime import datetime
 from matplotlib import pyplot as pp
 from scipy.stats import norm
-from astropy.visualization import SqrtStretch
-from astropy.visualization.mpl_normalize import ImageNormalize
+#from astropy.visualization import SqrtStretch
+#from astropy.visualization.mpl_normalize import ImageNormalize
 #import subprocess--> not cheating with aegean anymore don't need
-import aegean
-from AegeanTools.catalogs import save_catalog
-import multiprocessing
+#import aegean--> in Aegean_ObjDet.py
+#from AegeanTools.catalogs import save_catalog--> in Aegean_ObjDet.py
+#import multiprocessing--> in Aegean_ObjDet.py
+import imp
 
-#simple function to detect objects in fits image
+'''#simple function to detect objects in fits image
 def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr,npixels):
     print 'Cleaning Full Data Set to detect objects-->'
     clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
@@ -82,8 +83,8 @@ def object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,snr
         dec_list.append(str(c.dec.deg)+'deg')
         bbox_list.append(str(b[1])+','+str(b[0])+','+str(b[3])+','+str(b[2]))
         ind_list.append(tbl['id'][i])
-    return(ra_list,dec_list,bbox_list,ind_list,data,segm)
-#use Aegean object detection algorithm
+    return(ra_list,dec_list,bbox_list,ind_list,data,segm)'''
+#use Aegean object detection algorithm-->parse data file output from Aegean_ObjDet.py
 def run_aegean(tables,cellSize):
     with open(tables) as f:
     	lines=f.readlines()
@@ -96,28 +97,59 @@ def run_aegean(tables,cellSize):
     	min_list.append(float(lin_split[16])/cellSize)#pix
     	pos_list.append(float(lin_split[18]))#deg
     return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
-#Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
+    
+#Find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
 	return(num !=0 and ((num & (num-1)) ==0))
-#set path to where output is to be stored-->need to set up file system so have data and data_products directory in this path
+	
+#Read in variables from parameter file
+def getVar(filename):
+	f=open(filename)
+	global data_params
+	data_params=imp.load_source('data_params','',f)
+	f.close()
+	
+#set initial path to where input/output is to be stored
+#MS's need to be in path_dir/data, all output needs to be in path_dir/data_products
+#NOTE:both directories need to be created beforhand
 path_dir='/home/ubuntu/'
 
+
 ################################################################################################################
-#The following variables need to be changed for each new data set --> need to make these command line input
+#User Input Section and Setup-->read in from parameters file
+#WARNING-->The following variables need to be carefully considered and changed for each new data set 
 ################################################################################################################
-# Target name.
-target = 'V404Cyg'
-# Date of observation.
-obsDate = '2015jun22'
-# Observation frequency. 
-refFrequency ='21GHz'
-# Label for casa output directories and files.
+
+#get input parameters from file
+getVar(path_dir+'param.txt')
+
+#DATA SET PARAMETERS
+# Target name
+target = data_params.target
+# Date of observation
+obsDate = data_params.obsDate
+# Observation frequency 
+refFrequency =data_params.refFrequency
+# Label for casa output directories and files
 label = target + '_' + refFrequency + '_' + obsDate + '_'
 # Length of time bins (H,M,S); see below if you want manual input (line 288)
-intervalSizeH = 0
-intervalSizeM = 2
-intervalSizeS = 0
-#make data_products directory before start script--> done in initial clean, but check if didn't run that
+intervalSizeH = data_params.intervalSizeH
+intervalSizeM = data_params.intervalSizeM
+intervalSizeS = data_params.intervalSizeS
+# Name of visibliity - should include full path if script is not being run from vis location.
+visibility = path_dir+'data/'+ data_params.visibility
+visibility_uv = path_dir+'data/'+ data_params.visibility
+
+#DIRECTORY AND FILE NAME PARAMETERS
+# Set path to directory where all output from this script is saved.
+outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
+
+# dataPath contains the path and filename in which data file will be saved. 
+# This script can be run on several epochs of data from the same observation without changing this path.
+# In this case the data file will be appended each time.
+dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec.txt'
+
+#make output directory (within data_products directory)--> done in initial clean, but check if didn't run that
 if not os.path.isdir(path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'):
 	mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 	mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
@@ -126,25 +158,14 @@ if not os.path.isdir(path_dir+'data_products/images_'+target+'_'+refFrequency+'_
 	os.system(mkdir_perm1)
 	os.system(mkdir_perm2)
 
-# Path to directory where all output from this script is saved.
-outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
-# dataPath contains the path and filename in which data file will be saved. 
-# This script can be run on several epochs of data from the same observation without changing this path.
-# In this case the data file will be appended each time.
-dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec.txt'
-# Name of visibliity - should include full path if script is not being run from vis location.
-visibility = path_dir+'data/swj17_jun22_B_K_k21.ms'
-visibility_uv = path_dir+'data/swj17_jun22_B_K_k21.ms'
-
 #Object detection file-->output from Aegean_ObjDet.py
 tables=outputPath+label+'whole_dataset_objdet.tab'
 
-
-
-# The clean command (line 425) should be inspected closely to ensure all arguments are appropriate before 
+#CLEAN PARAMETERS
+# The clean command (line 505) should be inspected closely to ensure all arguments are appropriate before 
 # running script on a new data set.
 # The following arguments will be passed to casa's clean, imfit or imstat functions:
-imageSize = [6000,6000]
+imageSize = [data_params.imageSize,data_params.imageSize]
 if is_power2(imageSize[0])==False:
 	print 'Clean will run faster if image size is 2^n'
 	imS=raw_input('Do you want to optimize image size?, y or n? ')
@@ -152,12 +173,12 @@ if is_power2(imageSize[0])==False:
 		imageSize=[int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2)))),int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
         	print 'imagesize is now set to ', imageSize
     	print 'imagesize remains at ',imageSize, 'due to user request'
-numberIters = 5000
-cellSize = ['0.02arcsec','0.02arcsec']
-taylorTerms = 1
-myStokes = 'I'
-thre='10mJy'
-spw_choice='0~7:5~58'
+numberIters = data_params.numberIters
+cellSize = [data_params.cellSize,data_params.cellSize]
+taylorTerms = data_params.taylorTerms
+myStokes = data_params.myStokes
+thre=data_params.thre
+spw_choice=data_params.spw_choice
 
 '''#object detection old version-- snr=5. is limit for detecting sources and npix=10 is size of sources
 #ral,decl,bboxl,indl,data,segm=object_detect(imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,5.,10.)
@@ -182,21 +203,23 @@ if show_im=='y':
 	pp.savefig('object_detect_image.eps')
 	#pp.show()'''
 
+#OBJECT DETECTION AND SELECTION PARAMETERS
 #flag to run object detection
-runObj='T'
+runObj=data_params.runObj
 if runObj=='T':
     #object detection with Aegean algorithm--> Need to run initial_clean.py in CASA, and Aegean_ObjDet.py outside
     #CASA first
     src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(tables,cellSize)
-    print 'Number of Objects Detected is ', len(src_l)
-    print 'Objects Detected-->'
-    print 'Object, RA, DEC'
-    for i in range(0,len(src_l)):
-    	print src_l[i],ra_l[i],dec_l[i]
-    if len(src_l)>1:
-    	ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?--> ')
-    else:
-    	ind=1
+    #print 'Number of Objects Detected is ', len(src_l)
+    #print 'Objects Detected-->'
+    #print 'Object, RA, DEC'
+    #for i in range(0,len(src_l)):
+    #	print src_l[i],ra_l[i],dec_l[i]
+    #if len(src_l)>1:
+    #	ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?--> ')
+    #else:
+    #	ind=1
+    ind=data_params.ind
     # target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
     #use with rest of script
     tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
@@ -206,19 +229,22 @@ if runObj=='T':
     targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
 elif runObj=='F':
 #input target box in pixels if not running object detection	
-    targetBox ='2982,2937,2997,2947'
+    targetBox =data_params.targetBox#'2982,2937,2997,2947'
 
 maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 
+#OUTPUT IMAGE PRODUCT PARAMETERS
 #Is the data set large enough that you only want to save a cutout? 
 #If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval 
 #If cutout='T' & big_data='F' --> clean all, fit all, then delete.
 #If cutout='F' & big_data='F' --> clean all full size, fit all full size, no delete
+cutout=data_params.cutout
+big_data=data_params.big_data
+
+#RMS/ERROR IN IMAGE PLANE HANDLING PARAMETERS
 #pix_shift_cutout is how many pixels past target bx you want in cutout images
-cutout='T'
-pix_shift_cutout=20
+pix_shift_cutout=data_params.pix_shift_cutout
 cut_reg=str(float(targetBox.split(',')[0])-pix_shift_cutout)+','+str(float(targetBox.split(',')[1])-pix_shift_cutout)+','+str(float(targetBox.split(',')[2])+pix_shift_cutout)+','+str(float(targetBox.split(',')[3])+pix_shift_cutout)#'2962,2917,3017,2967'
-big_data='T'
 x_size=float(cut_reg.split(',')[2])-float(cut_reg.split(',')[0])
 y_size=float(cut_reg.split(',')[3])-float(cut_reg.split(',')[1])
 #define rms boxes for realistic error calculation
@@ -234,21 +260,21 @@ rmsbox3=str(x_size*2./6.)+','+str(y_size*4./6.)+','+str(x_size*4./6.)+','+str(y_
 # If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
 # also need to be set if outlier file is to be used.
 # If not, set outlierFile to ''.
-outlierFile = ''
+outlierFile = data_params.outlierFile
 # Clean can be toggled on/off here (T/F). 
-runClean =T
+runClean =data_params.runClean
 
 #If runClean=F set fit_cutout='T' if you have only cutout images but want to refit without cleaning again, make sure rms boxes are set to local.
-fit_cutout='F'
+fit_cutout=data_params.fit_cutout
 if fit_cutout=='T':
 	#rmsbox1='0,0,'+str(float(rmsbox1.split(',')[2])-float(rmsbox1.split(',')[0]))+','+str(float(rmsbox1.split(',')[3])-float(rmsbox1.split(',')[1]))
 	#rmsbox2='0,0,'+str(float(rmsbox2.split(',')[2])-float(rmsbox2.split(',')[0]))+','+str(float(rmsbox2.split(',')[3])-float(rmsbox2.split(',')[1]))
 	#rmsbox3='0,0,'+str(float(rmsbox3.split(',')[2])-float(rmsbox3.split(',')[0]))+','+str(float(rmsbox3.split(',')[3])-float(rmsbox3.split(',')[1]))
 	targetBox = str(float(targetBox.split(',')[0])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[1])-float(cut_reg.split(',')[1]))+','+str(float(targetBox.split(',')[2])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[3])-float(cut_reg.split(',')[1]))
 #do you want to fix parameters in fits from full data set fit? (T of F)
-fix_pos='T'
+fix_pos=data_params.fix_pos
 #if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
-do_monte='F'
+do_monte=data_params.do_monte
 if do_monte == 'T':
 #add appropriate label to final lightcurve file name
 	lab='_mc_'
@@ -260,7 +286,7 @@ nsim=100
 #a, b, p convolved with beam values not deconvolved values!!!
 #format is [value,error] from fit of full data set
 if fix_pos=='T':
-    par_fix='xyabp'
+    par_fix=data_params.par_fix
     if runObj=='F':
     	print 'Cleaning Full Data Set-->'
     	clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
@@ -290,13 +316,13 @@ if fix_pos=='T':
     pos_ang=[full_fit['results']['component0']['shape']['positionangle']['value'],full_fit['results']['component0']['shape']['positionangleerror']['value']]#[67.41,0.42]
 
 #do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
-integ_fit='B'
+integ_fit=data_params.integ_fit
 
 #do you want to do uv fitting (T or F) as well? Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy); if want to fix parameters put number insted of p[x] in uv_var
-uv_fit='F'
-do_monte_uv='F'
+uv_fit=data_params.uv_fit
+do_monte_uv=data_params.do_monte_uv
 comp_uv='delta'
-stokes_param='I' #from listobs-- always LL in SMA data
+stokes_param=data_params.stokes_param #from listobs-- always LL in SMA data
 if uv_fit=='T':
     print 'Fitting full data set in UV Plane-->'
     fitfulluv=uvm.uvmultifit(vis=visibility_uv, spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=['p[0],p[1],p[2]'],outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
@@ -305,7 +331,7 @@ if uv_fit=='T':
     src_uv_err=str(fitfulluv.result['Uncertainties'][0])+','+str(fitfulluv.result['Uncertainties'][1])+','+str(fitfulluv.result['Uncertainties'][2])#[4.7722e-05 , 3.7205e-05, 1.1192e-04]
  
 ############################################################################################################
-#End of user input section
+#End of User Input Section and Setup
 ############################################################################################################
 
 

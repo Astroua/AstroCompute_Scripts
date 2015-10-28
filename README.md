@@ -1,5 +1,5 @@
 # AstroCompute_Scripts
-CASA timing scripts
+CASA timing scripts-->All input parameters in parameter file
 
 1. Run initial_clean.py first to CLEAN whole data set and make a fits image for object detection
 2. Run Aegean_ObjDet.py to detect objects in fits image;output is data file of detected object properties

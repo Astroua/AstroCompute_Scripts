@@ -28,7 +28,7 @@ def getVar(filename):
 ###########################################################
 #USER INPUT SECTION-->read in from parameters file
 ###########################################################
-getVar(path_dir+'param.txt')
+getVar(path_dir+'AstroCompute_Scripts/param.txt')
 
 # Target name.
 target = data_params.target

@@ -16,10 +16,9 @@ import imp
 #in this path
 path_dir='/home/ubuntu/'
 
-#Function to find next power of 2^n closest to chosen imsize value to optimize cleaning
-def is_power2(num):
-	return(num !=0 and ((num & (num-1)) ==0))
 def getVar(filename):
+	'''Easy way to read in parameters from file
+	'''
 	f=open(filename)
 	global data_params
 	data_params=imp.load_source('data_params','',f)
@@ -59,17 +58,8 @@ dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+str(in
 # Name of visibliity - should include full path if script is not being run from vis location.
 visibility = path_dir+'data/'+ data_params.visibility
 
-# The clean command (line 425) should be inspected closely to ensure all arguments are appropriate before 
-# running script on a new data set.
-# The following arguments will be passed to casa's clean, imfit or imstat functions:
+# The following arguments will be passed to casa's clean
 imageSize = [data_params.imageSize,data_params.imageSize]
-if is_power2(imageSize[0])==False:
-	print 'Clean will run faster if image size is 2^n'
-	imS=raw_input('Do you want to optimize image size?, y or n? ')
-	if imS == 'y':
-		imageSize=[int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2)))),int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
-        	print 'imagesize is now set to ', imageSize
-    	print 'imagesize remains at ',imageSize, 'due to user request'
 numberIters = data_params.numberIters
 cellSize = [data_params.cellSize,data_params.cellSize]
 taylorTerms = data_params.taylorTerms

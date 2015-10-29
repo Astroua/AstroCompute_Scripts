@@ -1,5 +1,5 @@
 # example param file for initial_clean.py, Aegean_ObjDet.py, and casa_timing_script.py
-#common to all 3 scripts
+##common to all 3 scripts
 target = 'V404Cyg'
 obsDate = '2015jun22' 
 refFrequency ='21GHz'
@@ -7,6 +7,7 @@ intervalSizeH = 0
 intervalSizeM = 2
 intervalSizeS = 0
 visibility = 'swj17_jun22_B_K_k21.ms'
+visibility_uv='swj17_jun22_B_K_k21.ms'
 imageSize = 6000
 numberIters = 5000
 cellSize = '0.02arcsec'
@@ -14,15 +15,15 @@ taylorTerms = 1
 myStokes = 'I'
 thre ='10mJy'
 spw_choice ='0~7:5~58'
-#only for Aegean_ObjDet.py
+##only for Aegean_ObjDet.py
 seed = 10
 flood = 4
 tele = 'VLA'
-#only for casa_timing_script.py
-visibility_uv='swj17_jun22_B_K_k21.ms'
+lat=''#only set if not on list in scope2lat func of aegean.py
+##only for casa_timing_script.py
 runObj='T'
-ind=1#needs to be set after object detection
-targetBox='2982,2937,2997,2947'
+ind=1#only set if doing OD
+targetBox='2982,2937,2997,2947'#only set if not doing OD
 cutout='T'
 pix_shift_cutout=20
 big_data='T'
@@ -37,14 +38,15 @@ integ_fit='B'
 uv_fit='F'
 do_monte_uv='F' 
 uv_fix='F'
-stokes_param='I'
+stokes_param='I'#for uv fit
 def_times='F'
-startTimeH=''
-startTimeM=''
-startTimeS=''
-endTimeH=''
-endTimeM=''
-endTimeS=''
+startTimeH=''#only set if def_times='T'
+startTimeM=''#only set if def_times='T'
+startTimeS=''#only set if def_times='T'
+endTimeH=''#only set if def_times='T'
+endTimeM=''#only set if def_times='T'
+endTimeS=''#only set if def_times='T'
 rem_int=5
 lc_scale_unit='m'
 lc_scale_time='M'
+opt_clean='F'

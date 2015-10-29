@@ -7,7 +7,7 @@
 #(import NOEMA data into CASA: http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf).             
 #############################################################################################################
 #Original version written by C. Gough (student of J. Miller-Jones)--> 09/2012
-#Last modified by A. Tetarenko--> 10/2015
+#Last updated by A. Tetarenko--> 10/2015
 #############################################################################################################
 #Import modules                                         
 #
@@ -58,18 +58,16 @@ def run_aegean(tables,cellSize):
     	pos_list.append(float(lin_split[18]))#deg
     return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
     
-#Find next power of 2^n closest to chosen imsize value to optimize cleaning
 def is_power2(num):
-    ''' Find next power of 2^n closest to chosen image size value in order to
+    ''' Check if input imsize is a power of 2^n, in order to
     optimize cleaning speed
 	
     num: image size in pixels
 	
-    return: image size that corresponds to next closest 2^n power
+    return: True/False
     '''
     return(num !=0 and ((num & (num-1)) ==0))
 	
-#Read in variables from parameter file
 def getVar(filename):
     '''Easy way to read in variables from parameter file
     '''
@@ -130,29 +128,6 @@ if not os.path.isdir(path_dir+'data_products/images_'+target+'_'+refFrequency+'_
 #Object detection file-->output from Aegean_ObjDet.py
 tables=outputPath+label+'whole_dataset_objdet.tab'
 
-'''CLEAN PARAMETERS'''
-# The clean command (line 505) should be inspected closely to ensure all arguments are appropriate before 
-# running script on a new data set.
-# The following arguments will be passed to casa's clean, imfit or imstat functions:
-imageSize = [data_params.imageSize,data_params.imageSize]
-if is_power2(imageSize[0])==False:
-	print 'Clean will run faster if image size is 2^n'
-	imS=raw_input('Do you want to optimize image size?, y or n? ')
-	if imS == 'y':
-		imageSize=[int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2)))),int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
-        	print 'imagesize is now set to ', imageSize
-    	print 'imagesize remains at ',imageSize, 'due to user request'
-numberIters = data_params.numberIters
-cellSize = [data_params.cellSize,data_params.cellSize]
-taylorTerms = data_params.taylorTerms
-myStokes = data_params.myStokes
-thre=data_params.thre
-spw_choice=data_params.spw_choice
-# If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
-# also need to be set if outlier file is to be used.
-# If not, set outlierFile to ''.
-outlierFile = data_params.outlierFile
-
 '''FLAGS'''
 #flag to run object detection
 runObj=data_params.runObj
@@ -164,6 +139,8 @@ cutout=data_params.cutout
 big_data=data_params.big_data
 # Clean can be toggled on/off here (T/F). 
 runClean =data_params.runClean
+#optimize cleaning
+opt_clean=data_params.opt_clean
 #do you want to fix parameters in fits from full data set fit? (T of F)
 fix_pos=data_params.fix_pos
 #if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
@@ -182,28 +159,40 @@ fit_cutout=data_params.fit_cutout
 #define start and end time yourself
 def_times=data_params.def_times
 
+'''CLEAN PARAMETERS'''
+# The clean command (line 505) should be inspected closely to ensure all arguments are appropriate before 
+# running script on a new data set.
+# The following arguments will be passed to casa's clean, imfit or imstat functions:
+imageSize = [data_params.imageSize,data_params.imageSize]
+if opt_clean=='T':
+	if is_power2(imageSize[0])==False:
+		print 'Clean will run faster if image size is 2^n'
+		imageSize=[int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2)))),int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
+        	print 'imagesize is now set to ', imageSize
+    	print 'imagesize remains at ',imageSize, 'due to user request'
+numberIters = data_params.numberIters
+cellSize = [data_params.cellSize,data_params.cellSize]
+taylorTerms = data_params.taylorTerms
+myStokes = data_params.myStokes
+thre=data_params.thre
+spw_choice=data_params.spw_choice
+# If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
+# also need to be set if outlier file is to be used.
+# If not, set outlierFile to ''.
+outlierFile = data_params.outlierFile
+
 
 '''OBJECT DETECTION AND SELECTION PARAMETERS'''
 if runObj=='T':
     #object detection with Aegean algorithm--> Need to run initial_clean.py in CASA, and Aegean_ObjDet.py outside
     #CASA first
     src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(tables,cellSize)
-    #print 'Number of Objects Detected is ', len(src_l)
-    #print 'Objects Detected-->'
-    #print 'Object, RA, DEC'
-    #for i in range(0,len(src_l)):
-    #	print src_l[i],ra_l[i],dec_l[i]
-    #if len(src_l)>1:
-    #	ind=raw_input('More than one object was detected in the FOV, which object do you wish to target?--> ')
-    #else:
-    #	ind=1
     ind=data_params.ind
     # target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
     #use with rest of script
     tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
     bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
     bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
-    #targetBox = bboxl[int(ind)-1]#'2982,2937,2997,2947'
     targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
 elif runObj=='F':
 #input target box in pixels if not running object detection	

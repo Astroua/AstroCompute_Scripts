@@ -90,7 +90,7 @@ if lat==None:
         lat=44.6339
     else:
         #lat_string=raw_input('Enter latitude of telescope-->')
-        lat=float(lat_string))
+        lat=data_params.lat
 out_file= open(out_file0, 'w')
 tables=tab_file
 print 'Running Aegean Object Detection -->'

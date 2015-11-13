@@ -8,6 +8,8 @@
 #############################################################################################################
 #Import modules                                         
 #Make sure aegean tree of directories in path so you can import it
+import sys
+sys.path.append('/home/ubuntu/Aegean')
 import aegean
 from AegeanTools.catalogs import save_catalog
 import numpy as np

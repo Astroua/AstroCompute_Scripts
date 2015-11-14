@@ -35,6 +35,7 @@ from datetime import datetime
 from matplotlib import pyplot as pp
 from scipy.stats import norm
 import imp
+import re
  
 def run_aegean(tables,cellSize):
     '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),
@@ -46,6 +47,15 @@ def run_aegean(tables,cellSize):
     return: lists of source #, RA, DEC, semi-major axis, semi-minor axis, and position angle
     for all detected sources
     '''
+    src_list=[]
+    ra_list=[]
+    dec_list=[]
+    maj_list=[]
+    min_list=[]
+    pos_list=[]
+    cellSize_string=cellSize[0]
+    cellSize_list=re.findall('\d+|\D+', cellSize_string)
+    cellSize0=float(cellSize_list[0]+cellSize_list[1]+cellSize_list[2])
     with open(tables) as f:
     	lines=f.readlines()
     for i in range(1,len(lines)):
@@ -53,8 +63,8 @@ def run_aegean(tables,cellSize):
     	src_list.append(lin_split[0])
     	ra_list.append(lin_split[4])#string
     	dec_list.append(lin_split[5])#string
-    	maj_list.append(float(lin_split[14])/cellSize)#pix
-    	min_list.append(float(lin_split[16])/cellSize)#pix
+    	maj_list.append(float(lin_split[14])/cellSize0)#pix
+    	min_list.append(float(lin_split[16])/cellSize0)#pix
     	pos_list.append(float(lin_split[18]))#deg
     return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
     
@@ -126,7 +136,7 @@ if not os.path.isdir(path_dir+'data_products/images_'+target+'_'+refFrequency+'_
 	os.system(mkdir_perm2)
 
 #Object detection file-->output from Aegean_ObjDet.py
-tables=outputPath+label+'whole_dataset_objdet.tab'
+tables=outputPath+label+'whole_dataset_objdet_comp.tab'
 
 '''FLAGS'''
 #flag to run object detection
@@ -1181,9 +1191,9 @@ for i in range(len(mjdTimes)):
 
 if lc_scale_time=='M':
 	Elapsed=minutesElapsed
-elif lc_scale_time='S':
+elif lc_scale_time=='S':
 	Elapsed=secondsElapsed
-elif lc_scale_time='H':
+elif lc_scale_time=='H':
 	Elapsed=hoursElapsed
 
 if integ_fit == 'B':

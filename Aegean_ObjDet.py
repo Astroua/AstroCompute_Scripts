@@ -15,6 +15,7 @@ from AegeanTools.catalogs import save_catalog
 import numpy as np
 import multiprocessing
 import imp
+import re
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
@@ -63,11 +64,14 @@ label = target + '_' + refFrequency + '_' + obsDate + '_'
 outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
 fits_file=outputPath+label+'whole_dataset.fits'
 out_file0=outputPath+label+'whole_dataset_aegean.txt'
-tab_file=outputPath+label+'whole_dataset_objdet.tab'
+tab_file=outputPath+label+'whole_dataset_objdet_comp.tab'
 #aegean parameters
 seed=data_params.seed
 flood=data_params.flood
 tele=data_params.tele
+cellSize_string=data_params.cellSize
+cellSize_list=re.findall('\d+|\D+', cellSize_string)
+cellSize=float(cellSize_list[0]+cellSize_list[1]+cellSize_list[2])
 
 ###########################################################
 #END OF USER INPUT SECTION

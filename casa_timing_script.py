@@ -1183,7 +1183,7 @@ data.close()
 #########################################################################
 minutesElapsed=[]
 secondsElapsed=[]
-
+hoursElapsed=[]
 for i in range(len(mjdTimes)):
     hoursElapsed.append((mjdTimes[i]-mjdTimes[0])*24+intervalSizeS/(60.0*60.0*2.0))
     minutesElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60+intervalSizeS/(60.0*2.0))
@@ -1204,7 +1204,7 @@ if integ_fit == 'B':
 	pp.ylabel(y_label_name)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_integ.eps'
+	savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_integ.eps'
 	pp.savefig(savestring)
 	print savestring, ' is saved'
 	fig2=pp.figure()
@@ -1214,7 +1214,7 @@ if integ_fit == 'B':
 	pp.ylabel(y_label_name2)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	savestring2 = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_peak.eps'
+	savestring2 = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_peak.eps'
 	pp.savefig(savestring2)
 	print savestring2, ' is saved'
 	if uv_fit=='T':
@@ -1225,7 +1225,7 @@ if integ_fit == 'B':
 		pp.ylabel(y_label_name)
 		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-		savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
+		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
 		pp.savefig(savestring)
 		print savestring, ' is saved'
 	
@@ -1236,7 +1236,7 @@ else:
 	pp.ylabel(y_label_name)
 	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc.eps'
+	savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc.eps'
 	pp.savefig(savestring)
 	print savestring, ' is saved'
 	if uv_fit=='T':
@@ -1247,7 +1247,10 @@ else:
 		pp.ylabel(y_label_name)
 		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-		savestring = target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
+		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
 		pp.savefig(savestring)
 		print savestring, ' is saved'
-
+#remove temp files and .last/.log files created by CASA/ipython
+os.system('rm -rf *.last')
+os.system('rm -rf *.log')
+os.system('rm -rf tempfile.txt tempfile2.txt')

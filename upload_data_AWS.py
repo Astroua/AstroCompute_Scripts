@@ -12,5 +12,5 @@ upload_item='/projects/mnt/JACPOT/JACPOT_V404_Cyg/VLA/lustre/aoc/ftp/e2earchive/
 
 upload_to_s3(bucket_name, upload_item,
                  create_bucket=True, chunk_size=52428800, conn=None,
-                 aws_access={'aws_access_key_id': 'AKIAJCAOONJFMHT2IIRA',
- 'aws_secret_access_key': 'RP/X7li5HDNTpAzaf577Vu+4LE7sUTWajbz51JE3'}, replace=False)
+                 aws_access={'aws_access_key_id': 'ACESS_KEY_HERE',
+ 'aws_secret_access_key': 'SECRET_ACCESS_KEY_HERE'}, replace=False)

@@ -7,8 +7,8 @@ import sys
 sys.path.append('PATH_TO_AWS_CONTROLLER')
 from upload_download_s3 import upload_to_s3
 
-bucket_name='astrocompute_testbucket0'
-upload_item='/projects/mnt/JACPOT/JACPOT_V404_Cyg/VLA/lustre/aoc/ftp/e2earchive/stage/QK3610/v404_jun22_A_Cc5.ms'
+bucket_name='BUCKET_NAME_HERE'
+upload_item='PATH_TO_DATA_ON_YOUR_SYSTEM'
 
 upload_to_s3(bucket_name, upload_item,
                  create_bucket=True, chunk_size=52428800, conn=None,

@@ -3,7 +3,8 @@
 ''' Upload data to AWS S3 bucket (which can then be downloaded with download_data_AWS.py)
 	Notes: No capitals allowed in bucket name
 '''
-
+import sys
+sys.path.append('PATH_TO_AWS_CONTROLLER')
 from upload_download_s3 import upload_to_s3
 
 bucket_name='astrocompute_testbucket0'

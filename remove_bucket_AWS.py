@@ -2,7 +2,8 @@
 
 ''' Remove an AWS S3 bucket with data in it (added with upload_data_AWS.py)
 '''
-
+import sys
+sys.path.append('PATH_TO_AWS_CONTROLLER')
 from upload_download_s3 import remove_s3_bucket
 from boto.s3.connection import S3Connection
 

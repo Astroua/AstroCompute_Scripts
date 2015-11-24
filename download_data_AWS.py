@@ -9,8 +9,8 @@ sys.path.append('/home/ubuntu/aws_controller')
 from upload_download_s3 import download_from_s3
 
 key_name='*'
-bucket_name='astrocompute_testbucket0'
-output_dir='datadownload'
+bucket_name='BUCKET_NAME'
+output_dir='/home/ubuntu/data'
 
 download_from_s3(key_name, bucket_name, conn=None,
                      aws_access={'aws_access_key_id': 'ACCESS_KEY_HERE',

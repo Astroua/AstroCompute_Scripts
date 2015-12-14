@@ -215,16 +215,15 @@ maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix]
 #pix_shift_cutout is how many pixels past target bx you want in cutout images rms calculation
 pix_shift_cutout=data_params.pix_shift_cutout
 cut_reg=str(float(targetBox.split(',')[0])-pix_shift_cutout)+','+str(float(targetBox.split(',')[1])-pix_shift_cutout)+','+str(float(targetBox.split(',')[2])+pix_shift_cutout)+','+str(float(targetBox.split(',')[3])+pix_shift_cutout)#'2962,2917,3017,2967'
-x_size=float(cut_reg.split(',')[2])-float(cut_reg.split(',')[0])
-y_size=float(cut_reg.split(',')[3])-float(cut_reg.split(',')[1])
-#local rms
-rmsbox1=str(x_size/6.)+','+str(y_size/6.)+','+str(x_size*2./6.)+','+str(y_size*2./6.)
-rmsbox2=str(x_size*4./6.)+','+str(y_size/6.)+','+str(x_size*5./6.)+','+str(y_size*2./6.)
-rmsbox3=str(x_size*2./6.)+','+str(y_size*4./6.)+','+str(x_size*4./6.)+','+str(y_size*5./6.)
-#global rms
-#rmsbox1=str(imageSize[0]/6.)+','+str(imageSize[1]/6.)+','+str(imageSize[0]*2./6.)+','+str(imageSize[1]*2./6.)
-#rmsbox2=str(imageSize[0]*4./6.)+','+str(imageSize[1]/6.)+','+str(imageSize[0]*5./6.)+','+str(imageSize[1]*2./6.)
-#rmsbox3=str(imageSize[0]*2./6.)+','+str(imageSize[1]*4./6.)+','+str(imageSize[0]*4./6.)+','+str(imageSize[1]*5./6.)
+x_sizel=float(targetBox.split(',')[0])
+x_sizeu=float(targetBox.split(',')[2])
+y_sizel=float(targetBox.split(',')[1])
+y_sizeu=float(targetBox.split(',')[3])
+#local rms around target box but inside cutout region
+rmsbox1=str(x_sizel-(3./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_cutout)+','+str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizel-(1./4.)*pix_shift_cutout)
+rmsbox2=str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_cutout)+','+str(x_sizeu+(3./4.)*pix_shift_cutout)+','+str(y_sizel-(1./4.)*pix_shift_cutout)
+rmsbox3=str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(1./4.)*pix_shift_cutout)+','+str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(3./4.)*pix_shift_cutout)
+
 #what unit do you want light curve
 lc_scale_unit=data_params.lc_scale_unit
 if lc_scale_unit=='m':

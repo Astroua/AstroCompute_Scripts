@@ -2,11 +2,11 @@
 #Object Detection script-->Using AEGEAN algorithm (https://github.com/PaulHancock/Aegean)
 #Input: Cleaned FITS image of whole data set
 #Output: Data file of the parameters of objects found in image
-#NOTE: Run in normal python, DO NOT RUN WITHIN CASA, it won't work.             
+#NOTE: Run in normal python, DO NOT RUN WITHIN CASA, it won't work.
 #############################################################################################################
 #Written by A. Tetarenko--> 10/2015
 #############################################################################################################
-#Import modules                                         
+#Import modules
 #Make sure aegean tree of directories in path so you can import it
 import sys
 sys.path.append('/home/ubuntu/Aegean')
@@ -14,20 +14,13 @@ import aegean
 from AegeanTools.catalogs import save_catalog
 import numpy as np
 import multiprocessing
-import imp
 import re
+
+from utils import getVar
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
 path_dir='/home/ubuntu/'
-
-def getVar(filename):
-    '''Easy way to read in parameters from file
-    '''
-    f=open(filename)
-    global data_params
-    data_params=imp.load_source('data_params','',f)
-    f.close()
 
 def run_aegean(tables,cellSize):
     '''Open Aegean object file and read in source parameters
@@ -53,7 +46,7 @@ getVar(path_dir+'AstroCompute_Scripts/param.txt')
 target = data_params.target
 # Date of observation.
 obsDate = data_params.obsDate
-# Observation frequency. 
+# Observation frequency.
 refFrequency =data_params.refFrequency
 # Length of time bins (H,M,S)
 intervalSizeH = data_params.intervalSizeH
@@ -117,7 +110,7 @@ sources.extend(detections)
 if len(sources) > 0:
     save_catalog(tables, sources)
 
-#print detected sources fro user to choose from    
+#print detected sources fro user to choose from
 src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(tab_file,cellSize)
 print 'Number of Objects Detected is ', len(src_l)
 print 'Objects Detected-->'

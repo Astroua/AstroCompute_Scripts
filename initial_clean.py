@@ -2,39 +2,31 @@
 #CASA script #1-->initial CLEAN of FUll data set
 #Input: Calibrated and Split MS
 #Output: Cleaned and deconvolved CASA image (.image,.flux,.psf,.residual,.mask,.model) & fits image
-#Note: This script is theoretically compatible with any data that can be imported 
+#Note: This script is theoretically compatible with any data that can be imported
 #into CASA, but has only been tested on continuum data from the VLA, SMA, and NOEMA
-#(import NOEMA data into CASA: http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf).             
+#(import NOEMA data into CASA: http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf).
 #############################################################################################################
 #Written by A. Tetarenko--> 10/2015
 #############################################################################################################
-#Import modules                                         
+#Import modules
 #
-import imp
+from utils import getVar
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
 path_dir='/home/ubuntu/'
 
-def getVar(filename):
-	'''Easy way to read in parameters from file
-	'''
-	f=open(filename)
-	global data_params
-	data_params=imp.load_source('data_params','',f)
-	f.close()
-
 
 ###########################################################
 #USER INPUT SECTION-->read in from parameters file
 ###########################################################
-getVar(path_dir+'AstroCompute_Scripts/param.txt')
+data_params = getVar(path_dir+'AstroCompute_Scripts/param.txt')
 
 # Target name.
 target = data_params.target
 # Date of observation.
 obsDate = data_params.obsDate
-# Observation frequency. 
+# Observation frequency.
 refFrequency = data_params.refFrequency
 # Label for casa output directories and files.
 label = target + '_' + refFrequency + '_' + obsDate + '_'
@@ -51,7 +43,7 @@ os.system(mkdir_perm1)
 os.system(mkdir_perm2)
 # Path to directory where all output from this script is saved.
 outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
-# dataPath contains the path and filename in which data file will be saved. 
+# dataPath contains the path and filename in which data file will be saved.
 # This script can be run on several epochs of data from the same observation without changing this path.
 # In this case the data file will be appended each time.
 dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec.txt'

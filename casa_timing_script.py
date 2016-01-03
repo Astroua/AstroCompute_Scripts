@@ -25,14 +25,11 @@ from os import path
 import numpy as np
 import math as m
 from jdcal import gcal2jd,jd2gcal
-import pyfits
 import astropy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from datetime import time
-from datetime import timedelta
-from datetime import datetime
-from matplotlib import pyplot as pp
+from datetime import time, timedelta, datetime
+import matplotlib.pyplot as pp
 from scipy.stats import norm
 import re
 

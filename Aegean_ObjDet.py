@@ -40,7 +40,7 @@ def run_aegean(tables,cellSize):
 ###########################################################
 #USER INPUT SECTION--> read in from parameters file
 ###########################################################
-getVar(path_dir+'AstroCompute_Scripts/param.txt')
+data_params = getVar(path_dir+'AstroCompute_Scripts/param.txt')
 
 # Target name.
 target = data_params.target

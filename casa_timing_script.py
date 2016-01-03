@@ -81,7 +81,7 @@ path_dir='/home/ubuntu/'
 ################################################################################################################
 
 #get input parameters from file
-getVar(path_dir+'AstroCompute_Scripts/param.txt')
+data_params = getVar(path_dir+'AstroCompute_Scripts/param.txt')
 
 '''DATA SET PARAMETERS'''
 # Target name

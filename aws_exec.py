@@ -9,7 +9,7 @@ from aws_controller.utils import timestring
 from aws_controller.launch_instance import launch
 
 
-def run(timestamp, param_file, aws_file, s3_bucket, log_file=None):
+def run(timestamp, param_file, aws_file, s3_bucket=None, log_file=None):
     '''
     Run Timing scripts on AWS. See README for more info.
 
@@ -56,7 +56,7 @@ def run(timestamp, param_file, aws_file, s3_bucket, log_file=None):
     # Launch instance
 
     user_data = WORKER_SCRIPT % \
-        {"USER": ubuntu,
+        {"USER": 'ubuntu',
          "QUEUE_NAME": proc_name,
          "KEY": key,
          "SECRET": secret,
@@ -74,11 +74,32 @@ def run(timestamp, param_file, aws_file, s3_bucket, log_file=None):
 
     # Return success/failure
 
-def json_message(params, aws_settings, proc_name):
+
+def json_message(params, aws_settings, proc_name, s3_bucket=None):
     '''
     Create the json message to feed to the worker instance.
     '''
-    pass
+
+    # Command to run
+    cmd = ["/usr/local/bin/CASA/casa-release-4.3.1-el6/casa", "--nologger",
+           "--logfile", proc_name+".log",
+           "/home/ubuntu/AstroCompute_Scripts/casa_timing_script.py",
+           "/home/ubuntu/data/params.txt", "/home/ubuntu/"]
+
+    mess = {}
+
+    mess['proc_name'] = proc_name
+    mess['key_name'] = "data/*"
+
+    if s3_bucket is not None:
+        mess['bucket'] = s3_bucket
+    else:
+        mess['bucket'] = proc_name
+
+    mess["command"] = cmd
+
+    return json.dumps(mess)
+
 
 if __name__ == "__main__":
     pass

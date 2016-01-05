@@ -21,7 +21,10 @@ import json
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
-path_dir='/home/ubuntu/'
+path_dir = sys.argv[-1]
+# path_dir='/home/ubuntu/'
+
+param_file = sys.argv[-2]
 
 def run_aegean(tables,cellSize):
     '''Open Aegean object file and read in source parameters
@@ -41,7 +44,7 @@ def run_aegean(tables,cellSize):
 ###########################################################
 #USER INPUT SECTION--> read in from parameters file
 ###########################################################
-data_params = json.loads(path_dir+'AstroCompute_Scripts/param.txt')
+data_params = json.loads(param_file)
 
 # Target name.
 target = data_params["target"]

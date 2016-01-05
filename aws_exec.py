@@ -115,18 +115,35 @@ def json_message(params, aws_settings, proc_name):
     Create the json message to feed to the worker instance.
     '''
 
-    # Command to run
-    cmd = ["/usr/local/bin/CASA/casa-release-4.3.1-el6/casa", "--nologger",
-           "--logfile", proc_name+".log", "-c",
-           "/home/ubuntu/AstroCompute_Scripts/casa_timing_script.py",
-           "/home/ubuntu/data/params.txt", "/home/ubuntu/"]
+    # Commands to run
+    timing_cmd = \
+        "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
+        "--logfile " + proc_name + "_timing.log -c "\
+        "/home/ubuntu/AstroCompute_Scripts/casa_timing_script.py "\
+        "/home/ubuntu/data/params.txt /home/ubuntu/"
+
+    # Check whether Object detection should be run
+    if params['runObj'] == "T":
+        clean_cmd = \
+            "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
+            "--logfile " + proc_name + "_timing.log -c "\
+            "/home/ubuntu/AstroCompute_Scripts/initial_clean.py "\
+            "/home/ubuntu/data/params.txt /home/ubuntu/"
+        objdet_cmd = \
+            "/home/ubuntu/miniconda/bin/python " \
+            "/home/ubuntu/AstroCompute_Scripts/Aegean_ObjDet.py "\
+            "/home/ubuntu/data/params.txt /home/ubuntu/"
+
+        commands = [clean_cmd, objdet_cmd, timing_cmd]
+    else:
+        commands = [timing_cmd]
 
     mess = {}
 
     mess['proc_name'] = proc_name
     mess['key_name'] = "data/*"
     mess['bucket'] = proc_name
-    mess["command"] = cmd
+    mess["command"] = commands
 
     return json.dumps(mess)
 

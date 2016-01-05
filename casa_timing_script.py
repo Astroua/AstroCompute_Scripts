@@ -86,20 +86,20 @@ data_params = json.loads(param_file)
 
 '''DATA SET PARAMETERS'''
 # Target name
-target = data_params.target
+target = data_params["target"]
 # Date of observation
-obsDate = data_params.obsDate
+obsDate = data_params["obsDate"]
 # Observation frequency
-refFrequency =data_params.refFrequency
+refFrequency =data_params["refFrequency"]
 # Label for casa output directories and files
 label = target + '_' + refFrequency + '_' + obsDate + '_'
 # Length of time bins (H,M,S); see below if you want manual input (line 288)
-intervalSizeH = data_params.intervalSizeH
-intervalSizeM = data_params.intervalSizeM
-intervalSizeS = data_params.intervalSizeS
+intervalSizeH = data_params["intervalSizeH"]
+intervalSizeM = data_params["intervalSizeM"]
+intervalSizeS = data_params["intervalSizeS"]
 # Name of visibliity - should include full path if script is not being run from vis location.
-visibility = path_dir+'data/'+ data_params.visibility
-visibility_uv = path_dir+'data/'+ data_params.visibility
+visibility = path_dir+'data/'+ data_params["visibility"]
+visibility_uv = path_dir+'data/'+ data_params["visibility"]
 
 '''DIRECTORY AND FILE NAME PARAMETERS'''
 # Set path to directory where all output from this script is saved.
@@ -124,56 +124,56 @@ tables=outputPath+label+'whole_dataset_objdet_comp.tab'
 
 '''FLAGS'''
 #flag to run object detection
-runObj=data_params.runObj
+runObj=data_params["runObj"]
 #Is the data set large enough that you only want to save a cutout?
 #If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval
 #If cutout='T' & big_data='F' --> clean all, fit all, then delete.
 #If cutout='F' & big_data='F' --> clean all full size, fit all full size, no delete
-cutout=data_params.cutout
-big_data=data_params.big_data
+cutout=data_params["cutout"]
+big_data=data_params["big_data"]
 # Clean can be toggled on/off here (T/F).
-runClean =data_params.runClean
+runClean =data_params["runClean"]
 #optimize cleaning
-opt_clean=data_params.opt_clean
+opt_clean=data_params["opt_clean"]
 #do you want to fix parameters in fits from full data set fit? (T of F)
-fix_pos=data_params.fix_pos
+fix_pos=data_params["fix_pos"]
 #if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
-do_monte=data_params.do_monte
+do_monte=data_params["do_monte"]
 #do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
-integ_fit=data_params.integ_fit
+integ_fit=data_params["integ_fit"]
 #do you want to do uv fitting (T or F) as well?
 #Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy);
-uv_fit=data_params.uv_fit
+uv_fit=data_params["uv_fit"]
 #if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
-do_monte_uv=data_params.do_monte_uv
+do_monte_uv=data_params["do_monte_uv"]
 #fix position in UV
-uv_fix=data_params.uv_fix
+uv_fix=data_params["uv_fix"]
 #If runClean=F set fit_cutout='T' if you have only cutout images but want to refit without cleaning again,
-fit_cutout=data_params.fit_cutout
+fit_cutout=data_params["fit_cutout"]
 #define start and end time yourself
-def_times=data_params.def_times
+def_times=data_params["def_times"]
 
 '''CLEAN PARAMETERS'''
 # The clean command (line 505) should be inspected closely to ensure all arguments are appropriate before
 # running script on a new data set.
 # The following arguments will be passed to casa's clean, imfit or imstat functions:
-imageSize = [data_params.imageSize,data_params.imageSize]
+imageSize = [data_params["imageSize"]* 2
 if opt_clean=='T':
 	if is_power2(imageSize[0])==False:
 		print 'Clean will run faster if image size is 2^n'
 		imageSize=[int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2)))),int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
         	print 'imagesize is now set to ', imageSize
     	print 'imagesize remains at ',imageSize, 'due to user request'
-numberIters = data_params.numberIters
-cellSize = [data_params.cellSize,data_params.cellSize]
-taylorTerms = data_params.taylorTerms
-myStokes = data_params.myStokes
-thre=data_params.thre
-spw_choice=data_params.spw_choice
+numberIters = data_params["numberIters"]
+cellSize = [data_params["cellSize"] * 2
+taylorTerms = data_params["taylorTerms"]
+myStokes = data_params["myStokes"]
+thre=data_params["thre"]
+spw_choice=data_params["spw_choice"]
 # If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
 # also need to be set if outlier file is to be used.
 # If not, set outlierFile to ''.
-outlierFile = data_params.outlierFile
+outlierFile = data_params["outlierFile"]
 
 
 '''OBJECT DETECTION AND SELECTION PARAMETERS'''
@@ -181,7 +181,7 @@ if runObj=='T':
     #object detection with Aegean algorithm--> Need to run initial_clean.py in CASA, and Aegean_ObjDet.py outside
     #CASA first
     src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(tables,cellSize)
-    ind=data_params.ind
+    ind=data_params["ind"]
     # target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
     #use with rest of script
     tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
@@ -190,14 +190,14 @@ if runObj=='T':
     targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
 elif runObj=='F':
 #input target box in pixels if not running object detection
-    targetBox =data_params.targetBox#'2982,2937,2997,2947'
+    targetBox =data_params["targetBox"] # #'2982,2937,2997,2947'
 #mask for clean based on target box
 maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 
 '''IMAGE PRODUCT PARAMETERS: CUTOUT AND RMS/ERROR IN IMAGE PLANE HANDLING'''
 #define rms boxes for realistic error calculation
 #pix_shift_cutout is how many pixels past target bx you want in cutout images rms calculation
-pix_shift_cutout=data_params.pix_shift_cutout
+pix_shift_cutout=data_params["pix_shift_cutout"]
 cut_reg=str(float(targetBox.split(',')[0])-pix_shift_cutout)+','+str(float(targetBox.split(',')[1])-pix_shift_cutout)+','+str(float(targetBox.split(',')[2])+pix_shift_cutout)+','+str(float(targetBox.split(',')[3])+pix_shift_cutout)#'2962,2917,3017,2967'
 x_sizel=float(targetBox.split(',')[0])
 x_sizeu=float(targetBox.split(',')[2])
@@ -209,7 +209,7 @@ rmsbox2=str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_
 rmsbox3=str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(1./4.)*pix_shift_cutout)+','+str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(3./4.)*pix_shift_cutout)
 
 #what unit do you want light curve
-lc_scale_unit=data_params.lc_scale_unit
+lc_scale_unit=data_params["lc_scale_unit"]
 if lc_scale_unit=='m':
 	lc_scale_factor=1.0e03
 elif lc_scale_unit=='u':
@@ -217,9 +217,9 @@ elif lc_scale_unit=='u':
 elif lc_scale_unit=='':
 	lc_scale_factor=1.0
 #what time scale do you want in light curve
-lc_scale_time=data_params.lc_scale_time
+lc_scale_time=data_params["lc_scale_time"]
 #if remainder of obstime/interval > this # then it is included in time intervals (in minutes)
-rem_int=data_params.rem_int
+rem_int=data_params["rem_int"]
 
 '''REFITTTING WITHOUT CLEANING PARAMETERS'''
 #make sure rms boxes are set to local.
@@ -241,7 +241,7 @@ nsim=100
 #a, b, p convolved with beam values not deconvolved values!!!
 #format is [value,error] from fit of full data set
 if fix_pos=='T':
-    par_fix=data_params.par_fix
+    par_fix=data_params["par_fix"]
     if runObj=='F':
     	print 'Cleaning Full Data Set-->'
     	clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
@@ -271,7 +271,7 @@ if fix_pos=='T':
 #only point sources right now
 comp_uv='delta'
 #Not tested on anything other than I; for VLA 'I', for SMA 'LL' (from listobs)
-stokes_param=data_params.stokes_param
+stokes_param=data_params["stokes_param"]
 if uv_fit=='T':
     print 'Fitting full data set in UV Plane-->'
     fitfulluv=uvm.uvmultifit(vis=visibility_uv, spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=['p[0],p[1],p[2]'],outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
@@ -326,12 +326,12 @@ endDateMJD = gcal2jd(yeare,monthInte,daye)
 # Optional: Define start and end times manually (i.e., if only want subset of observation )
 #
 if def_times=='T':
-	startTimeH = data_params.startTimeH#input('Enter start time hour >| ')
-	startTimeM = data_params.startTimeM#input('Enter start time minute >| ')
-	startTimeS = data_params.startTimeS#input('Enter start time seconds >| ')
-	endTimeH = data_params.endTimeH#input('Enter finish time hour >| ')
-	endTimeM = data_params.endTimeM#input('Enter finish time minute >| ')
-	endTimeS = data_params.endTimeS#input('Enter start time seconds >| ')
+	startTimeH = data_params["startTimeH"] #input('Enter start time hour >| ')
+	startTimeM = data_params["startTimeM"] #input('Enter start time minute >| ')
+	startTimeS = data_params["startTimeS"] #input('Enter start time seconds >| ')
+	endTimeH = data_params["endTimeH"] #input('Enter finish time hour >| ')
+	endTimeM = data_params["endTimeM"] #input('Enter finish time minute >| ')
+	endTimeS = data_params["endTimeS"] #input('Enter start time seconds >| ')
 ####################################################################################################
 
 # We require a list of time interval strings to pass to the clean function.

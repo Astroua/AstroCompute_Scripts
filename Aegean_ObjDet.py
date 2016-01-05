@@ -11,13 +11,13 @@
 import sys
 sys.path.append('/home/ubuntu/Aegean')
 import aegean
+
 from AegeanTools.catalogs import save_catalog
 import numpy as np
 import multiprocessing
 import re
 import json
 
-from utils import getVar
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
@@ -44,15 +44,15 @@ def run_aegean(tables,cellSize):
 data_params = json.loads(path_dir+'AstroCompute_Scripts/param.txt')
 
 # Target name.
-target = data_params.target
+target = data_params["target"]
 # Date of observation.
-obsDate = data_params.obsDate
+obsDate = data_params["obsDate"]
 # Observation frequency.
-refFrequency =data_params.refFrequency
+refFrequency =data_params["refFrequency"]
 # Length of time bins (H,M,S)
-intervalSizeH = data_params.intervalSizeH
-intervalSizeM = data_params.intervalSizeM
-intervalSizeS = data_params.intervalSizeS
+intervalSizeH = data_params["intervalSizeH"]
+intervalSizeM = data_params["intervalSizeM"]
+intervalSizeS = data_params["intervalSizeS"]
 # Label for casa output directories and files.
 label = target + '_' + refFrequency + '_' + obsDate + '_'
 outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
@@ -60,10 +60,10 @@ fits_file=outputPath+label+'whole_dataset.fits'
 out_file0=outputPath+label+'whole_dataset_aegean.txt'
 tab_file=outputPath+label+'whole_dataset_objdet_comp.tab'
 #aegean parameters
-seed=data_params.seed
-flood=data_params.flood
-tele=data_params.tele
-cellSize_string=data_params.cellSize
+seed=data_params["seed"]
+flood=data_params["flood"]
+tele=data_params["tele"]
+cellSize_string=data_params["cellSize"]
 cellSize_list=re.findall('\d+|\D+', cellSize_string)
 cellSize=float(cellSize_list[0]+cellSize_list[1]+cellSize_list[2])
 
@@ -90,7 +90,7 @@ if lat==None:
         lat=44.6339
     else:
         #lat_string=raw_input('Enter latitude of telescope-->')
-        lat=data_params.lat
+        lat=data_params["lat"]
 out_file= open(out_file0, 'w')
 tables=tab_file
 print 'Running Aegean Object Detection -->'

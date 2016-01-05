@@ -1,7 +1,7 @@
 # example param file for initial_clean.py, Aegean_ObjDet.py, and casa_timing_script.py
 ##common to all 3 scripts
 target = 'V404Cyg'
-obsDate = '2015jun22' 
+obsDate = '2015jun22'
 refFrequency ='21GHz'
 intervalSizeH = 0
 intervalSizeM = 2
@@ -36,7 +36,7 @@ nsim=100
 par_fix='xyabp'
 integ_fit='B'
 uv_fit='F'
-do_monte_uv='F' 
+do_monte_uv='F'
 uv_fix='F'
 stokes_param='I'#for uv fit
 def_times='F'

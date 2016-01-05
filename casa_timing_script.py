@@ -198,16 +198,20 @@ maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix]
 #define rms boxes for realistic error calculation
 #pix_shift_cutout is how many pixels past target bx you want in cutout images rms calculation
 pix_shift_cutout=data_params["pix_shift_cutout"]
+annulus_rad_inner=data_params["annulus_rad_inner"]
+annulus_rad_outer=data_params["annulus_rad_outer"]
 cut_reg=str(float(targetBox.split(',')[0])-pix_shift_cutout)+','+str(float(targetBox.split(',')[1])-pix_shift_cutout)+','+str(float(targetBox.split(',')[2])+pix_shift_cutout)+','+str(float(targetBox.split(',')[3])+pix_shift_cutout)#'2962,2917,3017,2967'
 x_sizel=float(targetBox.split(',')[0])
 x_sizeu=float(targetBox.split(',')[2])
 y_sizel=float(targetBox.split(',')[1])
 y_sizeu=float(targetBox.split(',')[3])
-#local rms around target box but inside cutout region
-rmsbox1=str(x_sizel-(3./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_cutout)+','+str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizel-(1./4.)*pix_shift_cutout)
-rmsbox2=str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_cutout)+','+str(x_sizeu+(3./4.)*pix_shift_cutout)+','+str(y_sizel-(1./4.)*pix_shift_cutout)
-rmsbox3=str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(1./4.)*pix_shift_cutout)+','+str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(3./4.)*pix_shift_cutout)
-
+#local rms around target box but inside cutout region (not as accurate as annulus)
+#rmsbox1=str(x_sizel-(3./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_cutout)+','+str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizel-(1./4.)*pix_shift_cutout)
+#rmsbox2=str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_cutout)+','+str(x_sizeu+(3./4.)*pix_shift_cutout)+','+str(y_sizel-(1./4.)*pix_shift_cutout)
+#rmsbox3=str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(1./4.)*pix_shift_cutout)+','+str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(3./4.)*pix_shift_cutout)
+#annulus region parameters
+cen_annulus='['+str(((x_sizeu-x_sizel)/2.)+x_sizel)+','+str(((y_sizeu-y_sizel)/2.)+y_sizel)+']'
+cen_radius='['+str(annulus_rad_inner)+'pix,'+str(annulus_rad_outer)+'pix]'
 #what unit do you want light curve
 lc_scale_unit=data_params["lc_scale_unit"]
 if lc_scale_unit=='m':
@@ -224,10 +228,16 @@ rem_int=data_params["rem_int"]
 '''REFITTTING WITHOUT CLEANING PARAMETERS'''
 #make sure rms boxes are set to local.
 if fit_cutout=='T':
-	#rmsbox1='0,0,'+str(float(rmsbox1.split(',')[2])-float(rmsbox1.split(',')[0]))+','+str(float(rmsbox1.split(',')[3])-float(rmsbox1.split(',')[1]))
-	#rmsbox2='0,0,'+str(float(rmsbox2.split(',')[2])-float(rmsbox2.split(',')[0]))+','+str(float(rmsbox2.split(',')[3])-float(rmsbox2.split(',')[1]))
-	#rmsbox3='0,0,'+str(float(rmsbox3.split(',')[2])-float(rmsbox3.split(',')[0]))+','+str(float(rmsbox3.split(',')[3])-float(rmsbox3.split(',')[1]))
 	targetBox = str(float(targetBox.split(',')[0])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[1])-float(cut_reg.split(',')[1]))+','+str(float(targetBox.split(',')[2])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[3])-float(cut_reg.split(',')[1]))
+	cx_sizel=float(targetBox.split(',')[0])
+	cx_sizeu=float(targetBox.split(',')[2])
+	cy_sizel=float(targetBox.split(',')[1])
+	cy_sizeu=float(targetBox.split(',')[3])
+	#rmsbox1=str(cx_sizel-(3./4.)*pix_shift_cutout)+','+str(cy_sizel-(3./4.)*pix_shift_cutout)+','+str(cx_sizel-(1./4.)*pix_shift_cutout)+','+str(cy_sizel-(1./4.)*pix_shift_cutout)
+	#rmsbox2=str(cx_sizeu+(1./4.)*pix_shift_cutout)+','+str(cy_sizel-(3./4.)*pix_shift_cutout)+','+str(cx_sizeu+(3./4.)*pix_shift_cutout)+','+str(cy_sizel-(1./4.)*pix_shift_cutout)
+	#rmsbox3=str(cx_sizel-(1./4.)*pix_shift_cutout)+','+str(cy_sizeu+(1./4.)*pix_shift_cutout)+','+str(cx_sizeu+(1./4.)*pix_shift_cutout)+','+str(cy_sizeu+(3./4.)*pix_shift_cutout)
+	cen_annulus='['+str(((cx_sizeu-cx_sizel)/2.)+cx_sizel)+','+str(((cy_sizeu-cy_sizel)/2.)+cy_sizel)+']'
+	cen_radius='[10pix,20pix]'
 
 '''IMAGE FITTING PARAMETERS'''
 if do_monte == 'T':
@@ -453,9 +463,9 @@ print mjdTimes
 ############################################################################################
 
 #initialize lists
-result_box1rms=[]
-result_box2rms=[]
-result_box3rms=[]
+#result_box1rms=[]
+#result_box2rms=[]
+#result_box3rms=[]
 fluxError_real=[]
 uv_fitval=[]
 uv_fiterr=[]
@@ -544,15 +554,15 @@ if runClean:
 							print 'Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)'
 		    			else:
 		    				imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',append=F, overwrite = T)
-					result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox1)
-					result_box2=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox2)
-					result_box3=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox3)
-					result_box1rms.append(result_box1['rms'][0])
-					result_box2rms.append(result_box2['rms'][0])
-					result_box3rms.append(result_box3['rms'][0])
-					rms_array=np.array([result_box1['rms'],result_box2['rms'],result_box3['rms']])
-					fluxError_real.append(np.mean(rms_array))
 
+					result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
+					#result_box2=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox2)
+					#result_box3=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox3)
+					#result_box1rms.append(result_box1['rms'][0])
+					#result_box2rms.append(result_box2['rms'][0])
+					#result_box3rms.append(result_box3['rms'][0])
+					#rms_array=np.array([result_box1['rms'],result_box2['rms'],result_box3['rms']])
+					fluxError_real.append(result_box1['rms'][0])
 		    		else:
 					print '\nCLEAN failed on interval ' + interval + '.'
 					# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
@@ -588,11 +598,11 @@ if runClean:
 						uv_fiterr.append(fit.result['Uncertainties'][2])
 					else:
 						print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
-	    			if cutout== 'T':#and os.path.exists(outputPath+label+intervalString+imSuffix):
+	    			if cutout== 'T':#and os.path.exists(outputPath+label+intervalString+imSuffix):box=rmsbox1
 	    				immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp.image')
-					immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox1,outfile=outputPath+label+intervalString+'_rms1.image')
-					immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
-					immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
+					immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms.image')
+					#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
+					#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
 
 					comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
 					comm_and2='mv '+outputPath+label+intervalString+'_temp.image '+outputPath+label+intervalString+'.image'
@@ -674,18 +684,18 @@ if big_data=='F' or runClean==F:
 	    	else:
 	    		imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',append=F, overwrite = T)
 		if fit_cutout=='T':
-			result_box1=imstat(imagename=outputPath+label+intervalString+'_rms1'+imSuffix,box=rmsbox1)
-			result_box2=imstat(imagename=outputPath+label+intervalString+'_rms2'+imSuffix,box=rmsbox2)
-			result_box3=imstat(imagename=outputPath+label+intervalString+'_rms3'+imSuffix,box=rmsbox3)
+			result_box1=imstat(imagename=outputPath+label+intervalString+'_rms'+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
+			#result_box2=imstat(imagename=outputPath+label+intervalString+'_rms2'+imSuffix,box=rmsbox2)
+			#result_box3=imstat(imagename=outputPath+label+intervalString+'_rms3'+imSuffix,box=rmsbox3)
 		else:
-			result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox1)
-			result_box2=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox2)
-			result_box3=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox3)
-		result_box1rms.append(result_box1['rms'][0])
-		result_box2rms.append(result_box2['rms'][0])
-		result_box3rms.append(result_box3['rms'][0])
-		rms_array=np.array([result_box1['rms'],result_box2['rms'],result_box3['rms']])
-		fluxError_real.append(np.mean(rms_array))
+			result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,box=region='annulus['+cen_annulus+','+cen_radius+']')
+			#result_box2=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox2)
+			#result_box3=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox3)
+		#result_box1rms.append(result_box1['rms'][0])
+		#result_box2rms.append(result_box2['rms'][0])
+		#result_box3rms.append(result_box3['rms'][0])
+		#rms_array=np.array([result_box1['rms'],result_box2['rms'],result_box3['rms']])
+		fluxError_real.append(result_box1['rms'][0])
 		#comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
 		#comm_and2='mv temp_'+outputPath+label+intervalString+'.image '+outputPath+label+intervalString+'.image'
 		#os.system(comm_and1)
@@ -726,9 +736,9 @@ if big_data=='F' or runClean==F:
 			print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
 	    if cutout== 'T':
 		immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp.image')
-		immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox1,outfile=outputPath+label+intervalString+'_rms1.image')
-		immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
-		immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
+		immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms.image')
+		#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
+		#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
 		comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
 		comm_and2='mv '+outputPath+label+intervalString+'_temp.image '+outputPath+label+intervalString+'.image'
 		os.system(comm_and1)

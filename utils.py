@@ -1,15 +1,44 @@
 
-import imp
+import json
+import re
 
 
-def getVar(filename):
+def convert_param_format(filename, to="json"):
     '''
-    Easy way to read in parameters from file
+    Convert the text format into a dictionary, or JSON.
     '''
-    with open(filename) as f:
-        data_params = imp.load_source('data_params', '', f)
 
-    return data_params
+    with open(filename, "r") as f:
+        params = f.read()
+
+    params = params.split("\n")
+    param_dict = {}
+
+    for param in params:
+        # Skip comment lines
+        if len(param) == 0:
+            continue
+
+        if param[0] == "#":
+            continue
+
+        # Strip whitespace
+        param = re.sub("\s", "", param)
+
+        splits = param.split("=")
+
+        key = splits[0]
+        value = splits[1]
+
+        if len(value.split("#")) > 1:
+            value = value.split("#")[0]
+
+        param_dict[key] = value.strip("'")
+
+    if to is "json":
+        return json.dumps(param_dict)
+    else:
+        return param_dict
 
 
 def is_power2(num):

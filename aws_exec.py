@@ -116,6 +116,9 @@ def json_message(params, aws_settings, proc_name):
     '''
 
     # Commands to run
+    clone_cmd = \
+        'su - ubuntu -c "cd /home/ubuntu/; " \
+        "/usr/bin/git clone git@github.com:Astroua/AstroCompute_Scripts.git"'
     timing_cmd = \
         "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
         "--logfile " + proc_name + "_timing.log -c "\
@@ -134,9 +137,9 @@ def json_message(params, aws_settings, proc_name):
             "/home/ubuntu/AstroCompute_Scripts/Aegean_ObjDet.py "\
             "/home/ubuntu/data/params.txt /home/ubuntu/"
 
-        commands = [clean_cmd, objdet_cmd, timing_cmd]
+        commands = [clone_cmd, clean_cmd, objdet_cmd, timing_cmd]
     else:
-        commands = [timing_cmd]
+        commands = [clone_cmd, timing_cmd]
 
     mess = {}
 

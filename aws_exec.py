@@ -75,11 +75,6 @@ def run(timestamp, param_file, aws_file):
                   security_groups=aws_settings['security_groups'],
                   initial_check=False, user_data=user_data)
 
-    # Connect to the response queue
-    resp_queue = sqs.connect_to_region(region,
-                                       aws_access_key_id=key,
-                                       aws_secret_access_key=secret).create_queue(resp_queue_name)
-
     # Wait for return message
     # Total wait time set to 1 day
     time_max = 3600 * 24
@@ -89,14 +84,16 @@ def run(timestamp, param_file, aws_file):
         update = inst.update()
         if update in [u"stopping", u"stopped"]:
             break
-        # If a message is received, can be assumed to be done
-        elif resp_queue.count() > 0:
-            break
         sleep(time_wait)
     else:
         print("Reached time limit. Terminating.")
 
     inst.terminate()
+
+    # Connect to the response queue
+    resp_queue = sqs.connect_to_region(region,
+                                       aws_access_key_id=key,
+                                       aws_secret_access_key=secret).create_queue(resp_queue_name)
 
     # Check the response message
     mess = resp_queue.read(10)

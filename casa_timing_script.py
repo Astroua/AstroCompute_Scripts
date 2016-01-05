@@ -32,8 +32,10 @@ from datetime import time, timedelta, datetime
 import matplotlib.pyplot as pp
 from scipy.stats import norm
 import re
+import sys
+import json
 
-from utils import getVar, is_power2
+from utils import is_power2
 
 def run_aegean(tables,cellSize):
     '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),
@@ -66,19 +68,21 @@ def run_aegean(tables,cellSize):
     	pos_list.append(float(lin_split[18]))#deg
     return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
 
-#set initial path to where input/output is to be stored
-#NOTE: MS's need to be in path_dir/data, all output needs to be in path_dir/data_products,
-#both directories need to be created beforehand
-path_dir='/home/ubuntu/'
-
-
 ################################################################################################################
 #User Input Section and Setup-->read in from parameters file
 #WARNING-->The following variables need to be carefully considered and changed for each new data set
 ################################################################################################################
 
+#set initial path to where input/output is to be stored
+#NOTE: MS's need to be in path_dir/data, all output needs to be in path_dir/data_products,
+#both directories need to be created beforehand
+# path_dir='/home/ubuntu/'
+path_dir = sys.argv[-1]
+
+param_file = sys.argv[-2]
+
 #get input parameters from file
-data_params = getVar(path_dir+'AstroCompute_Scripts/param.txt')
+data_params = json.loads(param_file)
 
 '''DATA SET PARAMETERS'''
 # Target name

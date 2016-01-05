@@ -15,6 +15,7 @@ from AegeanTools.catalogs import save_catalog
 import numpy as np
 import multiprocessing
 import re
+import json
 
 from utils import getVar
 
@@ -40,7 +41,7 @@ def run_aegean(tables,cellSize):
 ###########################################################
 #USER INPUT SECTION--> read in from parameters file
 ###########################################################
-data_params = getVar(path_dir+'AstroCompute_Scripts/param.txt')
+data_params = json.loads(path_dir+'AstroCompute_Scripts/param.txt')
 
 # Target name.
 target = data_params.target

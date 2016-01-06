@@ -47,7 +47,10 @@ os.system(mkdir_string)
 os.system(mkdir_perm1)
 os.system(mkdir_perm2)
 # Path to directory where all output from this script is saved.
-outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
+outputPath = \
+    os.path.join(path_dir, 'data_products/images_'+target+'_'+refFrequency +
+                 '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
+                 str(intervalSizeS)+'sec/')
 # dataPath contains the path and filename in which data file will be saved.
 # This script can be run on several epochs of data from the same observation without changing this path.
 # In this case the data file will be appended each time.
@@ -69,6 +72,13 @@ spw_choice=data_params["spw_choice"]
 
 #CLEAN and CONVERT to FITS for use with object detection script
 print 'Cleaning Full Data Set to detect objects-->'
-clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
+clean(vis=visibility,
+      imagename=os.path.join(outputPath, label+'whole_dataset'),
+      field='', mode='mfs', imsize=imageSize, cell=cellSize,
+      weighting='natural', spw=spw_choice, nterms=taylorTerms,
+      niter=numberIters, gain=0.1,
+      threshold=thre, interactive=False)
 print 'Converting to fits-->'
-exportfits(imagename=outputPath+label+'whole_dataset.image', fitsimage=outputPath+label+'whole_dataset.fits',history=False)
+exportfits(imagename=os.path.join(outputPath, label+'whole_dataset.image'),
+           fitsimage=os.path.join(outputPath, label+'whole_dataset.fits'),
+           history=False)

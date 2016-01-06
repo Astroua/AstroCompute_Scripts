@@ -50,6 +50,8 @@ def load_json(filename):
         contents = json.load(f)
 
     for key in contents:
+        if isinstance(contents[key], list):
+            continue
         try:
             contents[key] = int(contents[key])
         except ValueError:

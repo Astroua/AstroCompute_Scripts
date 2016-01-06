@@ -68,7 +68,8 @@ def run(timestamp, param_file, aws_file):
          "KEY": key,
          "SECRET": secret,
          "REGION": region,
-         "RESP_QUEUE_NAME": resp_queue_name}
+         "RESP_QUEUE_NAME": resp_queue_name,
+         "CUSTOM_LINES": 'ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts\nsu - ubuntu -c "/usr/bin/git clone git@github.com:Astroua/AstroCompute_Scripts.git"'}
 
     inst = launch(key, region=region, image_id=aws_settings['image_id'],
                   instance_type=aws_settings['instance_type'],
@@ -116,9 +117,6 @@ def json_message(params, aws_settings, proc_name):
     '''
 
     # Commands to run
-    clone_cmd = \
-        'su - ubuntu -c "cd /home/ubuntu/; " \
-        "/usr/bin/git clone git@github.com:Astroua/AstroCompute_Scripts.git"'
     timing_cmd = \
         "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
         "--logfile " + proc_name + "_timing.log -c "\
@@ -137,9 +135,9 @@ def json_message(params, aws_settings, proc_name):
             "/home/ubuntu/AstroCompute_Scripts/Aegean_ObjDet.py "\
             "/home/ubuntu/data/params.txt /home/ubuntu/"
 
-        commands = [clone_cmd, clean_cmd, objdet_cmd, timing_cmd]
+        commands = [clean_cmd, objdet_cmd, timing_cmd]
     else:
-        commands = [clone_cmd, timing_cmd]
+        commands = [timing_cmd]
 
     mess = {}
 

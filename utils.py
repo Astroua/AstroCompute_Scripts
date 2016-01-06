@@ -49,6 +49,9 @@ def load_json(filename):
     with open(filename, "r") as f:
         contents = json.load(f)
 
+    for key in contents:
+        contents[key] = str(contents[key])
+
     return contents
 
 

@@ -58,7 +58,7 @@ outputPath = \
 # In this case the data file will be appended each time.
 dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec.txt'
 # Name of visibliity - should include full path if script is not being run from vis location.
-visibility = path_dir+'data/'+ data_params["visibility"]
+visibility = os.path.join(path_dir, 'data/' + data_params["visibility"])
 
 # The following arguments will be passed to casa's clean
 imageSize = [data_params["imageSize"]] * 2

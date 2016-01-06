@@ -44,7 +44,7 @@ def run(timestamp, param_file, aws_file):
         with open(aws_file) as f:
             aws_settings = json.load(f)
 
-    proc_name = params['target'] + "_" + timestamp
+    proc_name = params['target'].lower() + "_" + timestamp
     key = aws_settings['key']
     secret = aws_settings['secret']
     region = aws_settings['region']
@@ -57,7 +57,7 @@ def run(timestamp, param_file, aws_file):
                                   aws_access_key_id=key,
                                   aws_secret_access_key=secret).create_queue(queue_name)
 
-    msg = json_message(params, aws_settings, proc_name)
+    msg = json_message(params, proc_name)
     queue.write(queue.new_message(body=msg))
 
     # Launch instance
@@ -111,7 +111,7 @@ def run(timestamp, param_file, aws_file):
     # Return success/failure
 
 
-def json_message(params, aws_settings, proc_name):
+def json_message(params, proc_name):
     '''
     Create the json message to feed to the worker instance.
     '''

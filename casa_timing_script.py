@@ -35,7 +35,9 @@ import re
 import sys
 import json
 
-from utils import is_power2, load_json
+sys.path.append("AstroCompute_Scripts/")
+from AstroCompute_Scripts.utils import load_json, is_power2
+
 
 def run_aegean(tables,cellSize):
     '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),

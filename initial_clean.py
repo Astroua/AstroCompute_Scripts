@@ -15,7 +15,8 @@ import json
 import os
 import sys
 
-from utils import load_json
+sys.path.append("AstroCompute_Scripts/")
+from AstroCompute_Scripts.utils import load_json
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path

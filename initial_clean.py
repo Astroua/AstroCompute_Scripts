@@ -15,6 +15,8 @@ import json
 import os
 import sys
 
+from utils import load_json
+
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
 path_dir = sys.argv[-1]
@@ -25,7 +27,7 @@ param_file = sys.argv[-2]
 ###########################################################
 #USER INPUT SECTION-->read in from parameters file
 ###########################################################
-data_params = json.loads(param_file)
+data_params = load_json(param_file)
 
 # Target name.
 target = data_params["target"]

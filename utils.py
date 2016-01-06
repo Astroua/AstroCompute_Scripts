@@ -41,6 +41,17 @@ def convert_param_format(filename, to="json"):
         return param_dict
 
 
+def load_json(filename):
+    '''
+    Load in a JSON formatted text file.
+    '''
+
+    with open(filename, "r") as f:
+        contents = json.load(f)
+
+    return contents
+
+
 def is_power2(num):
     ''' Check if input imsize is a power of 2^n, in order to
     optimize cleaning speed

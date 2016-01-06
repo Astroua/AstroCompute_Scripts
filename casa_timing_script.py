@@ -35,7 +35,7 @@ import re
 import sys
 import json
 
-from utils import is_power2
+from utils import is_power2, load_json
 
 def run_aegean(tables,cellSize):
     '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),
@@ -82,7 +82,7 @@ path_dir = sys.argv[-1]
 param_file = sys.argv[-2]
 
 #get input parameters from file
-data_params = json.loads(param_file)
+data_params = load_json(param_file)
 
 '''DATA SET PARAMETERS'''
 # Target name

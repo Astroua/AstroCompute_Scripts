@@ -69,9 +69,10 @@ def run(timestamp, param_file, aws_file):
          "SECRET": secret,
          "REGION": region,
          "RESP_QUEUE_NAME": resp_queue_name,
-         "CUSTOM_LINES": 'ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts\nsu - ubuntu -c "/usr/bin/git clone git@github.com:Astroua/AstroCompute_Scripts.git"'}
+         "CUSTOM_LINES": 'ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts\nsu - ubuntu -c "/usr/bin/git clone git@github.com:e-koch/AstroCompute_Scripts.git"\nexport USER="ubuntu"'}
 
-    inst = launch(key, region=region, image_id=aws_settings['image_id'],
+    inst = launch(key_name=None, region=region,
+                  image_id=aws_settings['image_id'],
                   instance_type=aws_settings['instance_type'],
                   security_groups=aws_settings['security_groups'],
                   initial_check=False, user_data=user_data)
@@ -119,7 +120,7 @@ def json_message(params, proc_name):
     # Commands to run
     timing_cmd = \
         "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
-        "--logfile " + proc_name + "_timing.log -c "\
+        "--logfile data_products/" + proc_name + "_timing.log -c "\
         "/home/ubuntu/AstroCompute_Scripts/casa_timing_script.py "\
         "/home/ubuntu/data/params.txt /home/ubuntu/"
 
@@ -127,7 +128,7 @@ def json_message(params, proc_name):
     if params['runObj'] == "T":
         clean_cmd = \
             "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
-            "--logfile " + proc_name + "_timing.log -c "\
+            "--logfile data_products/" + proc_name + "_timing.log -c "\
             "/home/ubuntu/AstroCompute_Scripts/initial_clean.py "\
             "/home/ubuntu/data/params.txt /home/ubuntu/"
         objdet_cmd = \
@@ -135,18 +136,17 @@ def json_message(params, proc_name):
             "/home/ubuntu/AstroCompute_Scripts/Aegean_ObjDet.py "\
             "/home/ubuntu/data/params.txt /home/ubuntu/"
 
-        commands = [clean_cmd, objdet_cmd, timing_cmd]
+        # commands = [clean_cmd, objdet_cmd, timing_cmd]
+        commands = [clean_cmd]
     else:
         commands = [timing_cmd]
 
-    mess = {}
+    params['proc_name'] = proc_name
+    params['key_name'] = "data/*"
+    params['bucket'] = proc_name
+    params["command"] = commands
 
-    mess['proc_name'] = proc_name
-    mess['key_name'] = "data/*"
-    mess['bucket'] = proc_name
-    mess["command"] = commands
-
-    return json.dumps(mess)
+    return json.dumps(parameters)
 
 
 if __name__ == "__main__":

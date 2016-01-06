@@ -50,7 +50,10 @@ def load_json(filename):
         contents = json.load(f)
 
     for key in contents:
-        contents[key] = str(contents[key])
+        try:
+            contents[key] = int(contents[key])
+        except ValueError:
+            contents[key] = str(contents[key])
 
     return contents
 

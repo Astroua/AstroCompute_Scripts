@@ -33,10 +33,6 @@ import matplotlib.pyplot as pp
 from scipy.stats import norm
 import re
 import sys
-import json
-
-sys.path.append("AstroCompute_Scripts/")
-from AstroCompute_Scripts.utils import load_json, is_power2
 
 
 def run_aegean(tables,cellSize):
@@ -79,6 +75,9 @@ def run_aegean(tables,cellSize):
 #NOTE: MS's need to be in path_dir/data, all output needs to be in path_dir/data_products,
 #both directories need to be created beforehand
 # path_dir='/home/ubuntu/'
+sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
+from utils import load_json
+
 path_dir = sys.argv[-1]
 
 param_file = sys.argv[-2]

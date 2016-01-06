@@ -11,12 +11,8 @@
 #Import modules
 #
 
-import json
 import os
 import sys
-
-sys.path.append("AstroCompute_Scripts/")
-from AstroCompute_Scripts.utils import load_json
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
@@ -28,6 +24,9 @@ param_file = sys.argv[-2]
 ###########################################################
 #USER INPUT SECTION-->read in from parameters file
 ###########################################################
+sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
+from utils import load_json
+
 data_params = load_json(param_file)
 
 # Target name.

@@ -16,10 +16,7 @@ from AegeanTools.catalogs import save_catalog
 import numpy as np
 import multiprocessing
 import re
-import json
 
-sys.path.append("AstroCompute_Scripts/")
-from AstroCompute_Scripts.utils import load_json
 
 #set path to where output is to be stored-->need to set up file system so have data and data_products directory
 #in this path
@@ -46,6 +43,9 @@ def run_aegean(tables,cellSize):
 ###########################################################
 #USER INPUT SECTION--> read in from parameters file
 ###########################################################
+sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
+from utils import load_json
+
 data_params = load_json(param_file)
 
 # Target name.

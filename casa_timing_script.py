@@ -571,7 +571,8 @@ if runClean == "T":
 		    			else:
 		    				imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',append=F, overwrite = T)
 
-					result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
+					result_box1 = imstat(imagename=outputPath+label+intervalString+imSuffix,
+                                         region='annulus['+cen_annulus+','+cen_radius+']')
 					#result_box2=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox2)
 					#result_box3=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox3)
 					#result_box1rms.append(result_box1['rms'][0])
@@ -704,7 +705,8 @@ if big_data == 'F' or runClean == "F":
 			#result_box2=imstat(imagename=outputPath+label+intervalString+'_rms2'+imSuffix,box=rmsbox2)
 			#result_box3=imstat(imagename=outputPath+label+intervalString+'_rms3'+imSuffix,box=rmsbox3)
 		else:
-			result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,box=region='annulus['+cen_annulus+','+cen_radius+']')
+			result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,
+                               region='annulus['+cen_annulus+','+cen_radius+']')
 			#result_box2=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox2)
 			#result_box3=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox3)
 		#result_box1rms.append(result_box1['rms'][0])

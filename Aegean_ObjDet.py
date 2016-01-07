@@ -30,6 +30,14 @@ param_file = sys.argv[-2]
 def run_aegean(tables, cellSize):
     '''Open Aegean object file and read in source parameters
     '''
+
+    ra_list = []
+    dec_list = []
+    maj_list = []
+    min_list = []
+    pos_list = []
+    src_list = []
+
     with open(tables) as f:
         lines = f.readlines()
     for i in range(1, len(lines)):
@@ -83,13 +91,8 @@ cellSize = float(cellSize_list[0] + cellSize_list[1] + cellSize_list[2])
 
 
 # use Aegean object detection algorithm--> import as module
-ra_list = []
-dec_list = []
-maj_list = []
-min_list = []
-pos_list = []
-src_list = []
 sources = []
+
 # get latitude for telescope
 lat = aegean.scope2lat(tele)
 # adding SMA and NOEMA to list
@@ -121,7 +124,7 @@ detections = aegean.find_sources_in_image(fits_file,
 out_file.flush()
 out_file.close()
 if len(detections) == 0:
-    print 'No sources detected'
+    raise Exception('No sources detected by Aegean. Please check your inputs.')
 sources.extend(detections)
 # write detected source info to file
 if len(sources) > 0:

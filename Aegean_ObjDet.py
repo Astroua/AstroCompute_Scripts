@@ -77,6 +77,7 @@ outputPath = \
 fits_file = os.path.join(outputPath, label + 'whole_dataset.fits')
 out_file0 = os.path.join(outputPath, label + 'whole_dataset_aegean.txt')
 tab_file = os.path.join(outputPath, label + 'whole_dataset_objdet_comp.tab')
+catalog_input_name = os.path.join(outputPath, label + 'whole_dataset_objdet.tab')
 # aegean parameters
 seed = data_params["seed"]
 flood = data_params["flood"]
@@ -104,8 +105,9 @@ if lat == None:
     else:
         #lat_string=raw_input('Enter latitude of telescope-->')
         lat = data_params["lat"]
+
 out_file = open(out_file0, 'w')
-tables = tab_file
+
 print 'Running Aegean Object Detection -->'
 detections = aegean.find_sources_in_image(fits_file,
                                           outfile=out_file,
@@ -128,7 +130,7 @@ if len(detections) == 0:
 sources.extend(detections)
 # write detected source info to file
 if len(sources) > 0:
-    save_catalog(tables, sources)
+    save_catalog(catalog_input_name, sources)
 
 # print detected sources fro user to choose from
 src_l, ra_l, dec_l, maj_l, min_l, pos_l = run_aegean(tab_file, cellSize)

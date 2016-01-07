@@ -75,14 +75,15 @@ def run_aegean(tables,cellSize):
 #NOTE: MS's need to be in path_dir/data, all output needs to be in path_dir/data_products,
 #both directories need to be created beforehand
 # path_dir='/home/ubuntu/'
-sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
-from utils import load_json
 
 path_dir = sys.argv[-1]
 
 param_file = sys.argv[-2]
 
 #get input parameters from file
+sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
+from utils import load_json
+
 data_params = load_json(param_file)
 
 '''DATA SET PARAMETERS'''

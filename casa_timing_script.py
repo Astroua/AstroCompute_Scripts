@@ -224,7 +224,7 @@ y_sizeu=float(targetBox.split(',')[3])
 #rmsbox2=str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_cutout)+','+str(x_sizeu+(3./4.)*pix_shift_cutout)+','+str(y_sizel-(1./4.)*pix_shift_cutout)
 #rmsbox3=str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(1./4.)*pix_shift_cutout)+','+str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(3./4.)*pix_shift_cutout)
 #annulus region parameters
-cen_annulus='['+str(((x_sizeu-x_sizel)/2.)+x_sizel)+','+str(((y_sizeu-y_sizel)/2.)+y_sizel)+']'
+cen_annulus='['+str(((x_sizeu-x_sizel)/2.)+x_sizel)+'pix,'+str(((y_sizeu-y_sizel)/2.)+y_sizel)+'pix]'
 cen_radius='['+str(annulus_rad_inner)+'pix,'+str(annulus_rad_outer)+'pix]'
 #what unit do you want light curve
 lc_scale_unit=data_params["lc_scale_unit"]

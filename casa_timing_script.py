@@ -109,10 +109,17 @@ outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(in
 # dataPath contains the path and filename in which data file will be saved.
 # This script can be run on several epochs of data from the same observation without changing this path.
 # In this case the data file will be appended each time.
-dataPath = path_dir+'data_products/datafile_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec.txt'
+dataPath = \
+    os.path.join(path_dir,'data_products/datafile_'+target+'_'+refFrequency +
+                 '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
+                 str(intervalSizeS)+'sec.txt')
 
 #make output directory (within data_products directory)--> done in initial clean, but check if didn't run that
-if not os.path.isdir(path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'):
+if not os.path.isdir(os.path.join(path_dir,
+                                  'data_products/images_'+target+'_' +
+                                  refFrequency+'_'+str(intervalSizeH) +
+                                  'hours'+str(intervalSizeM)+'min' +
+                                  str(intervalSizeS)+'sec')):
 	mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 	mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 	mkdir_perm2='sudo chmod -R 777 '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
@@ -121,56 +128,58 @@ if not os.path.isdir(path_dir+'data_products/images_'+target+'_'+refFrequency+'_
 	os.system(mkdir_perm2)
 
 #Object detection file-->output from Aegean_ObjDet.py
-tables=outputPath+label+'whole_dataset_objdet_comp.tab'
+tables = outputPath+label+'whole_dataset_objdet_comp.tab'
 
 '''FLAGS'''
-#flag to run object detection
-runObj=data_params["runObj"]
-#Is the data set large enough that you only want to save a cutout?
-#If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval
-#If cutout='T' & big_data='F' --> clean all, fit all, then delete.
-#If cutout='F' & big_data='F' --> clean all full size, fit all full size, no delete
-cutout=data_params["cutout"]
-big_data=data_params["big_data"]
+# flag to run object detection
+runObj = data_params["runObj"]
+# Is the data set large enough that you only want to save a cutout?
+# If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval
+# If cutout='T' & big_data='F' --> clean all, fit all, then delete.
+# If cutout='F' & big_data='F' --> clean all full size, fit all full size, no delete
+cutout = data_params["cutout"]
+big_data = data_params["big_data"]
 # Clean can be toggled on/off here (T/F).
-runClean =data_params["runClean"]
-#optimize cleaning
-opt_clean=data_params["opt_clean"]
-#do you want to fix parameters in fits from full data set fit? (T of F)
-fix_pos=data_params["fix_pos"]
-#if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
-do_monte=data_params["do_monte"]
-#do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
-integ_fit=data_params["integ_fit"]
-#do you want to do uv fitting (T or F) as well?
-#Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy);
-uv_fit=data_params["uv_fit"]
-#if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
-do_monte_uv=data_params["do_monte_uv"]
-#fix position in UV
-uv_fix=data_params["uv_fix"]
-#If runClean=F set fit_cutout='T' if you have only cutout images but want to refit without cleaning again,
-fit_cutout=data_params["fit_cutout"]
-#define start and end time yourself
-def_times=data_params["def_times"]
+runClean = data_params["runClean"]
+# optimize cleaning
+opt_clean = data_params["opt_clean"]
+# do you want to fix parameters in fits from full data set fit? (T of F)
+fix_pos = data_params["fix_pos"]
+# if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
+do_monte = data_params["do_monte"]
+# do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
+integ_fit = data_params["integ_fit"]
+# do you want to do uv fitting (T or F) as well?
+# Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy);
+uv_fit = data_params["uv_fit"]
+# if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
+do_monte_uv = data_params["do_monte_uv"]
+# fix position in UV
+uv_fix = data_params["uv_fix"]
+# If runClean=F set fit_cutout='T' if you have only cutout images but want to refit without cleaning again,
+fit_cutout = data_params["fit_cutout"]
+# define start and end time yourself
+def_times = data_params["def_times"]
 
 '''CLEAN PARAMETERS'''
 # The clean command (line 505) should be inspected closely to ensure all arguments are appropriate before
 # running script on a new data set.
 # The following arguments will be passed to casa's clean, imfit or imstat functions:
-imageSize = [data_params["imageSize"]* 2
-if opt_clean=='T':
-	if is_power2(imageSize[0])==False:
+imageSize = [data_params["imageSize"]] * 2
+if opt_clean == 'T':
+	if not is_power2(imageSize[0]):
 		print 'Clean will run faster if image size is 2^n'
-		imageSize=[int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2)))),int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
+		imageSize = \
+            [int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2)))),
+             int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
         	print 'imagesize is now set to ', imageSize
-    	print 'imagesize remains at ',imageSize, 'due to user request'
+    	print 'imagesize remains at ', imageSize, 'due to user request'
 numberIters = data_params["numberIters"]
-cellSize = [data_params["cellSize"] * 2
+cellSize = [data_params["cellSize"]] * 2
 taylorTerms = data_params["taylorTerms"]
 myStokes = data_params["myStokes"]
-thre=data_params["thre"]
-spw_choice=data_params["spw_choice"]
+thre = data_params["thre"]
+spw_choice = data_params["spw_choice"]
 # If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
 # also need to be set if outlier file is to be used.
 # If not, set outlierFile to ''.
@@ -178,20 +187,23 @@ outlierFile = data_params["outlierFile"]
 
 
 '''OBJECT DETECTION AND SELECTION PARAMETERS'''
-if runObj=='T':
+if runObj == 'T':
     #object detection with Aegean algorithm--> Need to run initial_clean.py in CASA, and Aegean_ObjDet.py outside
     #CASA first
     src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(tables,cellSize)
-    ind=data_params["ind"]
+    ind = data_params["ind"]
     # target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
     #use with rest of script
     tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
     bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
     bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
     targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
-elif runObj=='F':
-#input target box in pixels if not running object detection
-    targetBox =data_params["targetBox"] # #'2982,2937,2997,2947'
+elif runObj == 'F':
+    # input target box in pixels if not running object detection
+    targetBox = data_params["targetBox"] # #'2982,2937,2997,2947'
+else:
+    raise ValueError("runObj must be 'T' or 'F'. Value given is ", runObj)
+
 #mask for clean based on target box
 maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 
@@ -228,7 +240,7 @@ rem_int=data_params["rem_int"]
 
 '''REFITTTING WITHOUT CLEANING PARAMETERS'''
 #make sure rms boxes are set to local.
-if fit_cutout=='T':
+if fit_cutout == 'T':
 	targetBox = str(float(targetBox.split(',')[0])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[1])-float(cut_reg.split(',')[1]))+','+str(float(targetBox.split(',')[2])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[3])-float(cut_reg.split(',')[1]))
 	cx_sizel=float(targetBox.split(',')[0])
 	cx_sizeu=float(targetBox.split(',')[2])
@@ -251,9 +263,9 @@ nsim=100
 #if fixing parameters, what parameters do you want to fix in fits? f= peak flux, x=peak x pos, y=peak y pos, a=major axis (arcsec), b=minor axis (arcsec), p=position angle (deg)
 #a, b, p convolved with beam values not deconvolved values!!!
 #format is [value,error] from fit of full data set
-if fix_pos=='T':
+if fix_pos == 'T':
     par_fix=data_params["par_fix"]
-    if runObj=='F':
+    if runObj == 'F':
     	print 'Cleaning Full Data Set-->'
     	clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
     print 'Fitting full data set in Image Plane-->'
@@ -313,7 +325,7 @@ listobsLine7 = linecache.getline(outputPath + label + 'listobs.text', 7)
 
 startTimeH = int(listobsLine7[31:33])
 startTimeM = int(listobsLine7[34:36])
-startTimeS= int(listobsLine7[37:39])
+startTimeS = int(listobsLine7[37:39])
 endTimeH = int(listobsLine7[61:63])
 endTimeM = int(listobsLine7[64:66])
 endTimeS = int(listobsLine7[67:69])
@@ -325,13 +337,15 @@ endDate = listobsLine7[49:60]
 year = startDate[7:11]
 month = startDate[3:6]
 day = startDate[0:2]
-monthInt = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}[month]
-startDateMJD = gcal2jd(year,monthInt,day)
+months = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+          'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}
+monthInt = months[month]
+startDateMJD = gcal2jd(year, monthInt, day)
 yeare = endDate[7:11]
 monthe = endDate[3:6]
 daye = endDate[0:2]
-monthInte = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}[monthe]
-endDateMJD = gcal2jd(yeare,monthInte,daye)
+monthInte = months[monthe]
+endDateMJD = gcal2jd(yeare, monthInte, daye)
 
 ####################################################################################################
 # Optional: Define start and end times manually (i.e., if only want subset of observation )
@@ -433,7 +447,8 @@ for element in range(numIntervals):
     elif float(endTimeDelta.days) != 0 and float(startTimeDelta.days)!=0:
     	timeIntervals[element] = str(date_conv2[0]) +'/'+ str(month_2) +'/'+str(str(date_conv2[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+startTimeDelta).time())) + '~' +str(date_conv2[0]) +'/'+ str(month_2) +'/'+str(str(date_conv2[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+endTimeDelta).time()))
     else:
-    	print 'Something is wrong, please review input'
+        raise Exception('Something went wrong finding time intervals,'
+                        'please review input')
 
 
 # If the remainder of observation time is greater than this # of minutes it should be used, and is appended
@@ -475,7 +490,7 @@ mjdTimes_uv=mjdTimes
 timeIntervals_uv=timeIntervals
 
 print 'Clean is starting-->'
-if runClean:
+if runClean == "T":
 	for interval, time, interval_uv, time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
 		print 'cleaning interval:', interval
         	if outlierFile == '':
@@ -611,7 +626,7 @@ if runClean:
 					os.system(comm_and2)
 
 
-if big_data=='F' or runClean==F:
+if big_data == 'F' or runClean == "F":
 	for interval, time, interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
 	    # Get beam parameters using imhead.
 

@@ -2,11 +2,9 @@
 import json
 from time import sleep, time
 
-import boto
 from boto import sqs
 
 from aws_controller.controller import WORKER_SCRIPT
-from aws_controller.utils import timestring
 from aws_controller.launch_instance import launch
 
 

@@ -67,7 +67,7 @@ def run(timestamp, param_file, aws_file):
          "SECRET": secret,
          "REGION": region,
          "RESP_QUEUE_NAME": resp_queue_name,
-         "CUSTOM_LINES": 'ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts\nsu - ubuntu -c "/usr/bin/git clone git@github.com:e-koch/AstroCompute_Scripts.git"\nexport USER="ubuntu"'}
+         "CUSTOM_LINES": 'ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts\nsu - ubuntu -c "/usr/bin/git clone git@github.com:Astroua/AstroCompute_Scripts.git"\nexport USER="ubuntu"'}
 
     inst = launch(key_name=None, region=region,
                   image_id=aws_settings['image_id'],

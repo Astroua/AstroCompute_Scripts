@@ -1,0 +1,3 @@
+[submodule "aws_controller"]
+	path = aws_controller
+	url = git@github.com:Astroua/aws_controller.git

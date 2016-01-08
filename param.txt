@@ -1,13 +1,13 @@
 # example param file for initial_clean.py, Aegean_ObjDet.py, and casa_timing_script.py
 ##common to all 3 scripts
 target = 'V404Cyg'
-obsDate = '2015jun22' 
+obsDate = '2015jun22'
 refFrequency ='21GHz'
 intervalSizeH = 0
-intervalSizeM = 2
-intervalSizeS = 0
-visibility = 'swj17_jun22_B_K_k21.ms'
-visibility_uv='swj17_jun22_B_K_k21.ms'
+intervalSizeM = 0
+intervalSizeS = 2
+visibility = 'v404_jun22_B_Cc7_bp.ms'
+visibility_uv='v404_jun22_B_Cc7_bp.ms'
 imageSize = 6000
 numberIters = 5000
 cellSize = '0.02arcsec'
@@ -30,7 +30,7 @@ cutout='T'
 pix_shift_cutout=20
 big_data='T'
 outlierFile=''
-runClean=True
+runClean='T'
 fit_cutout='F'
 fix_pos='T'
 do_monte='F'
@@ -38,7 +38,7 @@ nsim=100
 par_fix='xyabp'
 integ_fit='B'
 uv_fit='F'
-do_monte_uv='F' 
+do_monte_uv='F'
 uv_fix='F'
 stokes_param='I'#for uv fit
 def_times='F'

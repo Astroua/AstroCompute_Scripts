@@ -80,7 +80,7 @@ def run(timestamp, param_file, aws_file):
     # Wait for return message
     # Total wait time set to 1 day
     time_max = 3600 * 24
-    time_wait = 600
+    time_wait = 200
     t0 = time()
     while time() < t0 + time_max:
         update = inst.update()
@@ -118,6 +118,9 @@ def json_message(params, proc_name):
     '''
 
     # Commands to run
+    chmod_cmd = \
+        "chmod -R 777 /home/ubuntu/data/" + params['visibility']
+
     timing_cmd = \
         "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
         "--logfile data_products/" + proc_name + "_timing.log -c "\
@@ -128,7 +131,7 @@ def json_message(params, proc_name):
     if params['runObj'] == "T":
         clean_cmd = \
             "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
-            "--logfile data_products/" + proc_name + "_timing.log -c "\
+            "--logfile data_products/" + proc_name + "_initclean.log -c "\
             "/home/ubuntu/AstroCompute_Scripts/initial_clean.py "\
             "/home/ubuntu/data/params.txt /home/ubuntu/"
         objdet_cmd = \
@@ -137,16 +140,16 @@ def json_message(params, proc_name):
             "/home/ubuntu/data/params.txt /home/ubuntu/"
 
         # commands = [clean_cmd, objdet_cmd, timing_cmd]
-        commands = [clean_cmd]
+        commands = [chmod_cmd, clean_cmd, objdet_cmd, timing_cmd]
     else:
-        commands = [timing_cmd]
+        commands = [chmod_cmd, timing_cmd]
 
     params['proc_name'] = proc_name
     params['key_name'] = "data/*"
     params['bucket'] = proc_name
     params["command"] = commands
 
-    return json.dumps(parameters)
+    return json.dumps(params)
 
 
 if __name__ == "__main__":

@@ -16,8 +16,8 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = 'cheese'
 
-key = app.config['S3_KEY']
-secret = app.config['S3_SECRET']
+# key = app.config['S3_KEY']
+# secret = app.config['S3_SECRET']
 
 
 class MyForm(Form):
@@ -43,9 +43,9 @@ def upload(timestamp):
     if request.method == 'POST':
         data_file = request.files.get('file')
         file_name = data_file.filename
-        upload_to_s3(timestamp, file_name, create_bucket=True,
-                     aws_access={"aws_access_key_id": key,
-                                 "aws_secret_access_key": secret})
+        # upload_to_s3(timestamp, file_name, create_bucket=True,
+        #              aws_access={"aws_access_key_id": key,
+        #                          "aws_secret_access_key": secret})
 
         # return jsonify(name=file_name)
         return jsonify(name=file_name)

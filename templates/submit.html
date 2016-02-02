@@ -3,7 +3,8 @@
 
 <form method="POST" action="/">
     {{ form.csrf_token }}
-    {{ form.name.label }} {{ form.name(size=20) }}
+    {{ form.filename.label }} {{ form.filename(size=20) }}
+    {{ form.source_detect.label }} {{ form.source_detect(size=20) }}
     <input type="submit" value="Go">
 </form>
 

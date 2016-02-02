@@ -13,3 +13,6 @@ class AWSConfig(object):
     info = config.items("default")[2:]
     AWS_KEY = info[0][1]
     AWS_SECRET = info[1][1]
+
+    WTF_CSRF_ENABLED = True
+    SECRET_KEY = 'cheese'

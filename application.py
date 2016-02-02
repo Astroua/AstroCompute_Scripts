@@ -1,13 +1,12 @@
 
 
-from flask import Flask, request, redirect, url_for, \
+from flask import Flask, request, redirect, url_for, flash, \
     render_template, send_from_directory, jsonify, request
 from astropy import log
-from flask_wtf import Form
-from wtforms import StringField, BooleanField
-from wtforms.validators import DataRequired
 
 from aws_controller.upload_download_s3 import upload_to_s3
+
+from web_app import InputForm, LoginForm
 
 
 UPLOAD_FOLDER = 'uploads/'
@@ -15,14 +14,9 @@ UPLOAD_FOLDER = 'uploads/'
 app = Flask(__name__)
 app.config.from_object('config.AWSConfig')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.secret_key = 'cheese'
 
 key = app.config['AWS_KEY']
 secret = app.config['AWS_SECRET']
-
-
-class MyForm(Form):
-    name = StringField('name', validators=[DataRequired()])
 
 
 @app.route("/")
@@ -33,7 +27,7 @@ def default():
 
 @app.route('/submit', methods=('GET', 'POST'))
 def submit():
-    form = MyForm()
+    form = InputForm()
     if form.validate_on_submit():
         return redirect('/success')
     return render_template('submit.html', form=form)
@@ -49,6 +43,15 @@ def upload(timestamp):
                                  "aws_secret_access_key": secret})
 
         return jsonify(name=file_name)
+
+
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        flash("Logging in: " + form.inputid.data)
+        return redirect("/")
+    return render_template('login.html', title='Login', form=form)
 
 if __name__ == '__main__':
     log.setLevel(10)

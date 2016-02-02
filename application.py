@@ -2,6 +2,7 @@
 
 from flask import Flask, request, redirect, url_for, flash, \
     render_template, send_from_directory, jsonify, request
+from werkzeug.utils import secure_filename
 from astropy import log
 
 from aws_controller.upload_download_s3 import upload_to_s3
@@ -28,6 +29,7 @@ def default():
 @app.route('/submit', methods=('GET', 'POST'))
 def submit():
     form = InputForm()
+    form.filename(multiple="")
     if form.validate_on_submit():
         return redirect('/success')
     return render_template('submit.html', form=form)
@@ -36,8 +38,8 @@ def submit():
 @app.route('/upload', methods=['POST'])
 def upload(timestamp):
     if request.method == 'POST':
-        data_file = request.files.get('file')
-        file_name = data_file.filename
+        data_file = request.files('file')
+        file_name = secure_filename(data_file.filename)
         upload_to_s3(timestamp, file_name, create_bucket=True,
                      aws_access={"aws_access_key_id": key,
                                  "aws_secret_access_key": secret})

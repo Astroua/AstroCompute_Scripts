@@ -1176,22 +1176,22 @@ data = open(dataPath, 'w')
 for i in range(0,len(fluxDensity)):
 	if integ_fit == 'B':
 		data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
-		data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxError_real))
+		data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxError_real[i]))
 		if uv_fit == 'T':
 			data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
-			data.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real))
+			data.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
 	elif integ_fit =='T':
 		data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
-		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real))
+		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
 		if uv_fit=='T':
 			data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
-			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real))
+			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
 	elif integ_fit =='F':
 		data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
-		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real))
+		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
 		if uv_fit=='T':
 			data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
-			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real))
+			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
 data.close()
 
 ########################################################################

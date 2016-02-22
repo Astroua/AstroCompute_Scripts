@@ -99,6 +99,9 @@ label = target + '_' + refFrequency + '_' + obsDate + '_'
 intervalSizeH = data_params["intervalSizeH"]
 intervalSizeM = data_params["intervalSizeM"]
 intervalSizeS = data_params["intervalSizeS"]
+frac,whole=m.modf(intervalSizeS)
+intervalSizemicro = int(frac*(1e6))
+intervalSizeSec = int(whole)
 # Name of visibliity - should include full path if script is not being run from vis location.
 visibility = path_dir+'data/'+ data_params["visibility"]
 visibility_uv = path_dir+'data/'+ data_params["visibility"]
@@ -395,8 +398,8 @@ print '\nTotal observation time is ' + str(time.isoformat(observationDuration))
 #intervalSizeS = input('Enter length of interval (seconds) >| ')
 #
 # The interval length is converted to a datetime.timedelta object
-intervalSize = time(intervalSizeH, intervalSizeM, intervalSizeS)
-intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeS)
+intervalSize = time(intervalSizeH, intervalSizeM, intervalSizeSec,intervalSizemicro)
+intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeSec,microseconds=intervalSizemicro)
 #
 # Calculate number of intervals. This is done by converting the duration and interval size, which are both datetime.time objects, into an integer number of minutes. Integer division is then used.
 durationSeconds = (observationDuration.hour)*3600 + (observationDuration.minute)*60+(observationDuration.second)
@@ -1173,24 +1176,36 @@ for k in length:
 #Write results to data file
 #########################################################################
 data = open(dataPath, 'w')
+if integ_fit == 'B':
+	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
+elif integ_fit == 'B' and uv_fit == 'T':
+	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
+elif integ_fit=='T':
+	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
+elif integ_fit=='T' and uv_fit=='T':
+	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
+elif integ_fit=='F':
+	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
+elif integ_fit=='F' and uv_fit=='T':
+	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
 for i in range(0,len(fluxDensity)):
 	if integ_fit == 'B':
-		data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
+		#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
 		data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxError_real[i]))
 		if uv_fit == 'T':
-			data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
+			#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
 			data.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
 	elif integ_fit =='T':
-		data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
+		#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
 		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
 		if uv_fit=='T':
-			data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
+			#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
 			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
 	elif integ_fit =='F':
-		data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
+		#data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
 		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
 		if uv_fit=='T':
-			data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
+			#data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
 			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
 data.close()
 

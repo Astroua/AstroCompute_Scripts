@@ -403,12 +403,12 @@ intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, second
 #
 # Calculate number of intervals. This is done by converting the duration and interval size, which are both datetime.time objects, into an integer number of minutes. Integer division is then used.
 durationSeconds = (observationDuration.hour)*3600 + (observationDuration.minute)*60+(observationDuration.second)
-intervalSeconds = (intervalSize.hour)*3600 + (intervalSize.minute)*60 + (intervalSize.second)
+intervalSeconds = (intervalSize.hour)*3600 + (intervalSize.minute)*60 + (intervalSize.second)+(intervalSize.microsecond*1e-6)
 if intervalSeconds > durationSeconds:
     raise Exception("The observation duration (", str(durationSeconds),
                     "sec) is less than the given interval (",
                     str(intervalSeconds), "sec). Decrease the interval time.")
-numIntervals = durationSeconds / intervalSeconds
+numIntervals = int(durationSeconds / intervalSeconds)
 print numIntervals
 
 # The remaining observation time is calculated. This will be used if it is > rem_int.

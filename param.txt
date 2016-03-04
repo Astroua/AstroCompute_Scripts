@@ -15,7 +15,8 @@ taylorTerms = 1
 myStokes = 'I'
 thre ='10mJy'
 spw_choice ='0~7:5~58'
-var_anal='T'
+var_anal='F'
+power_spec='F'
 ##only for Aegean_ObjDet.py
 seed = 10
 flood = 4

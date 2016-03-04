@@ -33,6 +33,7 @@ import matplotlib.pyplot as pp
 from scipy.stats import norm
 import re
 import sys
+import astroML.time_series
 
 
 def run_aegean(tables,cellSize):
@@ -105,6 +106,21 @@ intervalSizeSec = int(whole)
 # Name of visibliity - should include full path if script is not being run from vis location.
 visibility = path_dir+'data/'+ data_params["visibility"]
 visibility_uv = path_dir+'data/'+ data_params["visibility"]
+
+''' Variability Analysis'''
+#Do you want a basic variability analysis?
+var_anal=data_params.var_anal
+power_spec=data_params.power_spec
+#Variability file name
+dataPathVar = \
+    os.path.join(path_dir,'data_products/varfile_'+target+'_'+refFrequency +
+                 '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
+                 str(intervalSizeS)+'sec.txt')
+#periodogram name
+labelP = \
+    os.path.join(path_dir,'data_products/periodogram_'+target+'_'+refFrequency +
+                 '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
+                 str(intervalSizeS)+'sec.eps')
 
 '''DIRECTORY AND FILE NAME PARAMETERS'''
 # Set path to directory where all output from this script is saved.
@@ -1281,6 +1297,45 @@ else:
 		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
 		pp.savefig(savestring)
 		print savestring, ' is saved'
+def var_analysis(flux,fluxerr):
+#chi2 and weighted mean
+   chi_tot,dof,wm,wmerr,null=chi2_calc(flux,fluxerr)
+#excess variance and fractional rms
+   var_data=np.var(flux,ddof=1)
+   rms_mean=np.sum(fluxerr**2)/len(fluxerr)
+   ex_var=(var_data)-rms_mean
+   if ex_var < 0.0:
+      ex_var='n/a'
+      print 'Variance of data much less then measurment errors'
+      frac_rms='n/a'
+      frac_rms_err='n/a'
+      ex_var_err='n/a'
+   else:
+      frac_rms=np.sqrt(ex_var/wm**2)
+      ex_var_err=np.sqrt((np.sqrt(2/len(flux))*rms_mean/wm**2)**2+(np.sqrt(rms_mean/len(flux))*2.*frac_rms/wm)**2)
+      frac_rms_err=(1./2.*frac_rms)*ex_var_err
+   return(chi_tot,dof,null,wm,wmerr,ex_var,ex_var_err,frac_rms,frac_rms_err)
+
+if var_anal=='T':
+	fluxerrvar=np.array(fluxError_real)
+	if integ_fit=='T':
+		fluxvar=np.array(fluxDensity)
+	elif integ_fit=='F':
+		fluxvar=np.array(fluxDensity2)
+	else:
+		fluxvar=np.array(fluxDensity2)
+	var_file=open(dataPathVar,'w')
+	print 'Performing Variiability Tests'
+	chi_tot,dof,null,wm,wmerr,ex_var,ex_var_error,frac_rms,frac_rms_error=var_analysis(fluxvar,fluxerrvar)
+	var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
+	var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))
+	var_file.write('{0} {1} {2}\n'.format('Excess Variance/Error',ex_var,ex_var_error))
+	var_file.write('{0} {1} {2}\n'.format('Fractional RMS/Error',frac_rms,frac_rms_error))
+	var_file.close()
+	if power_spec=='T':
+		print 'Creating Power Spectrum'
+		lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeS),labelP)
+
 #remove temp files and .last/.log files created by CASA/ipython
 os.system('rm -rf *.last')
 os.system('rm -rf *.log')

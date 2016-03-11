@@ -113,36 +113,36 @@ var_anal=data_params.var_anal
 power_spec=data_params.power_spec
 #Variability file name
 dataPathVar = \
-    os.path.join(path_dir,'data_products/varfile_'+target+'_'+refFrequency +
+    os.path.join(path_dir,'data_products/varfile_'+target+ '_' + obsDate +'_'+refFrequency +
                  '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
                  str(intervalSizeS)+'sec.txt')
 #periodogram name
 labelP = \
-    os.path.join(path_dir,'data_products/periodogram_'+target+'_'+refFrequency +
+    os.path.join(path_dir,'data_products/periodogram_'+target+ '_' + obsDate +'_'+refFrequency +
                  '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
                  str(intervalSizeS)+'sec.eps')
 
 '''DIRECTORY AND FILE NAME PARAMETERS'''
 # Set path to directory where all output from this script is saved.
-outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
+outputPath = path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
 
 # dataPath contains the path and filename in which data file will be saved.
 # This script can be run on several epochs of data from the same observation without changing this path.
 # In this case the data file will be appended each time.
 dataPath = \
-    os.path.join(path_dir,'data_products/datafile_'+target+'_'+refFrequency +
+    os.path.join(path_dir,'data_products/datafile_'+target+ '_' + obsDate +'_'+refFrequency +
                  '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
                  str(intervalSizeS)+'sec.txt')
 
 #make output directory (within data_products directory)--> done in initial clean, but check if didn't run that
 if not os.path.isdir(os.path.join(path_dir,
-                                  'data_products/images_'+target+'_' +
+                                  'data_products/images_'+target+ '_' + obsDate +'_' +
                                   refFrequency+'_'+str(intervalSizeH) +
                                   'hours'+str(intervalSizeM)+'min' +
                                   str(intervalSizeS)+'sec')):
-	mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-	mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-	mkdir_perm2='sudo chmod -R 777 '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_perm2='sudo chmod -R 777 '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 	os.system(mkdir_string)
 	os.system(mkdir_perm1)
 	os.system(mkdir_perm2)

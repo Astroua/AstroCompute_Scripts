@@ -11,4 +11,4 @@ CASA timing scripts-->All input parameters in parameter file (param.txt)
     d) Make power spectrum using generalized lomb-periodogram (Zechmeister and Kurster, 2009); implemented with
        the astroML package.
 
-Note: If you already have a target source position (i.e., target box in pixels) you can toggle off object detection (skip 1 & 2 and go directly to 3).
+Note: If you already have a target source position (i.e., target box in pixels, or your own mask image) you can toggle off object detection (skip 1 & 2 and go directly to 3).

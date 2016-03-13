@@ -1302,6 +1302,48 @@ else:
 		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
 		pp.savefig(savestring)
 		print savestring, ' is saved'
+########################
+#Basic Variability Tests
+########################
+#chi2 with weighted mean
+def errf(ampl,y,er):
+   fitf = ampl
+   return (y-fitf)/er
+def chi2_calc(flux,fluxerr):
+   we_fix=[]
+   for item in fluxerr:
+      w_fix=1/((item)**2)
+      we_fix.append(w_fix)
+   wei_fix=np.array(we_fix)
+   dof_fix=len(flux)-1
+   wm_fix=np.average(flux,weights=wei_fix)
+   un_fix=1/(np.array(we_fix).sum())
+   residual_fix=errf(wm_fix,flux,fluxerr)
+   chisquared_fix=residual_fix**2  
+   chi_tot_fix=((residual_fix**2).sum())
+   null_hyp_fix=chi2.sf(chi_tot_fix,(np.array(flux).shape[0])-1)
+   return(chi_tot_fix,dof_fix,wm_fix,un_fix,null_hyp_fix)
+	
+#generalized LS periodogram	
+def lomb_scargle(time,flux,fluxerr,interval,label):
+   secondsElapsed=[]
+   for i in range(0,len(time)):
+      secondsElapsed.append((time[i]-time[0])*24*60*60+interval/2.0)
+   omega=np.logspace(np.log10(2.*np.pi/(secondsElapsed[-1])),np.log10(2*np.pi/(2.*interval)),10000)
+   samp=1./interval
+   lsg,sig=astroML.time_series.lomb_scargle(secondsElapsed,flux,fluxerr,omega,generalized=True,significance=[0.05,0.01])
+   fig=pp.figure()
+   ax1=fig.add_subplot(111)
+   ax1.plot(omega/(2*np.pi),(lsg/samp)*(np.array(secondsElapsed).shape[0]*np.var(flux)))
+   #plt.axhline(y=sig[0],linewidth=4,ls='--',color='m')
+   #plt.axhline(y=sig[1],linewidth=4,ls='--',color='c')
+   pp.xlim(min(omega)/(2.*np.pi),max(omega)/(2.*np.pi))
+   pp.xscale("log")
+   pp.yscale("log")
+   pp.xlabel('Frequency, $\\nu$ (Hz)',size=16)
+   pp.ylabel('Power (mJy^2/Hz)',size=16)
+   pp.savefig(label)
+
 def var_analysis(flux,fluxerr):
 #chi2 and weighted mean
    chi_tot,dof,wm,wmerr,null=chi2_calc(flux,fluxerr)

@@ -224,9 +224,14 @@ elif runObj == 'F':
 else:
     raise ValueError("runObj must be 'T' or 'F'. Value given is ", runObj)
 
-#mask for clean based on target box
-maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
-
+#mask for clean based on target box or mask file for complicated fields
+mask_option=data_params["mask_option"]
+if mask_option == 'box':
+	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
+elif mask_option == 'file':
+	maskPath = data_params["mask_file"]
+else:
+	raise ValueError("mask_option must be 'box' or 'file'. Value given is ", mask_option)
 '''IMAGE PRODUCT PARAMETERS: CUTOUT AND RMS/ERROR IN IMAGE PLANE HANDLING'''
 #define rms boxes for realistic error calculation
 #pix_shift_cutout is how many pixels past target bx you want in cutout images rms calculation
@@ -640,13 +645,13 @@ if runClean == "T":
 					else:
 						print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
 	    			if cutout== 'T':#and os.path.exists(outputPath+label+intervalString+imSuffix):box=rmsbox1
-	    				immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp.image')
-					immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms.image')
+	    				immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
+					immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
 					#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
 					#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
 
 					comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
-					comm_and2='mv '+outputPath+label+intervalString+'_temp.image '+outputPath+label+intervalString+'.image'
+					comm_and2='mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix
 					os.system(comm_and1)
 					os.system(comm_and2)
 

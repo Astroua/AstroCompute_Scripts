@@ -15,6 +15,8 @@ taylorTerms = 1
 myStokes = 'I'
 thre ='10mJy'
 spw_choice ='0~7:5~58'
+mask_option ='box'#box for target box, file for mask file
+mask_file=''
 var_anal='F'
 power_spec='F'
 ##only for Aegean_ObjDet.py

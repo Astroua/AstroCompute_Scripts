@@ -109,8 +109,8 @@ visibility_uv = path_dir+'data/'+ data_params["visibility"]
 
 ''' Variability Analysis'''
 #Do you want a basic variability analysis?
-var_anal=data_params.var_anal
-power_spec=data_params.power_spec
+var_anal=data_params["var_anal"]
+power_spec=data_params["power_spec"]
 #Variability file name
 dataPathVar = \
     os.path.join(path_dir,'data_products/varfile_'+target+ '_' + obsDate +'_'+refFrequency +
@@ -238,11 +238,12 @@ else:
 if mask_option == 'box':
 	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 elif mask_option == 'file':
-	maskPath = data_params["mask_file"]
+	maskPath = path_dir+'data/'+data_params["mask_file"]
 elif mask_option == 'aegean':
 	maskPath='aegean_mask.txt'
 else:
 	raise ValueError("mask_option must be 'box' or 'file'. Value given is ", mask_option)
+
 '''IMAGE PRODUCT PARAMETERS: CUTOUT AND RMS/ERROR IN IMAGE PLANE HANDLING'''
 #define rms boxes for realistic error calculation
 #pix_shift_cutout is how many pixels past target bx you want in cutout images rms calculation

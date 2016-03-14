@@ -214,6 +214,14 @@ if runObj == 'T':
     ind = data_params["ind"]
     # target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
     #use with rest of script
+    mask_file_OD=open('aegean_mask.txt','w')
+    for i in range(0,len(src_l)):
+    	pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(i)-1]+' '+dec_l[int(i)-1])
+    	bbox_halfwidth=np.sqrt((min_l[int(i)-1]*np.cos(pos_l[int(i)-1]))**2+(min_l[int(i)-1]*np.sin(pos_l[int(i)-1]))**2)+3
+    	bbox_halfheight=np.sqrt((maj_l[int(i)-1]*np.cos(pos_l[int(i)-1]+(np.pi/2.)))**2+(maj_l[int(i)-1]*np.sin(pos_l[int(i)-1]+(np.pi/2.)))**2)+3
+    	Box = str(pos[0]-bbox_halfwidth)+','+ str(pos[1]-bbox_halfheight)+','+str(pos[0]+bbox_halfwidth)+','+ str(pos[1]+bbox_halfheight)
+    	mask_file_OD.write('{0}\n'.format(Box))
+    mask_file_OD.close()
     tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
     bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
     bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
@@ -230,6 +238,8 @@ if mask_option == 'box':
 	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 elif mask_option == 'file':
 	maskPath = data_params["mask_file"]
+elif mask_option == 'aegean':
+    maskPath='aegean_mask.txt'
 else:
 	raise ValueError("mask_option must be 'box' or 'file'. Value given is ", mask_option)
 '''IMAGE PRODUCT PARAMETERS: CUTOUT AND RMS/ERROR IN IMAGE PLANE HANDLING'''

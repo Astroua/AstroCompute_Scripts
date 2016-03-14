@@ -207,6 +207,7 @@ outlierFile = data_params["outlierFile"]
 
 
 '''OBJECT DETECTION AND SELECTION PARAMETERS'''
+mask_option=data_params["mask_option"]
 if runObj == 'T':
     #object detection with Aegean algorithm--> Need to run initial_clean.py in CASA, and Aegean_ObjDet.py outside
     #CASA first
@@ -226,6 +227,7 @@ if runObj == 'T':
     bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
     bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
     targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
+    mask_option='aegean'
 elif runObj == 'F':
     # input target box in pixels if not running object detection
     targetBox = data_params["targetBox"] # #'2982,2937,2997,2947'
@@ -233,13 +235,12 @@ else:
     raise ValueError("runObj must be 'T' or 'F'. Value given is ", runObj)
 
 #mask for clean based on target box or mask file for complicated fields
-mask_option=data_params["mask_option"]
 if mask_option == 'box':
 	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 elif mask_option == 'file':
 	maskPath = data_params["mask_file"]
 elif mask_option == 'aegean':
-    maskPath='aegean_mask.txt'
+	maskPath='aegean_mask.txt'
 else:
 	raise ValueError("mask_option must be 'box' or 'file'. Value given is ", mask_option)
 '''IMAGE PRODUCT PARAMETERS: CUTOUT AND RMS/ERROR IN IMAGE PLANE HANDLING'''
@@ -792,12 +793,12 @@ if big_data == 'F' or runClean == "F":
 		else:
 			print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
 	    if cutout== 'T':
-		immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp.image')
-		immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms.image')
+		immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
+		immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
 		#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
 		#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
 		comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
-		comm_and2='mv '+outputPath+label+intervalString+'_temp.image '+outputPath+label+intervalString+'.image'
+		comm_and2='mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix
 		os.system(comm_and1)
 		os.system(comm_and2)
 

@@ -1,6 +1,12 @@
 # AstroCompute CASA Scripts
 A collection of python scripts to create high time resolution light curves from calibrated interferometric data sets. These scripts run in the Common Astronomy Software Application (CASA; http://casa.nrao.edu) and have been tested with VLA, SMA and NOEMA data sets.
-##Description of scripts
+
+## Links for importing data into CASA
+VLA: Can be downloaded from archive in CASA format.
+SMA: Can be calibrated in CASA. Follow instructions at https://www.cfa.harvard.edu/sma/casa for reduction details and details on how to convert to a CASA MS data set for use by these scripts
+NOEMA: Must be calibrated beforehand. Follow instructions at http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf to convert to a CASA MS data set for use by these scripts.
+
+###Description of scripts
 1. **initial_clean.py**: intended to be run first within CASA to CLEAN whole data set and make a fits image for object detection.
 2. **Aegean_ObjDet.py**: intended to be run second outside CASA to detect objects in the whole data set fits image
    * Data file of detected object properties that is read in casa_timing_script.py is output
@@ -17,7 +23,7 @@ A collection of python scripts to create high time resolution light curves from 
        the astroML package.
 
 
-###Additional Notes
+####Additional Notes
 If you already have a target source position (i.e., target box in pixels, or your own mask image) you can toggle off object detection (skip 1 & 2 and go directly to 3).
 
 ####

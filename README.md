@@ -2,9 +2,9 @@
 A collection of python scripts to create high time resolution light curves from calibrated interferometric data sets. These scripts run in the Common Astronomy Software Application (CASA; http://casa.nrao.edu) and have been tested with VLA, SMA and NOEMA data sets.
 
 ## Links for importing data into CASA
-VLA: Can be downloaded from archive in CASA format.
-SMA: Can be calibrated in CASA. Follow instructions at https://www.cfa.harvard.edu/sma/casa for reduction details and details on how to convert to a CASA MS data set for use by these scripts
-NOEMA: Must be calibrated beforehand. Follow instructions at http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf to convert to a CASA MS data set for use by these scripts.
+* VLA: Can be downloaded from archive in CASA format.
+* SMA: Can be calibrated in CASA. Follow instructions at https://www.cfa.harvard.edu/sma/casa for reduction details and details on how to convert to a CASA MS data set for use by these scripts
+* NOEMA: Must be calibrated beforehand. Follow instructions at http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf to convert to a CASA MS data set for use by these scripts.
 
 ###Description of scripts
 1. **initial_clean.py**: intended to be run first within CASA to CLEAN whole data set and make a fits image for object detection.

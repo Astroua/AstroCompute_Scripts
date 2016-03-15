@@ -1,5 +1,5 @@
 # AstroCompute CASA Scripts
-##All input parameters are in the parameter file (param.txt), and need to be carefully considered and changed for each new data set. A complete description of each parameter is provided in param_example.txt.
+##All input parameters are in the parameter file (param.txt), and need to be carefully considered and changed for each new data set. A complete description of each parameter is provided in param_description.txt.
 
 1. Run **initial_clean.py** first within CASA to CLEAN whole data set and make a fits image for object detection.
 2. Run **Aegean_ObjDet.py** outside CASA to detect objects in fits image (recommended default parameters are seed=5, flood=4, output is:

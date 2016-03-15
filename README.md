@@ -15,6 +15,8 @@ A collection of python scripts to create high time resolution light curves from 
       * Calculate fractional RMS (Vaughn et al. 2003; Bell et al., 2015), and
       * Make power spectrum using generalized lomb-periodogram (Zechmeister and Kurster, 2009); implemented with
        the astroML package.
+
+
 ###Additional Notes
 If you already have a target source position (i.e., target box in pixels, or your own mask image) you can toggle off object detection (skip 1 & 2 and go directly to 3).
 

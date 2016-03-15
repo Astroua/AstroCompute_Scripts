@@ -1,33 +1,33 @@
-# example param file for initial_clean.py, Aegean_ObjDet.py, and casa_timing_script.py
+#param file for initial_clean.py, Aegean_ObjDet.py, and casa_timing_script.py
 ##common to all 3 scripts
-target = 'V404Cyg'
-obsDate = '2015jun22'
-refFrequency ='21GHz'
+target = ''
+obsDate = ''
+refFrequency ='GHz'
 intervalSizeH = 0
 intervalSizeM = 0
-intervalSizeS = 2
-visibility = 'v404_jun22_B_Cc7_bp.ms'
-visibility_uv='v404_jun22_B_Cc7_bp.ms'
-imageSize = 6000
+intervalSizeS = 30
+visibility = 'target_date_band.ms'
+visibility_uv='target_date_band.ms'
+imageSize = 1024
 numberIters = 5000
-cellSize = '0.02arcsec'
+cellSize = '0.1arcsec'
 taylorTerms = 1
 myStokes = 'I'
-thre ='10mJy'
-spw_choice ='0~7:5~58'
-mask_option ='box'#box for target box, file for mask file, aegean when run obj det
+thre ='1mJy'
+spw_choice =''
+mask_option =''
 mask_file=''
 var_anal='F'
 power_spec='F'
 ##only for Aegean_ObjDet.py
-seed = 10
+seed = 5
 flood = 4
 tele = 'VLA'
 lat=''#only set if not on list in scope2lat func of aegean.py
 ##only for casa_timing_script.py
 runObj='T'
 ind=1#only set if doing OD
-targetBox='2982,2937,2997,2947'#only set if not doing OD
+targetBox=''#only set if not doing OD
 annulus_rad_inner=10
 annulus_rad_outer=20
 cutout='T'
@@ -44,7 +44,7 @@ integ_fit='B'
 uv_fit='F'
 do_monte_uv='F'
 uv_fix='F'
-stokes_param='I'#for uv fit
+stokes_param='I'
 def_times='F'
 startTimeH=''#only set if def_times='T'
 startTimeM=''#only set if def_times='T'

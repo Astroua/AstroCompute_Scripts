@@ -12,7 +12,6 @@ A collection of python scripts to create high time resolution light curves from 
    * Data file of detected object properties that is read in casa_timing_script.py is output
    * Detected object positions are printed to terminal (target object number needs to be set in parameter file; ind=1)
 3. **casa_timing_script.py**: intended to be run within CASA. This script does all the hard work.
-   * All input parameters are in the parameter file (param.txt), a complete description of each parameter is provided in param_description.txt.
    * All parameters need to be carefully considered and changed for each new data set.
    * If you have a complicated field with other sources it is recommended that you use your own mask file (with clean boxes     around bright sources; mask_option='file') for cleaning, or run object detection, which will create a mask file with a       boxed region around each detected source (mask_option='aegean').
    * Included in casa_timing_script.py is the option to run basic variability analysis:
@@ -22,6 +21,9 @@ A collection of python scripts to create high time resolution light curves from 
       * Make power spectrum using generalized lomb-periodogram (Zechmeister and Kurster, 2009); implemented with
        the astroML package.
 
+###User Parameters
+* All input parameters are set in the parameter file (param.txt)
+* A complete description of each parameter is provided in param_description.txt.
 
 ###Additional Notes
 If you already have a target source position (i.e., target box in pixels, or your own mask image) you can toggle off object detection (skip 1 & 2 and go directly to 3).

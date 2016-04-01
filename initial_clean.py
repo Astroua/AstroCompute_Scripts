@@ -1,16 +1,12 @@
-############################################################################################################
-#CASA script #1-->initial CLEAN of FUll data set
-#Input: Calibrated and Split MS
-#Output: Cleaned and deconvolved CASA image (.image,.flux,.psf,.residual,.mask,.model) & fits image
-#Note: This script is theoretically compatible with any data that can be imported
-#into CASA, but has only been tested on continuum data from the VLA, SMA, and NOEMA
-#(import NOEMA data into CASA: http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf).
-#############################################################################################################
-#Written by A. Tetarenko--> 10/2015
-#############################################################################################################
+'''CASA script #1-->initial CLEAN of FUll data set
+Input: Calibrated and Split MS
+Output: Cleaned and deconvolved CASA image (.image,.flux,.psf,.residual,.mask,.model) & fits image
+Note: This script is theoretically compatible with any data that can be imported
+into CASA.
+Written by A. Tetarenko'''
+
 #Import modules
 #
-
 import os
 import sys
 
@@ -25,9 +21,11 @@ param_file = sys.argv[-2]
 #USER INPUT SECTION-->read in from parameters file
 ###########################################################
 sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
-from utils import load_json
+from utils import load_json,convert_param_format
 
 data_params = load_json(param_file)
+#to convert txt param file to dictionary do this,
+#data_params = convert_param_format(param_file, to="dict")
 
 # Target name.
 target = data_params["target"]

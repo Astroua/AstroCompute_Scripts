@@ -1,22 +1,17 @@
-############################################################################################################
-#CASA Script #2-->Timing script
-#Input: Calibrated and Split MS
-#Output: Produces a lightcurve with a user specified time bin (plot + data file)
-#Note: This script is theoretically compatible with any data that can be imported
-#into CASA, but has only been tested on continuum data from the VLA, SMA, and NOEMA
-#(import NOEMA data into CASA: http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf).
-#############################################################################################################
-#Original version written by C. Gough (student of J. Miller-Jones)--> 09/2012
-#Last updated by A. Tetarenko--> 10/2015
-#############################################################################################################
-#Import modules
-#
-#To ensure all modules used in this script are callable:
-#1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
+'''CASA Script #2-->Timing script
+Input: Calibrated and Split MS
+Output: Produces a lightcurve with a user specified time bin (plot + data file)
+Note: This script is theoretically compatible with any data that can be imported
+into CASA
+Original version written by C. Gough; additions and updates by A. Tetarenko & E. Koch'''
+
+'''Import modules:
+To ensure all modules used in this script are callable:
+1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
 #with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils,lmfit)
-#2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
+2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
 #(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
-#3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
+3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities'''
 import tempfile
 import os
 import linecache
@@ -34,38 +29,7 @@ from scipy.stats import norm
 import re
 import sys
 import astroML.time_series
-
-
-def run_aegean(tables,cellSize):
-    '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),
-    to extract positional information on sources in field
-
-    tables: data file output form Aegean_ObjDet.py
-    cellSize: imaging parameter, arcsec/pix
-
-    return: lists of source #, RA, DEC, semi-major axis, semi-minor axis, and position angle
-    for all detected sources
-    '''
-    src_list=[]
-    ra_list=[]
-    dec_list=[]
-    maj_list=[]
-    min_list=[]
-    pos_list=[]
-    cellSize_string=cellSize[0]
-    cellSize_list=re.findall('\d+|\D+', cellSize_string)
-    cellSize0=float(cellSize_list[0]+cellSize_list[1]+cellSize_list[2])
-    with open(tables) as f:
-    	lines=f.readlines()
-    for i in range(1,len(lines)):
-    	lin_split=lines[i].split('\t')
-    	src_list.append(lin_split[0])
-    	ra_list.append(lin_split[4])#string
-    	dec_list.append(lin_split[5])#string
-    	maj_list.append(float(lin_split[14])/cellSize0)#pix
-    	min_list.append(float(lin_split[16])/cellSize0)#pix
-    	pos_list.append(float(lin_split[18]))#deg
-    return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
+from utils import convert_param_format,run_aegean,var_analysis,lomb_scargle,chi2_calc,errf
 
 ################################################################################################################
 #User Input Section and Setup-->read in from parameters file
@@ -87,7 +51,6 @@ sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
 from utils import load_json
 data_params = load_json(param_file)
 #to convert txt param file to dictionary do this,
-#from utils import convert_param_format
 #data_params = convert_param_format(param_file, to="dict")
 
 '''DATA SET PARAMETERS'''
@@ -1320,64 +1283,6 @@ else:
 ########################
 #Basic Variability Tests
 ########################
-#chi2 with weighted mean
-def errf(ampl,y,er):
-   fitf = ampl
-   return (y-fitf)/er
-def chi2_calc(flux,fluxerr):
-   we_fix=[]
-   for item in fluxerr:
-      w_fix=1/((item)**2)
-      we_fix.append(w_fix)
-   wei_fix=np.array(we_fix)
-   dof_fix=len(flux)-1
-   wm_fix=np.average(flux,weights=wei_fix)
-   un_fix=1/(np.array(we_fix).sum())
-   residual_fix=errf(wm_fix,flux,fluxerr)
-   chisquared_fix=residual_fix**2  
-   chi_tot_fix=((residual_fix**2).sum())
-   null_hyp_fix=chi2.sf(chi_tot_fix,(np.array(flux).shape[0])-1)
-   return(chi_tot_fix,dof_fix,wm_fix,un_fix,null_hyp_fix)
-	
-#generalized LS periodogram	
-def lomb_scargle(time,flux,fluxerr,interval,label):
-   secondsElapsed=[]
-   for i in range(0,len(time)):
-      secondsElapsed.append((time[i]-time[0])*24*60*60+interval/2.0)
-   omega=np.logspace(np.log10(2.*np.pi/(secondsElapsed[-1])),np.log10(2*np.pi/(2.*interval)),10000)
-   samp=1./interval
-   lsg,sig=astroML.time_series.lomb_scargle(secondsElapsed,flux,fluxerr,omega,generalized=True,significance=[0.05,0.01])
-   fig=pp.figure()
-   ax1=fig.add_subplot(111)
-   ax1.plot(omega/(2*np.pi),(lsg/samp)*(np.array(secondsElapsed).shape[0]*np.var(flux)))
-   #plt.axhline(y=sig[0],linewidth=4,ls='--',color='m')
-   #plt.axhline(y=sig[1],linewidth=4,ls='--',color='c')
-   pp.xlim(min(omega)/(2.*np.pi),max(omega)/(2.*np.pi))
-   pp.xscale("log")
-   pp.yscale("log")
-   pp.xlabel('Frequency, $\\nu$ (Hz)',size=16)
-   pp.ylabel('Power (mJy^2/Hz)',size=16)
-   pp.savefig(label)
-
-def var_analysis(flux,fluxerr):
-#chi2 and weighted mean
-   chi_tot,dof,wm,wmerr,null=chi2_calc(flux,fluxerr)
-#excess variance and fractional rms
-   var_data=np.var(flux,ddof=1)
-   rms_mean=np.sum(fluxerr**2)/len(fluxerr)
-   ex_var=(var_data)-rms_mean
-   if ex_var < 0.0:
-      ex_var='n/a'
-      print 'Variance of data much less then measurment errors'
-      frac_rms='n/a'
-      frac_rms_err='n/a'
-      ex_var_err='n/a'
-   else:
-      frac_rms=np.sqrt(ex_var/wm**2)
-      ex_var_err=np.sqrt((np.sqrt(2/len(flux))*rms_mean/wm**2)**2+(np.sqrt(rms_mean/len(flux))*2.*frac_rms/wm)**2)
-      frac_rms_err=(1./2.*frac_rms)*ex_var_err
-   return(chi_tot,dof,null,wm,wmerr,ex_var,ex_var_err,frac_rms,frac_rms_err)
-
 if var_anal=='T':
 	fluxerrvar=np.array(fluxError_real)
 	if integ_fit=='T':

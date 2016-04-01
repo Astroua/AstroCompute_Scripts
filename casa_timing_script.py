@@ -81,11 +81,14 @@ path_dir = sys.argv[-1]
 
 param_file = sys.argv[-2]
 
-#get input parameters from file
 sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
-from utils import load_json
 
+#get input parameters from file
+from utils import load_json
 data_params = load_json(param_file)
+#to convert txt param file to dictionary do this,
+#from utils import convert_param_format
+#data_params = convert_param_format(param_file, to="dict")
 
 '''DATA SET PARAMETERS'''
 # Target name

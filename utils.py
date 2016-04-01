@@ -1,6 +1,9 @@
 
 import json
 import re
+import astroML.time_series
+from scipy.stats import norm
+import matplotlib.pyplot as pp
 
 
 def convert_param_format(filename, to="json"):

@@ -1,0 +1,21 @@
+{% extends "base.html" %} {% import 'macros.html' as macros %}
+
+{% block content %}
+  <h1>Sign In</h1>
+  <form action="" method="post" name="login">
+      {{ form.hidden_tag() }}
+      <p>
+          Please enter your ID:<br>
+          {{ form.inputid(size=80) }}<br>
+          {% for error in form.inputid.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+          {% endfor %}<br>
+          Please enter your password:<br>
+          {{ form.passwd(size=80) }}<br>
+          {% for error in form.passwd.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+          {% endfor %}<br>
+      </p>
+      <p><input type="submit" value="Sign In"></p>
+  </form>
+{% endblock %}

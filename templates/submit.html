@@ -1,11 +1,61 @@
-{% extends "base.html" %} {% import 'macros.html' as macros %}
+{% extends "bootstrap/base.html" %}
+
+{% import 'macros.html' as macros %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+
 {% block content %}
 
 <form method="POST" action="/">
     {{ form.csrf_token }}
-    {{ form.filename.label }} {{ form.filename(multiple="multiple",size=20) }}
-    {{ form.source_detect.label }} {{ form.source_detect(size=20) }}
+    {{ form.hidden_tag() }}
+    {{ wtf.form_errors(form, hiddens='only') }}
+{#     {{ form.filename.label }} {{ form.filename(multiple="multiple",size=20) }}<br>
+    {{ form.source_detect.label }} {{ form.source_detect(size=20) }}<br>
+ #}
+    {# {{ wtf.quick_form(form) }}<br> #}
+
+    {{ wtf.form_field(form.filename) }}<br>
+    {{ wtf.form_field(form.source_detect) }}<br>
+    {{ wtf.form_field(form.imageSize) }}<br>
+
+    {% if form.source_detect.data %}
+        {{ form.imageSize.data }}
+{#         {{ form.numberIters.label }} {{ form.numberIters(size=10) }}<br>
+        {{ form.cellSize.label }} {{ form.cellSize(size=10) }}<br>
+        {{ form.taylorTerms.label }} {{ form.taylorTerms(size=10) }}<br>
+        {{ form.myStokes.label }} {{ form.myStokes(size=10) }}<br>
+        {{ form.thre.label }} {{ form.thre(size=10) }}<br>
+        {{ form.spw_choice.label }} {{ form.spw_choice(size=10) }}<br> #}
+    {% else %}
+        {{ form.imageSize.label }}
+{#         {{ form.imageSize.label }} {{ form.imageSize(size=10, disabled=True) }}<br>
+        {{ form.numberIters.label }} {{ form.numberIters(size=10, disabled=True) }}<br>
+        {{ form.cellSize.label }} {{ form.cellSize(size=10, disabled=True) }}<br>
+        {{ form.taylorTerms.label }} {{ form.taylorTerms(size=10, disabled=True) }}<br>
+        {{ form.myStokes.label }} {{ form.myStokes(size=10, disabled=True) }}<br>
+        {{ form.thre.label }} {{ form.thre(size=10, disabled=True) }}<br>
+        {{ form.spw_choice.label }} {{ form.spw_choice(size=10, disabled=True) }}<br> #}
+    {% endif %}
+
     <input type="submit" value="Go">
 </form>
+
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+
+    <script>
+        jQuery(document).ready(function() {
+            $("#source_detect").change(function() {
+                if ($("#source_detect").val()) {
+                    $('#imageSize').show();
+                } else {
+                    $('#imageSize').hide();
+                }
+            });
+        });
+    </script>
 
 {% endblock %}

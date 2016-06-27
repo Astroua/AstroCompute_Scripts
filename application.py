@@ -4,6 +4,7 @@ from flask import Flask, request, redirect, url_for, flash, \
     render_template, send_from_directory, jsonify, request
 from werkzeug.utils import secure_filename
 from astropy import log
+from flask_bootstrap import Bootstrap
 
 from aws_controller.upload_download_s3 import upload_to_s3
 
@@ -13,6 +14,7 @@ from web_app import InputForm, LoginForm
 UPLOAD_FOLDER = 'uploads/'
 
 app = Flask(__name__)
+Bootstrap(app)
 app.config.from_object('config.AWSConfig')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -26,12 +28,15 @@ def default():
     return render_template('index.html')
 
 
-@app.route('/submit', methods=('GET', 'POST'))
+@app.route('/submit', methods=['GET', 'POST'])
 def submit():
     form = InputForm()
     form.filename(multiple="")
-    if form.validate_on_submit():
-        return redirect('/success')
+    if request.method == "POST":
+        if form.validate_on_submit():
+            return redirect('/')
+        else:
+            return render_template('submit.html', form=form)
     return render_template('submit.html', form=form)
 
 

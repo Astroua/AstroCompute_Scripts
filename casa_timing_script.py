@@ -1,22 +1,17 @@
-############################################################################################################
-#CASA Script #2-->Timing script
-#Input: Calibrated and Split MS
-#Output: Produces a lightcurve with a user specified time bin (plot + data file)
-#Note: This script is theoretically compatible with any data that can be imported
-#into CASA, but has only been tested on continuum data from the VLA, SMA, and NOEMA
-#(import NOEMA data into CASA: http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf).
-#############################################################################################################
-#Original version written by C. Gough (student of J. Miller-Jones)--> 09/2012
-#Last updated by A. Tetarenko--> 10/2015
-#############################################################################################################
-#Import modules
-#
-#To ensure all modules used in this script are callable:
-#1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
+'''CASA Script #2-->Timing script
+Input: Calibrated and Split MS
+Output: Produces a lightcurve with a user specified time bin (plot + data file)
+Note: This script is theoretically compatible with any data that can be imported
+into CASA
+Original version written by C. Gough; additions and updates by A. Tetarenko & E. Koch'''
+
+'''Import modules:
+To ensure all modules used in this script are callable:
+1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
 #with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils,lmfit)
-#2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
+2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
 #(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
-#3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
+3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities'''
 import tempfile
 import os
 import linecache
@@ -33,38 +28,8 @@ import matplotlib.pyplot as pp
 from scipy.stats import norm
 import re
 import sys
-
-
-def run_aegean(tables,cellSize):
-    '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),
-    to extract positional information on sources in field
-
-    tables: data file output form Aegean_ObjDet.py
-    cellSize: imaging parameter, arcsec/pix
-
-    return: lists of source #, RA, DEC, semi-major axis, semi-minor axis, and position angle
-    for all detected sources
-    '''
-    src_list=[]
-    ra_list=[]
-    dec_list=[]
-    maj_list=[]
-    min_list=[]
-    pos_list=[]
-    cellSize_string=cellSize[0]
-    cellSize_list=re.findall('\d+|\D+', cellSize_string)
-    cellSize0=float(cellSize_list[0]+cellSize_list[1]+cellSize_list[2])
-    with open(tables) as f:
-    	lines=f.readlines()
-    for i in range(1,len(lines)):
-    	lin_split=lines[i].split('\t')
-    	src_list.append(lin_split[0])
-    	ra_list.append(lin_split[4])#string
-    	dec_list.append(lin_split[5])#string
-    	maj_list.append(float(lin_split[14])/cellSize0)#pix
-    	min_list.append(float(lin_split[16])/cellSize0)#pix
-    	pos_list.append(float(lin_split[18]))#deg
-    return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
+import astroML.time_series
+from utils import convert_param_format,run_aegean,var_analysis,lomb_scargle,chi2_calc,errf
 
 ################################################################################################################
 #User Input Section and Setup-->read in from parameters file
@@ -80,11 +45,13 @@ path_dir = sys.argv[-1]
 
 param_file = sys.argv[-2]
 
-#get input parameters from file
 sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
-from utils import load_json
 
+#get input parameters from file
+from utils import load_json
 data_params = load_json(param_file)
+#to convert txt param file to dictionary do this,
+#data_params = convert_param_format(param_file, to="dict")
 
 '''DATA SET PARAMETERS'''
 # Target name
@@ -99,31 +66,49 @@ label = target + '_' + refFrequency + '_' + obsDate + '_'
 intervalSizeH = data_params["intervalSizeH"]
 intervalSizeM = data_params["intervalSizeM"]
 intervalSizeS = data_params["intervalSizeS"]
+frac,whole=m.modf(intervalSizeS)
+intervalSizemicro = int(frac*(1e6))
+intervalSizeSec = int(whole)
 # Name of visibliity - should include full path if script is not being run from vis location.
 visibility = path_dir+'data/'+ data_params["visibility"]
 visibility_uv = path_dir+'data/'+ data_params["visibility"]
 
+''' Variability Analysis'''
+#Do you want a basic variability analysis?
+var_anal=data_params["var_anal"]
+power_spec=data_params["power_spec"]
+#Variability file name
+dataPathVar = \
+    os.path.join(path_dir,'data_products/varfile_'+target+ '_' + obsDate +'_'+refFrequency +
+                 '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
+                 str(intervalSizeS)+'sec.txt')
+#periodogram name
+labelP = \
+    os.path.join(path_dir,'data_products/periodogram_'+target+ '_' + obsDate +'_'+refFrequency +
+                 '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
+                 str(intervalSizeS)+'sec.eps')
+
 '''DIRECTORY AND FILE NAME PARAMETERS'''
 # Set path to directory where all output from this script is saved.
-outputPath = path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
+outputPath = path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
 
 # dataPath contains the path and filename in which data file will be saved.
 # This script can be run on several epochs of data from the same observation without changing this path.
 # In this case the data file will be appended each time.
 dataPath = \
-    os.path.join(path_dir,'data_products/datafile_'+target+'_'+refFrequency +
+    os.path.join(path_dir,'data_products/datafile_'+target+ '_' + obsDate +'_'+refFrequency +
                  '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
                  str(intervalSizeS)+'sec.txt')
 
 #make output directory (within data_products directory)--> done in initial clean, but check if didn't run that
 if not os.path.isdir(os.path.join(path_dir,
-                                  'data_products/images_'+target+'_' +
+                                  'data_products/images_'+target+ '_' + obsDate +'_' +
                                   refFrequency+'_'+str(intervalSizeH) +
                                   'hours'+str(intervalSizeM)+'min' +
                                   str(intervalSizeS)+'sec')):
-	mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-	mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-	mkdir_perm2='sudo chmod -R 777 '+path_dir+'data_products/images_'+target+'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_perm2='sudo chmod -R 777 '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 	os.system(mkdir_string)
 	os.system(mkdir_perm1)
 	os.system(mkdir_perm2)
@@ -188,6 +173,7 @@ outlierFile = data_params["outlierFile"]
 
 
 '''OBJECT DETECTION AND SELECTION PARAMETERS'''
+mask_option=data_params["mask_option"]
 if runObj == 'T':
     #object detection with Aegean algorithm--> Need to run initial_clean.py in CASA, and Aegean_ObjDet.py outside
     #CASA first
@@ -195,18 +181,34 @@ if runObj == 'T':
     ind = data_params["ind"]
     # target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
     #use with rest of script
+    mask_file_OD=open('aegean_mask.txt','w')
+    for i in range(0,len(src_l)):
+    	pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(i)-1]+' '+dec_l[int(i)-1])
+    	bbox_halfwidth=np.sqrt((min_l[int(i)-1]*np.cos(pos_l[int(i)-1]))**2+(min_l[int(i)-1]*np.sin(pos_l[int(i)-1]))**2)+3
+    	bbox_halfheight=np.sqrt((maj_l[int(i)-1]*np.cos(pos_l[int(i)-1]+(np.pi/2.)))**2+(maj_l[int(i)-1]*np.sin(pos_l[int(i)-1]+(np.pi/2.)))**2)+3
+    	Box = str(pos[0]-bbox_halfwidth)+','+ str(pos[1]-bbox_halfheight)+','+str(pos[0]+bbox_halfwidth)+','+ str(pos[1]+bbox_halfheight)
+    	mask_file_OD.write('{0}\n'.format(Box))
+    mask_file_OD.close()
     tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
     bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
     bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
     targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
+    mask_option='aegean'
 elif runObj == 'F':
     # input target box in pixels if not running object detection
     targetBox = data_params["targetBox"] # #'2982,2937,2997,2947'
 else:
     raise ValueError("runObj must be 'T' or 'F'. Value given is ", runObj)
 
-#mask for clean based on target box
-maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
+#mask for clean based on target box or mask file for complicated fields
+if mask_option == 'box':
+	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
+elif mask_option == 'file':
+	maskPath = path_dir+'data/'+data_params["mask_file"]
+elif mask_option == 'aegean':
+	maskPath='aegean_mask.txt'
+else:
+	raise ValueError("mask_option must be 'box' or 'file'. Value given is ", mask_option)
 
 '''IMAGE PRODUCT PARAMETERS: CUTOUT AND RMS/ERROR IN IMAGE PLANE HANDLING'''
 #define rms boxes for realistic error calculation
@@ -395,17 +397,17 @@ print '\nTotal observation time is ' + str(time.isoformat(observationDuration))
 #intervalSizeS = input('Enter length of interval (seconds) >| ')
 #
 # The interval length is converted to a datetime.timedelta object
-intervalSize = time(intervalSizeH, intervalSizeM, intervalSizeS)
-intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeS)
+intervalSize = time(intervalSizeH, intervalSizeM, intervalSizeSec,intervalSizemicro)
+intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeSec,microseconds=intervalSizemicro)
 #
 # Calculate number of intervals. This is done by converting the duration and interval size, which are both datetime.time objects, into an integer number of minutes. Integer division is then used.
 durationSeconds = (observationDuration.hour)*3600 + (observationDuration.minute)*60+(observationDuration.second)
-intervalSeconds = (intervalSize.hour)*3600 + (intervalSize.minute)*60 + (intervalSize.second)
+intervalSeconds = (intervalSize.hour)*3600 + (intervalSize.minute)*60 + (intervalSize.second)+(intervalSize.microsecond*1e-6)
 if intervalSeconds > durationSeconds:
     raise Exception("The observation duration (", str(durationSeconds),
                     "sec) is less than the given interval (",
                     str(intervalSeconds), "sec). Decrease the interval time.")
-numIntervals = durationSeconds / intervalSeconds
+numIntervals = int(durationSeconds / intervalSeconds)
 print numIntervals
 
 # The remaining observation time is calculated. This will be used if it is > rem_int.
@@ -434,12 +436,12 @@ for element in range(numIntervals):
     # The next element in the list is generated by adding the fractional number of days since the start
     # of the observation to the MJD start time.
     if float(endTimeDelta.days) == 0:
-    	mjdTimes[element] = startDateMJD[1] + long((datetime.min+endTimeDelta).time().hour)/24.0 + long((datetime.min+endTimeDelta).time().minute)/60.0/24.0 + long((datetime.min+endTimeDelta).time().second)/60.0/60.0/24.0
+    	mjdTimes[element] = startDateMJD[1] + long((datetime.min+endTimeDelta).time().hour)/24.0 + long((datetime.min+endTimeDelta).time().minute)/60.0/24.0 + long((datetime.min+endTimeDelta).time().second)/60.0/60.0/24.0+ long((datetime.min+endTimeDelta).time().microsecond)/60.0/60.0/24.0/(1.0e6)
     	date_conv=jd2gcal(startDateMJD[0],startDateMJD[1])
     	month_0={1: '01', 2: '02', 3: '03', 4: '04', 5: '05', 6: '06', 7: '07', 8: '08', 9: '09', 10: '10', 11: '11', 12: '12'}[date_conv[1]]
 
     else:
-    	mjdTimes[element] = endDateMJD[1] + long((datetime.min+endTimeDelta).time().hour)/24.0 + long((datetime.min+endTimeDelta).time().minute)/60.0/24.0 + long((datetime.min+endTimeDelta).time().second)/60.0/60.0/24.0
+    	mjdTimes[element] = endDateMJD[1] + long((datetime.min+endTimeDelta).time().hour)/24.0 + long((datetime.min+endTimeDelta).time().minute)/60.0/24.0 + long((datetime.min+endTimeDelta).time().second)/60.0/60.0/24.0+ long((datetime.min+endTimeDelta).time().microsecond)/60.0/60.0/24.0/(1.0e6)
     	date_conv2=jd2gcal(endDateMJD[0],endDateMJD[1])
     	month_2={1: '01', 2: '02', 3: '03', 4: '04', 5: '05', 6: '06', 7: '07', 8: '08', 9: '09', 10: '10', 11: '11', 12: '12'}[date_conv2[1]]
 
@@ -461,10 +463,10 @@ for element in range(numIntervals):
 if remainder >= rem_int:
     if float(startDateMJD[1]) != float(endDateMJD[1]):
     	timeIntervals = timeIntervals + [str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat(endTime))]
-    	mjdTimes = mjdTimes + [endDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ long(endTime.second)/24.0/60.0/60.0]
+    	mjdTimes = mjdTimes + [endDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
     else:
     	timeIntervals = timeIntervals + [str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +'/' +str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +'/' +str(time.isoformat(endTime))]
-    	mjdTimes = mjdTimes + [startDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ long(endTime.second)/24.0/60.0/60.0]
+    	mjdTimes = mjdTimes + [startDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
 
 # The results are printed for the user.
 print '\nThe observation will be divided into the following intervals: '
@@ -621,13 +623,13 @@ if runClean == "T":
 					else:
 						print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
 	    			if cutout== 'T':#and os.path.exists(outputPath+label+intervalString+imSuffix):box=rmsbox1
-	    				immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp.image')
-					immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms.image')
+	    				immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
+					immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
 					#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
 					#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
 
 					comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
-					comm_and2='mv '+outputPath+label+intervalString+'_temp.image '+outputPath+label+intervalString+'.image'
+					comm_and2='mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix
 					os.system(comm_and1)
 					os.system(comm_and2)
 
@@ -758,12 +760,12 @@ if big_data == 'F' or runClean == "F":
 		else:
 			print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
 	    if cutout== 'T':
-		immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp.image')
-		immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms.image')
+		immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
+		immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
 		#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
 		#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
 		comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
-		comm_and2='mv '+outputPath+label+intervalString+'_temp.image '+outputPath+label+intervalString+'.image'
+		comm_and2='mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix
 		os.system(comm_and1)
 		os.system(comm_and2)
 
@@ -1173,25 +1175,37 @@ for k in length:
 #Write results to data file
 #########################################################################
 data = open(dataPath, 'w')
+if integ_fit == 'B':
+	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
+elif integ_fit == 'B' and uv_fit == 'T':
+	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
+elif integ_fit=='T':
+	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
+elif integ_fit=='T' and uv_fit=='T':
+	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
+elif integ_fit=='F':
+	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
+elif integ_fit=='F' and uv_fit=='T':
+	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
 for i in range(0,len(fluxDensity)):
 	if integ_fit == 'B':
-		data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
-		data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxError_real))
+		#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
+		data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxError_real[i]))
 		if uv_fit == 'T':
-			data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
-			data.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real))
+			#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
+			data.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
 	elif integ_fit =='T':
-		data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
-		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real))
+		#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
+		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
 		if uv_fit=='T':
-			data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
-			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real))
+			#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
+			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
 	elif integ_fit =='F':
-		data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
-		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real))
+		#data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
+		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
 		if uv_fit=='T':
-			data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
-			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real))
+			#data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
+			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
 data.close()
 
 ########################################################################
@@ -1266,6 +1280,29 @@ else:
 		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
 		pp.savefig(savestring)
 		print savestring, ' is saved'
+########################
+#Basic Variability Tests
+########################
+if var_anal=='T':
+	fluxerrvar=np.array(fluxError_real)
+	if integ_fit=='T':
+		fluxvar=np.array(fluxDensity)
+	elif integ_fit=='F':
+		fluxvar=np.array(fluxDensity2)
+	else:
+		fluxvar=np.array(fluxDensity2)
+	var_file=open(dataPathVar,'w')
+	print 'Performing Variiability Tests'
+	chi_tot,dof,null,wm,wmerr,ex_var,ex_var_error,frac_rms,frac_rms_error=var_analysis(fluxvar,fluxerrvar)
+	var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
+	var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))
+	var_file.write('{0} {1} {2}\n'.format('Excess Variance/Error',ex_var,ex_var_error))
+	var_file.write('{0} {1} {2}\n'.format('Fractional RMS/Error',frac_rms,frac_rms_error))
+	var_file.close()
+	if power_spec=='T':
+		print 'Creating Power Spectrum'
+		lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeS),labelP)
+
 #remove temp files and .last/.log files created by CASA/ipython
 os.system('rm -rf *.last')
 os.system('rm -rf *.log')

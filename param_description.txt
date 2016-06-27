@@ -1,0 +1,105 @@
+#detailed explanation of all parameters in param file
+
+target: name of target source; string
+
+obsDate: observation date to distinguish between different epochs of the same source; string
+
+refFrequency: frequency band of observations; string
+
+intervalSizeX: time bin size, H is hours (integer), M is minutes (integer), S is seconds (integer or float)
+
+visibility(_uv): path to CASA MS; string
+
+imageSize: image size in pixels; integer
+
+numberIters: max number iterations in clean; integer, default is 5000
+
+cellSize: cell size in arcseconds; string, 'XXarcsec'
+
+taylorTerms: number of taylor terms to use; integer, default is 1
+
+myStokes: stokes parameter; string, default is 'I'
+
+thre: cleaning threshold; string, default is '1mJy'
+
+spw_choice: spectral window selection, string
+
+mask_option: specify choice of clean mask; string, options are 'box' (just targetBox around source), 'file' (provide own
+mask file specified in mask_file parameter), or 'aegean' (box around all detected sources from Aegean script if run)
+
+mask_file: path to mask file if mask_option='file'; string
+
+var_anal: toggle to do variability analysis; string, options are 'T' or 'F'
+
+power_spec: toggle to make power spectra; string, options are 'T' or 'F'
+
+seed: seed threashold (i.e., peak pixels) for aegean in sigmas; integer, default is 5
+
+flood: flood threashold (i.e., surrounding pixels) for aegean in sigmas; integer, default is 4
+
+tele: telescope for latutude determination by aegean; string, default is 'VLA'
+
+lat: only set if not on list (VLA, SMA, NOEMA) in scope2lat func of aegean.py; string
+
+runObj: toggle to run object detection; string, options are 'T' or 'F'
+
+ind: target object index in object detection list, only set if doing object detection; 
+integer, default is 1 (i.e.brightest object)
+
+targetBox: target box in pixels, only set if not doing object detection or mask_option='box'; string ('X1,Y1,X2,Y2')
+
+annulus_rad_inner: inner radius in pixels of rms annulus for error determintion; integer, default is 10
+
+annulus_rad_outer: outer radius in pixels of rms annulus for error determintion; integer, default is 20
+
+cutout: toggle to create cutout images of each time bin; string, options are 'T' or 'F', 'T' recommended to save disk space.
+
+pix_shift_cutout: set size of cutout images if cutout='T' in pixels from target box; integer, default is 20
+
+big_data: toggle to clean, fit, cutout, delete original image for each timebin; string, options are 'T' or 'F',
+'T' is recommended to save disk space
+
+outlierFile: provide path to outlier file for clean if needed; string
+
+runClean: toggle to run clean, if off can refit a data set provided images were saved (if saved images a cutout 
+then fit_cutout must be 'T'); string, options are 'T' or 'F'
+
+fit_cutout: toggle to re-fit each time bin image with no cleaning if you saved cutout images rather then whole images:
+string, options are 'T' or 'F'
+
+fix_pos: toggle to fix position in individual images to that of whole data set fit; string, options are 'T' or 'F'
+
+do_monte: toggle to monte carlo sample position of full data set if fix_pos='T'; string, options are 'T' or 'F'
+
+nsim: number of monte carlo samples if fix_pos and do_monte are 'T'; integer, default is 100
+
+par_fix: parameters to fix in fit if fix_pos='T'; string, x (peak x pos), y (peak y pos), f (peak flux), a (major axis),
+b (minor axis), p (position angle), recommended use is 'xyabp'
+
+integ_fit: toggle to write both integrated and peak flux to data file; string, options are 'B' (both), 'T' (integrated only),
+'F' (peak only), default is 'B'
+
+uv_fit: toggle to do uv plane fitting; string, options are 'T' or 'F'
+
+do_monte_uv: toggle to monte carlo sample fixed position in uv fitting; string, options are 'T' or 'F'
+
+uv_fix: toggle to fix position in uv fitting from position of whole data set; string, options are 'T' or 'F'
+
+stokes_param: stokes parameter for uv fitting; string, default is 'I' (SMA is 'LL')
+
+def_times: toggle to manually define start and end times (next 6 params), default is start and end of observation; string,
+options are 'T' or 'F'
+
+startTimeX: manual start time in format from listobs; string, only set if def_times='T'
+
+endTimeX: manual end time in format from listobs; string, only set if def_times='T'
+
+rem_int: if remainder of obs time after divisin by time bin interval greater then this number (in minutes) it is 
+included in time intervals; integer, default is 5
+
+lc_scale_unit: unit for lightcurve flux density; string, options are '' (Jy), 'm' (mJy), 'u' (microJy), default is 'm'
+
+lc_scale_time: unit for lightcurve time; string, options are 'H' (hours), 'M' (minutes), 'S' (seconds), default is 'M'
+
+opt_clean: toggle to optimize cleanining, i.e. change image size to closest 2^n size; string, options are 'T' or 'F', 
+default is 'F'

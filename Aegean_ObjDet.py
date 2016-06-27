@@ -1,11 +1,9 @@
-##########################################################################
-# Object Detection script-->Using AEGEAN algorithm (https://github.com/PaulHancock/Aegean)
-# Input: Cleaned FITS image of whole data set
-# Output: Data file of the parameters of objects found in image
-# NOTE: Run in normal python, DO NOT RUN WITHIN CASA, it won't work.
-##########################################################################
-# Written by A. Tetarenko--> 10/2015
-##########################################################################
+'''Object Detection script-->Using AEGEAN algorithm (https://github.com/PaulHancock/Aegean)
+Input: Cleaned FITS image of whole data set
+Output: Data file of the parameters of objects found in image
+NOTE: Run in normal python, DO NOT RUN WITHIN CASA, it won't work.
+Written by A. Tetarenko'''
+
 # Import modules
 # Make sure aegean tree of directories in path so you can import it
 import sys
@@ -54,9 +52,11 @@ def run_aegean(tables, cellSize):
 # USER INPUT SECTION--> read in from parameters file
 ###########################################################
 sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
-from utils import load_json
+from utils import load_json,convert_param_format
 
 data_params = load_json(param_file)
+#to convert txt param file to dictionary do this,
+#data_params = convert_param_format(param_file, to="dict")
 
 # Target name.
 target = data_params["target"]

@@ -18,8 +18,8 @@ Bootstrap(app)
 app.config.from_object('config.AWSConfig')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-key = app.config['AWS_KEY']
-secret = app.config['AWS_SECRET']
+#key = app.config['AWS_KEY']
+#secret = app.config['AWS_SECRET']
 
 
 @app.route("/")
@@ -40,16 +40,16 @@ def submit():
     return render_template('submit.html', form=form)
 
 
-@app.route('/upload', methods=['POST'])
-def upload(timestamp):
-    if request.method == 'POST':
-        data_file = request.files('file')
-        file_name = secure_filename(data_file.filename)
-        upload_to_s3(timestamp, file_name, create_bucket=True,
-                     aws_access={"aws_access_key_id": key,
-                                 "aws_secret_access_key": secret})
+#@app.route('/upload', methods=['POST'])
+#def upload(timestamp):
+#    if request.method == 'POST':
+#        data_file = request.files('file')
+#        file_name = secure_filename(data_file.filename)
+#        upload_to_s3(timestamp, file_name, create_bucket=True,
+#                     aws_access={"aws_access_key_id": key,
+#                                 "aws_secret_access_key": secret})
 
-        return jsonify(name=file_name)
+#        return jsonify(name=file_name)
 
 
 @app.route("/login", methods=['GET', 'POST'])

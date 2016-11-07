@@ -1,7 +1,7 @@
 
 from flask_wtf import Form
 from wtforms import StringField, BooleanField, PasswordField, IntegerField, \
-    TextField, FloatField, FileField
+    TextField, FloatField, FileField, SelectMultipleField
 from wtforms.validators import DataRequired, Length, Email, Required
 
 from folder_upload import FolderField
@@ -13,15 +13,12 @@ class InputForm(Form):
                                   Length(min=6, message=(u'Email address is too short')),
                                   Email(message=(u'That is not a valid email address.'))])
     filename = FolderField('File Name', validators=[DataRequired()])
-    source_detect = BooleanField('Enable source detection', default=False)
+    source_detect = BooleanField('', default=False)
     runObj = source_detect
     target_name = StringField('Name of target', validators=[DataRequired()])
     obsdate = StringField("Observation Date", validators=[DataRequired()])
     reffreq = StringField("Reference Frequency (with units!)",
                           validators=[DataRequired()])
-
-    # visibility = 'v404_jun22_B_Cc7_bp.ms'
-    # visibility_uv='v404_jun22_B_Cc7_bp.ms'
     imageSize = IntegerField("Image size", default=6000)
     numberIters = IntegerField("Clean iterations", default=5000)
     cellSize = StringField("Cell size", default='0.02arcsec')
@@ -33,52 +30,56 @@ class InputForm(Form):
     seed = IntegerField("Aegean Seed", default=134656956)
     flood = IntegerField("Aegean flood level", default=4)
     # Define custom requirement.
-    tele = StringField("Telescope", default='VLA')
+    choice_tels=[("VLA","VLA"),("SMA","SMA"),("NOEMA","NOEMA"),("OTHER","OTHER")]
+    tele = SelectMultipleField("Telescope",choices = choice_tels, default =["VLA"])
     # only set if not on list in scope2lat func of aegean.py
-    lat = StringField("Latitude", default='')  # if no telescope given
+    lat = StringField("Latitude (specify if telescope = OTHER)", default='')  # if no telescope given
     # only for casa_timing_script.py
-    ind = IntegerField("Nth detection to run timing on",
-                       default=1)
+    #ind = IntegerField("Nth detection to run timing on",
+    #                   default=1) **enable multiple objects later**
 
     # only set if not doing OD
-    targetBox = StringField("Box around object",
+    mask_option = BooleanField('', default=False)
+    targetBox = StringField("Size of box around object (pixels)",
                             default='2982,2937,2997,2947')
 
     # Annulus size to define source vs. bkg properties
-    annulus_rad_inner = FloatField("Inner radius", default=10.)
-    annulus_rad_outer = FloatField("Outer radius", default=20.)
+    annulus_rad_inner = FloatField("Inner annulus radius (pixels)", default=10.)
+    annulus_rad_outer = FloatField("Outer annulus radius (pixels)", default=20.)
 
     # Run timing script on cutout of image.
     cutout = BooleanField("Cutout region around object", default=True)
-    pix_shift_cutout = IntegerField("Pix shift???", default=20)
+    pix_shift_cutout = IntegerField("Size of cutout image (pixels from target box)", default=20)
 
     # Define an internal parameter for "big data"
-    big_data = 'T'
+    big_data = BooleanField('delete original image to save space?', default=True)
 
     outlierFile = FileField("Clean outlier file")
 
     # Why does this need to be set? Or can you also feed it an image?
-    runClean = 'T'
+    runClean = BooleanField('run clean?', default=True)
 
-    fit_cutout = 'F'
-    fix_pos = 'T'
+    #why is this here?
+    fit_cutout = BooleanField('re-fit each time bin image with no cleaning?', default=False)
+
+    fix_pos = BooleanField('fix position in individual images?', default=True)
 
     # Monte Carlo settings
-    do_monte = BooleanField("Monte Carlo analysis", default=False)
+    do_monte = BooleanField("Use monte carlo sample position of full data set", default=False)
     nsim = IntegerField("Monte Carlo iterations", default=100)
 
     # Unsure
-    par_fix = 'xyabp'
-    integ_fit = 'B'
-    uv_fit = 'F'
-    do_monte_uv = 'F'
-    uv_fix = 'F'
+    #par_fix = 'xyabp' wtf alex??
+    #integ_fit = 'B' wtf alex?? if you want a lsit of options use SelectMultipleField?
+    uv_fit = BooleanField("uv plane fitting??", default=False)
+    do_monte_uv = BooleanField("monte carlo sample fixed position in uv fitting?", default=False)
+    uv_fix = BooleanField("fix position in uv fitting?", default=False)
 
     # for uv fit
-    stokes_param = StringField("UV multifit Stokes param", default='I')
+    stokes_param = StringField("stokes parameter for uv fitting", default='I')
 
     # Set time periods to fit.
-    def_times = BooleanField("Define start and stop times to fit",
+    def_times = BooleanField("Manually define start and stop times to fit to:",
                              default=False)
 
     # Interval sizes
@@ -94,14 +95,16 @@ class InputForm(Form):
     endTimeM = StringField("Minute End Time", default='')
     endTimeS = StringField("Second End Time", default='')
 
-    # This doesn't appear to be used in the timing scripts.
-    rem_int = 5
+    # check amount of remaining time after dividing time bins
+    rem_int = IntegerField("if remaining time >, include in time intervals", default=5)
 
     # Time units
-    lc_scale_unit = 'm'
-    lc_scale_time = 'M'
+    choice_units_f=[("","Jy"),("m","mJy"),("u","uJy")]
+    choice_units_t=[("H","hours"),("M","minutes"),("S","seconds")]
+    lc_scale_unit = SelectMultipleField("Flux Units",choices = choice_units_f, default =["m"])
+    lc_scale_time = SelectMultipleField("Time Units",choices = choice_units_t, default =["M"])
 
-    opt_clean = StringField("Optimize clean parameters", default='F')
+    opt_clean = StringField("Optimize clean parameters", default='F') #wtf alex??
 
 
 class LoginForm(Form):

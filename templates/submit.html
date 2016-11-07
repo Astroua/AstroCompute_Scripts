@@ -5,9 +5,9 @@
 
 
 {% block content %}
-
+<p><font size="+3">Input Form</font></p>
 <form method="POST" action="/">
-    {{ form.csrf_token }}
+    {#{{ form.csrf_token }}#}
     {{ form.hidden_tag() }}
     {{ wtf.form_errors(form, hiddens='only') }}
 {#     {{ form.filename.label }} {{ form.filename(multiple="multiple",size=20) }}<br>
@@ -15,20 +15,73 @@
  #}
     {# {{ wtf.quick_form(form) }}<br> #}
 
-    {{ wtf.form_field(form.filename) }}<br>
-    {{ wtf.form_field(form.source_detect) }}<br>
-    {{ wtf.form_field(form.imageSize) }}<br>
+    
+    <div class="boxed" style=" width:400px; margin-left: 40px;">
+    {{ wtf.form_field(form.email) }}
+    <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
+    <font size="+3"><u>Data Options</u></font><br><br>
+    {{ wtf.form_field(form.filename) }}
+    {{ wtf.form_field(form.target_name) }}
+    {{ wtf.form_field(form.obsdate) }}
+    {{ wtf.form_field(form.reffreq) }}
+    {{ wtf.form_field(form.intervalSizeH) }}
+    {{ wtf.form_field(form.intervalSizeM) }}
+    {{ wtf.form_field(form.intervalSizeS) }}
+    {{ wtf.form_field(form.rem_int) }}
+    {{ wtf.form_field(form.def_times) }}
+    start = hour: {{ form.startTimeH(size=3) }}, minute: {{ form.startTimeM(size=3) }}, second: {{form.startTimeS(size=3) }}<br>
+    end = hour: {{ form.endTimeH(size=3) }}, minute: {{ form.endTimeM(size=3) }}, second: {{form.endTimeS(size=3) }}
+    <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
+    <font size="+3"><u>Object Detection Options</u></font><br><br>
+    <font size="+2">{{ form.mask_option }} Use Mask File (recommended)</font><br>
+    {{ wtf.form_field(form.targetBox) }}
+    {{ wtf.form_field(form.annulus_rad_inner) }}
+    {{ wtf.form_field(form.annulus_rad_outer) }}
+    <br><font size="+2"> OR</font> <br><br>
+    <font size="+2">{{ form.source_detect }} Use Aegean Algorithm</font><br>
+    {{ wtf.form_field(form.tele) }}
+    {{ wtf.form_field(form.lat) }}
+    {{ wtf.form_field(form.seed) }}
+    {{ wtf.form_field(form.flood) }}
+    <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
+    <font size="+3"><u>Imaging Parameters</u></font><br><br>
+    <font size="+2">{{ form.runClean }} (a) Clean Options</font><br>
+    {{ wtf.form_field(form.outlierFile) }}
+    {{ wtf.form_field(form.imageSize) }}
+    {{ wtf.form_field(form.numberIters) }}
+    {{ wtf.form_field(form.cellSize) }}
+    {{ wtf.form_field(form.taylorTerms) }}
+    {{ wtf.form_field(form.myStokes) }}
+    {{ wtf.form_field(form.thre) }}
+    {{ wtf.form_field(form.spw_choice) }}
+    <font size="+2">{{ form.cutout }} (b) Cutout Options</font><br>
+    {{ wtf.form_field(form.pix_shift_cutout) }}
+    {{ wtf.form_field(form.big_data) }}
+    <font size="+2">{{ form.fix_pos }} (c) Position Options</font><br>
+    {{ wtf.form_field(form.do_monte) }} with {{ form.nsim(size=5) }} iterations<br><br>
+    <font size="+2">{{ form.uv_fit }} (d) UV Fitting</font><br>
+    {{ wtf.form_field(form.do_monte_uv) }}
+    {{ wtf.form_field(form.uv_fix) }}
+    {{ wtf.form_field(form.stokes_param) }}
+    <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
+    <font size="+3"><u>Light Curve Parameters</u></font><br><br>
+    {{ wtf.form_field(form.lc_scale_unit) }}
+    {{ wtf.form_field(form.lc_scale_time) }}
+    <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
+    </div>
 
-    {% if form.source_detect.data %}
-        {{ form.imageSize.data }}
+
+
+{#    {% if form.source_detect.data %}
+        {{ form.imageSize.data }}#}
 {#         {{ form.numberIters.label }} {{ form.numberIters(size=10) }}<br>
         {{ form.cellSize.label }} {{ form.cellSize(size=10) }}<br>
         {{ form.taylorTerms.label }} {{ form.taylorTerms(size=10) }}<br>
         {{ form.myStokes.label }} {{ form.myStokes(size=10) }}<br>
         {{ form.thre.label }} {{ form.thre(size=10) }}<br>
         {{ form.spw_choice.label }} {{ form.spw_choice(size=10) }}<br> #}
-    {% else %}
-        {{ form.imageSize.label }}
+{#    {% else %}
+        {{ form.imageSize.label }}#}
 {#         {{ form.imageSize.label }} {{ form.imageSize(size=10, disabled=True) }}<br>
         {{ form.numberIters.label }} {{ form.numberIters(size=10, disabled=True) }}<br>
         {{ form.cellSize.label }} {{ form.cellSize(size=10, disabled=True) }}<br>
@@ -36,9 +89,10 @@
         {{ form.myStokes.label }} {{ form.myStokes(size=10, disabled=True) }}<br>
         {{ form.thre.label }} {{ form.thre(size=10, disabled=True) }}<br>
         {{ form.spw_choice.label }} {{ form.spw_choice(size=10, disabled=True) }}<br> #}
-    {% endif %}
+{#    {% endif %}#}
 
-    <input type="submit" value="Go">
+<input type="submit" value="Go">
+
 </form>
 
 {% endblock %}

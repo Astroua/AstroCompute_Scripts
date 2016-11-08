@@ -38,7 +38,7 @@ try:
 
     print("Uploading at: " + human_time())
     upload_to_s3(params['target'].lower() + "_" + start_time,
-                 '/media/eric/Data_3/VLA/V404/v404_jun22_B_Cc7_bp.ms',
+                 '/Users/atetarenk/Desktop/AstroCompute_Nov/v404_jun22_B_Cc7_bp.ms',
                  key_prefix="data/", create_bucket=True)
 
     time.sleep(10)
@@ -51,7 +51,7 @@ try:
     print("Downloading results at: " + human_time())
     download_from_s3("data_products/*",
                      params['target'].lower() + "_" + start_time,
-                     output_dir="/media/eric/Data_3/VLA/V404/")
+                     output_dir="/Users/atetarenk/Desktop/AstroCompute_Nov/")
 
 except Exception as e:
     print("Failed at " + human_time())

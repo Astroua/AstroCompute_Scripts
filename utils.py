@@ -139,7 +139,7 @@ def chi2_calc(flux,fluxerr):
    return(chi_tot_fix,dof_fix,wm_fix,un_fix,null_hyp_fix)
 	
 def lomb_scargle(time,flux,fluxerr,interval,label):
-   '''Generalized LS periodogram (Note: Power is normalized according to Scargle, J.D. 1982, ApJ 263:835-853)
+   '''Generalized LS periodogram (Note: Power is normalized between 0 and 1)
    
    time: MJD array
    flux: flux array
@@ -158,16 +158,16 @@ def lomb_scargle(time,flux,fluxerr,interval,label):
    lsg,sig=astroML.time_series.lomb_scargle(secondsElapsed,flux,fluxerr,omega,generalized=True,significance=[0.05,0.01])
    fig=pp.figure()
    ax1=fig.add_subplot(111)
-   ax1.plot(omega/(2*np.pi),(lsg)*((np.array(secondsElapsed).shape[0]-1)/2.))
-   #plt.axhline(y=sig[0],linewidth=4,ls='--',color='m')
-   #plt.axhline(y=sig[1],linewidth=4,ls='--',color='c')
+   ax1.plot(omega/(2*np.pi),(lsg))
+   plt.axhline(y=sig[0],linewidth=4,ls='--',color='m')
+   plt.axhline(y=sig[1],linewidth=4,ls='--',color='c')
    pp.xlim(min(omega)/(2.*np.pi),max(omega)/(2.*np.pi))
-   pp.xscale("log")
-   pp.yscale("log")
+   #pp.xscale("log")
+   #pp.yscale("log")
    pp.xlabel('Frequency, $\\nu$ (Hz)',size=16)
    pp.ylabel('Lomb-Scargle Power',size=16)
    pp.savefig(label)
-   return(sig[0]*((np.array(secondsElapsed).shape[0]-1)/2.),sig[1]*((np.array(secondsElapsed).shape[0]-1)/2.))
+   return(sig[0],sig[1])
 
 def var_analysis(flux,fluxerr):
    '''Run all variability analysis

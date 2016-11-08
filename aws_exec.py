@@ -134,6 +134,11 @@ def run(timestamp, param_file, aws_file):
 
     # Return success/failure
 
+    # Add in the job name to parameters
+    params["job_name"] = proc_name
+
+    return params
+
 
 def json_message(params, proc_name):
     '''

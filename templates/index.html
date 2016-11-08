@@ -1,7 +1,13 @@
 {% extends "base.html" %} {% import 'macros.html' as macros %}
 {% block content %}
 
-<h1>You have successfully deployed to Elastic Beanstalk!</h1>
+<h1>AstroCompute Timing Analysis</h1>
+
+<a href="{{ url_for('register') }}">New user? Register here.</a>
+
+<a href="{{ url_for('login') }}">Login</a>
+
+
 <a href="{{ url_for('submit') }}">Click here to go to page 2</a>
 
 {% endblock %}

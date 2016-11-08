@@ -9,7 +9,7 @@ from flask_login import login_required, current_user
 
 from aws_controller.upload_download_s3 import upload_to_s3
 
-from web_app import InputForm, LoginForm,  RegisterForm
+from web_app import InputForm, LoginForm, RegisterForm, ResultInfo
 
 
 UPLOAD_FOLDER = 'uploads/'
@@ -36,7 +36,7 @@ def submit():
     form.filename(multiple="")
     if request.method == "POST":
         if form.validate_on_submit():
-            return redirect('/')
+            return render_template('job_submission.html')
         else:
             return render_template('submit.html', form=form)
     return render_template('submit.html', form=form)
@@ -65,6 +65,7 @@ def login():
         return redirect("/")
     return render_template('login.html', title='Login', form=form)
 
+
 @app.route("/register", methods=['GET', 'POST'])
 def register():
     '''
@@ -74,15 +75,19 @@ def register():
     if form.validate_on_submit():
         flash("Logging in: " + form.inputid.data)
         return redirect("/")
-    return render_template('login.html', title='Login', form=form)
+    return render_template('register.html', title='Register', form=form)
+
 
 @app.route("/summary", methods=['POST'])
 @login_required
-def summary(job_name):
+def summary(params):
+    output = ResultInfo(params)
+    job_name = params["job_name"]
 
+    return render_template('summary.html',
+                           title='Results for {}'.format(job_name),
+                           output=output)
 
-
-    pass
 
 if __name__ == '__main__':
     log.setLevel(10)

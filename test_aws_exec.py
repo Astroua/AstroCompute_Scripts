@@ -34,6 +34,12 @@ try:
 
     params = convert_param_format("param.txt", to="dict")
 
+    # Add in the user parameters.
+    params["user_email"] = "koch.eric.w@gmail.com"
+    params["user_name"] = "Dill Pickle"
+    params["time_limit"] = 1
+    params["summary_url"] = "https://server-name"
+    params["project_email"] = "ualberta.astrocompute@gmail.com"
     start_time = timestring()
 
     print("Uploading at: " + human_time())

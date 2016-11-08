@@ -5,6 +5,7 @@ from wtforms import StringField, BooleanField, PasswordField, IntegerField, \
 from wtforms.validators import DataRequired, Length, Email, Required
 
 from folder_upload import FolderField
+from wtforms import validators
 
 
 
@@ -111,3 +112,17 @@ class InputForm(Form):
 class LoginForm(Form):
     inputid = StringField('Input ID', validators=[DataRequired()])
     passwd = PasswordField("Password", validators=[DataRequired()])
+
+
+
+class EnterDBInfo(Form):
+    username = TextField(label='enter username', description="db_enter", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])    
+    passwd = TextField(label='enter password', description="db_enter_pw", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])    
+    institute = TextField(label='enter insitution', description="db_enter_in", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
+    email_ad = TextField(label='enter email', description="db_enter_email", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
+class RetrieveDBInfo(Form):
+    username_ret = TextField(label='username to retrieve', description="db_get", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
+    passwd_ret = TextField(label='password to retrieve', description="db_get_pw", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
+
+
+

@@ -125,7 +125,7 @@ def run(timestamp, param_file, aws_file):
     body = email_body(username, proc_name, summary_url, time_limit,
                       project_email)
     email_service.send_email(project_email, subject, body, email_address,
-                             format='test')
+                             format='text')
 
     # Set the expiration on the S3 bucket.
     set_bucket_lifetime(proc_name, days=time_limit,
@@ -197,7 +197,7 @@ def email_body(username, job_name, url, time_limit, project_email):
     email_str = email_str.replace("USER", username)
     email_str = email_str.replace("JOB", job_name)
     email_str = email_str.replace("URL", url)
-    email_str = email_str.replace("TIME", time_limit)
+    email_str = email_str.replace("TIME", str(time_limit))
     email_str = email_str.replace("EMAIL_HELP", project_email)
 
     return email_str

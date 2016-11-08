@@ -1,13 +1,14 @@
 
 
 from flask import Flask, request, redirect, url_for, flash, \
-    render_template, send_from_directory, jsonify, request
+    render_template, send_from_directory, jsonify, request, abort
+from urllib import urljoin
 from werkzeug.utils import secure_filename
 from astropy import log
 from flask_bootstrap import Bootstrap
 from flask_login import login_required, current_user
 
-from aws_controller.upload_download_s3 import upload_to_s3
+from aws_controller.upload_download_s3 import upload_to_s3, return_s3_connection
 
 from web_app import InputForm, LoginForm, RegisterForm, ResultInfo
 
@@ -78,15 +79,32 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 
-@app.route("/summary", methods=['POST'])
+@app.route("/summary/<str:job_name>", methods=['POST'])
 @login_required
-def summary(params):
+def summary(job_name, params):
     output = ResultInfo(params)
-    job_name = params["job_name"]
 
     return render_template('summary.html',
                            title='Results for {}'.format(job_name),
                            output=output)
+
+
+@app.route('/download/<str:filename>/', methods=['GET', 'POST'])
+def download(filename, bucket_name):
+    # Connect to S3
+    s3conn = return_s3_connection({"aws_access_key_id": key,
+                                   "aws_secret_access_key": secret})
+    try:
+        bucket = s3conn.get_bucket(bucket_name)
+    except Exception:
+        abort(404)
+
+    if bucket.get_key(filename) is None:
+        raise ValueError("The filename ({0}) does not exist in the given "
+                         "bucket ({1})".format(filename, bucket_name))
+
+    # redirect to the url of the file hosted on S3
+    return redirect(urljoin(bucket_name, filename))
 
 
 if __name__ == '__main__':

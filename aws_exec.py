@@ -3,9 +3,11 @@ import json
 from time import sleep, time
 
 from boto import sqs
+from boto import ses
 
 from aws_controller.controller import WORKER_SCRIPT
 from aws_controller.launch_instance import launch
+from aws_controller.upload_download_s3 import set_bucket_lifetime
 
 
 def run(timestamp, param_file, aws_file):
@@ -107,6 +109,29 @@ def run(timestamp, param_file, aws_file):
     queue.delete()
     resp_queue.delete()
 
+    # Send out email to the user.
+    email_service = ses.connect_to_region(region,
+                                          aws_access_key_id=key,
+                                          aws_secret_access_key=secret)
+
+    # The parameters should have the user's database values.
+    email_address = params["user_email"]
+    username = params["user_name"]
+    time_limit = params["time_limit"]
+    summary_url = params["summary_url"]
+    project_email = params["project_email"]
+
+    subject = "AstroCompute Timing Script Job: {} Completion".format(proc_name)
+    body = email_body(username, proc_name, summary_url, time_limit,
+                      project_email)
+    email_service.send_email(project_email, subject, body, email_address,
+                             format='test')
+
+    # Set the expiration on the S3 bucket.
+    set_bucket_lifetime(proc_name, days=time_limit,
+                        aws_access={"aws_access_key_id": key,
+                                    "aws_secret_access_key": secret})
+
     # Return success/failure
 
 
@@ -148,6 +173,34 @@ def json_message(params, proc_name):
     params["command"] = commands
 
     return json.dumps(params)
+
+
+def email_body(username, job_name, url, time_limit, project_email):
+    '''
+    Generate string for email body.
+    '''
+
+    email_str = \
+        '''
+        Hello USER,\n
+        \n
+        Your timing script job JOB is complete. The analysis results may be
+        downloaded from the link below. Note that data products are
+        automatically deleted after TIME days. Please retrieve the data
+        products as soon as possible!\n
+        \n
+        URL \n
+        \n
+        Questions or issues should be sent to EMAIL_HELP.\n
+        '''
+
+    email_str = email_str.replace("USER", username)
+    email_str = email_str.replace("JOB", job_name)
+    email_str = email_str.replace("URL", url)
+    email_str = email_str.replace("TIME", time_limit)
+    email_str = email_str.replace("EMAIL_HELP", project_email)
+
+    return email_str
 
 
 if __name__ == "__main__":

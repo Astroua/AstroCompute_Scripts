@@ -139,7 +139,7 @@ def chi2_calc(flux,fluxerr):
    return(chi_tot_fix,dof_fix,wm_fix,un_fix,null_hyp_fix)
 	
 def lomb_scargle(time,flux,fluxerr,interval,label):
-   '''Generalized LS periodogram
+   '''Generalized LS periodogram (Note: Power is normalized according to Scargle, J.D. 1982, ApJ 263:835-853)
    
    time: MJD array
    flux: flux array
@@ -148,8 +148,8 @@ def lomb_scargle(time,flux,fluxerr,interval,label):
    label: name for savefig
    
    return: plot is saved to a file
-   Note: Power is normalized according to Scargle, J.D. 1982, ApJ 263:835-853
    '''
+
    secondsElapsed=[]
    for i in range(0,len(time)):
       secondsElapsed.append((time[i]-time[0])*24*60*60+interval/2.0)
@@ -170,14 +170,15 @@ def lomb_scargle(time,flux,fluxerr,interval,label):
    return(sig[0]*((np.array(secondsElapsed).shape[0]-1)/2.),sig[1]*((np.array(secondsElapsed).shape[0]-1)/2.))
 
 def var_analysis(flux,fluxerr):
-'''Run all variability analysis
+   '''Run all variability analysis
 
-flux: flux array
-fluxerr: flux error array
+   flux: flux array
+   fluxerr: flux error array
 
-return: total chi^2, degrees of freedom, null hypothesis probability, weighted mean,
-weighted mean error, excess variance, excess variance error, fractional rms, fractional rms error
-'''
+   return: total chi^2, degrees of freedom, null hypothesis probability, weighted mean,
+   weighted mean error, excess variance, excess variance error, fractional rms, fractional rms error
+   '''
+
 #chi2 and weighted mean
    chi_tot,dof,wm,wmerr,null=chi2_calc(flux,fluxerr)
 #excess variance and fractional rms

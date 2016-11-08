@@ -1,6 +1,6 @@
 #param file for initial_clean.py, Aegean_ObjDet.py, and casa_timing_script.py
 ##common to all 3 scripts
-target = ''
+target = 'v404_test'
 obsDate = ''
 refFrequency ='GHz'
 intervalSizeH = 0

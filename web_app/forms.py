@@ -107,3 +107,17 @@ class InputForm(Form):
 class LoginForm(Form):
     inputid = StringField('Input ID', validators=[DataRequired()])
     passwd = PasswordField("Password", validators=[DataRequired()])
+
+
+class RegisterForm(Form):
+    username = StringField('User name', validators=[DataRequired()])
+    email = \
+        TextField("Email address",
+                  validators=[Required("Please provide a valid email"
+                                       "address"),
+                              Length(min=6, message=(u'Email address is too'
+                                                     ' short')),
+                              Email(message=(u'That is not a valid email '
+                                             'address.'))])
+    institution = StringField("Institution", validators=[DataRequired()])
+    passwd = PasswordField("Password", validators=[DataRequired()])

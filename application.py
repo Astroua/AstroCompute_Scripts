@@ -5,10 +5,11 @@ from flask import Flask, request, redirect, url_for, flash, \
 from werkzeug.utils import secure_filename
 from astropy import log
 from flask_bootstrap import Bootstrap
+from flask_login import login_required, current_user
 
 from aws_controller.upload_download_s3 import upload_to_s3
 
-from web_app import InputForm, LoginForm
+from web_app import InputForm, LoginForm,  RegisterForm
 
 
 UPLOAD_FOLDER = 'uploads/'
@@ -29,6 +30,7 @@ def default():
 
 
 @app.route('/submit', methods=['GET', 'POST'])
+@login_required
 def submit():
     form = InputForm()
     form.filename(multiple="")
@@ -54,11 +56,33 @@ def upload(timestamp):
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
+    '''
+    Login form for users
+    '''
     form = LoginForm()
     if form.validate_on_submit():
         flash("Logging in: " + form.inputid.data)
         return redirect("/")
     return render_template('login.html', title='Login', form=form)
+
+@app.route("/register", methods=['GET', 'POST'])
+def register():
+    '''
+    Register form for new users
+    '''
+    form = LoginForm()
+    if form.validate_on_submit():
+        flash("Logging in: " + form.inputid.data)
+        return redirect("/")
+    return render_template('login.html', title='Login', form=form)
+
+@app.route("/summary", methods=['POST'])
+@login_required
+def summary(job_name):
+
+
+
+    pass
 
 if __name__ == '__main__':
     log.setLevel(10)

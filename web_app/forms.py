@@ -7,6 +7,7 @@ from wtforms.validators import DataRequired, Length, Email, Required
 from folder_upload import FolderField
 
 
+
 class InputForm(Form):
     email = TextField("Email address",
                       validators=[Required("Please provide a valid email address"),

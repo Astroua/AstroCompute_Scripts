@@ -397,11 +397,6 @@ observationDuration = (datetime.min+observationDurationDelta).time()
 # Duration is printed in iso format as a string for the user.
 print '\nTotal observation time is ' + str(time.isoformat(observationDuration))
 #
-# User is prompted for the desired interval length.
-#intervalSizeH = input('Enter length of interval (hours) >| ')
-#intervalSizeM = input('Enter length of interval (minutes) >| ')
-#intervalSizeS = input('Enter length of interval (seconds) >| ')
-#
 # The interval length is converted to a datetime.timedelta object
 intervalSize = time(intervalSizeH, intervalSizeM, intervalSizeSec,intervalSizemicro)
 intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeSec,microseconds=intervalSizemicro)

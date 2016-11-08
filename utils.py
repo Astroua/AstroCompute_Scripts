@@ -106,11 +106,11 @@ def run_aegean(tables,cellSize):
 
 def errf(ampl,y,er):
    ''' Residual function for Chi2 calculation
-
+   
    ampl: weighted mean
    y: flux array
    er: flux error array
-
+   
    return: residual for chi^2 calculation in chi2_calc
    '''
    fitf = ampl
@@ -118,10 +118,10 @@ def errf(ampl,y,er):
 
 def chi2_calc(flux,fluxerr):
    ''' Chi2 with constant flux model
-
+   
    flux: flux array
    fluxerr: flux error array
-
+   
    return: chi^2 with constant flux (at weighted mean) model
    '''
    we_fix=[]
@@ -133,23 +133,23 @@ def chi2_calc(flux,fluxerr):
    wm_fix=np.average(flux,weights=wei_fix)
    un_fix=1/(np.array(we_fix).sum())
    residual_fix=errf(wm_fix,flux,fluxerr)
-   chisquared_fix=residual_fix**2
+   chisquared_fix=residual_fix**2  
    chi_tot_fix=((residual_fix**2).sum())
    null_hyp_fix=chi2.sf(chi_tot_fix,(np.array(flux).shape[0])-1)
    return(chi_tot_fix,dof_fix,wm_fix,un_fix,null_hyp_fix)
-
+	
 def lomb_scargle(time,flux,fluxerr,interval,label):
-   '''Generalized LS periodogram
-
+   '''Generalized LS periodogram (Note: Power is normalized between 0 and 1)
+   
    time: MJD array
    flux: flux array
    fluxerr: flux error array
    interval: time bin size in seconds
    label: name for savefig
-
+   
    return: plot is saved to a file
-   Note: Power is normalized according to Scargle, J.D. 1982, ApJ 263:835-853
    '''
+
    secondsElapsed=[]
    for i in range(0,len(time)):
       secondsElapsed.append((time[i]-time[0])*24*60*60+interval/2.0)
@@ -158,42 +158,41 @@ def lomb_scargle(time,flux,fluxerr,interval,label):
    lsg,sig=astroML.time_series.lomb_scargle(secondsElapsed,flux,fluxerr,omega,generalized=True,significance=[0.05,0.01])
    fig=pp.figure()
    ax1=fig.add_subplot(111)
-   ax1.plot(omega/(2*np.pi),(lsg)*((np.array(secondsElapsed).shape[0]-1)/2.))
-   #plt.axhline(y=sig[0],linewidth=4,ls='--',color='m')
-   #plt.axhline(y=sig[1],linewidth=4,ls='--',color='c')
+   ax1.plot(omega/(2*np.pi),(lsg))
+   plt.axhline(y=sig[0],linewidth=4,ls='--',color='m')
+   plt.axhline(y=sig[1],linewidth=4,ls='--',color='c')
    pp.xlim(min(omega)/(2.*np.pi),max(omega)/(2.*np.pi))
-   pp.xscale("log")
-   pp.yscale("log")
+   #pp.xscale("log")
+   #pp.yscale("log")
    pp.xlabel('Frequency, $\\nu$ (Hz)',size=16)
    pp.ylabel('Lomb-Scargle Power',size=16)
    pp.savefig(label)
-   return(sig[0]*((np.array(secondsElapsed).shape[0]-1)/2.),sig[1]*((np.array(secondsElapsed).shape[0]-1)/2.))
-
+   return(sig[0],sig[1])
 
 def var_analysis(flux,fluxerr):
-    '''
-    Run all variability analysis
+   '''Run all variability analysis
 
-    flux: flux array
-    fluxerr: flux error array
+   flux: flux array
+   fluxerr: flux error array
 
-    return: total chi^2, degrees of freedom, null hypothesis probability, weighted mean,
-    weighted mean error, excess variance, excess variance error, fractional rms, fractional rms error
-    '''
-    #chi2 and weighted mean
-    chi_tot,dof,wm,wmerr,null=chi2_calc(flux,fluxerr)
-    #excess variance and fractional rms
-    var_data=np.var(flux,ddof=1)
-    rms_mean=np.sum(fluxerr**2)/len(fluxerr)
-    ex_var=(var_data)-rms_mean
-    if ex_var < 0.0:
-       ex_var='n/a'
-       print 'Variance of data much less then measurment errors'
-       frac_rms='n/a'
-       frac_rms_err='n/a'
-       ex_var_err='n/a'
-    else:
-       frac_rms=np.sqrt(ex_var/wm**2)
-       ex_var_err=np.sqrt((np.sqrt(2/len(flux))*rms_mean/wm**2)**2+(np.sqrt(rms_mean/len(flux))*2.*frac_rms/wm)**2)
-       frac_rms_err=(1./2.*frac_rms)*ex_var_err
-    return(chi_tot,dof,null,wm,wmerr,ex_var,ex_var_err,frac_rms,frac_rms_err)
+   return: total chi^2, degrees of freedom, null hypothesis probability, weighted mean,
+   weighted mean error, excess variance, excess variance error, fractional rms, fractional rms error
+   '''
+
+#chi2 and weighted mean
+   chi_tot,dof,wm,wmerr,null=chi2_calc(flux,fluxerr)
+#excess variance and fractional rms
+   var_data=np.var(flux,ddof=1)
+   rms_mean=np.sum(fluxerr**2)/len(fluxerr)
+   ex_var=(var_data)-rms_mean
+   if ex_var < 0.0:
+      ex_var='n/a'
+      print 'Variance of data much less then measurment errors'
+      frac_rms='n/a'
+      frac_rms_err='n/a'
+      ex_var_err='n/a'
+   else:
+      frac_rms=np.sqrt(ex_var/wm**2)
+      ex_var_err=np.sqrt((np.sqrt(2/len(flux))*rms_mean/wm**2)**2+(np.sqrt(rms_mean/len(flux))*2.*frac_rms/wm)**2)
+      frac_rms_err=(1./2.*frac_rms)*ex_var_err
+   return(chi_tot,dof,null,wm,wmerr,ex_var,ex_var_err,frac_rms,frac_rms_err)

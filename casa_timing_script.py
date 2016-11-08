@@ -118,23 +118,23 @@ tables = outputPath+label+'whole_dataset_objdet_comp.tab'
 
 '''FLAGS'''
 # flag to run object detection
-runObj = data_params["runObj"]
+runObj = 'F'#data_params["runObj"]
 # Is the data set large enough that you only want to save a cutout?
 # If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval
 # If cutout='T' & big_data='F' --> clean all, fit all, then delete.
 # If cutout='F' & big_data='F' --> clean all full size, fit all full size, no delete
-cutout = data_params["cutout"]
-big_data = data_params["big_data"]
+cutout = 'T'#data_params["cutout"]
+big_data = 'T'#data_params["big_data"]
 # Clean can be toggled on/off here (T/F).
-runClean = data_params["runClean"]
+runClean = 'T'#data_params["runClean"]
 # optimize cleaning
-opt_clean = data_params["opt_clean"]
+opt_clean = 'F'#data_params["opt_clean"]
 # do you want to fix parameters in fits from full data set fit? (T of F)
 fix_pos = data_params["fix_pos"]
 # if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
 do_monte = data_params["do_monte"]
 # do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
-integ_fit = data_params["integ_fit"]
+integ_fit = 'B'#data_params["integ_fit"]
 # do you want to do uv fitting (T or F) as well?
 # Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy);
 uv_fit = data_params["uv_fit"]
@@ -143,7 +143,7 @@ do_monte_uv = data_params["do_monte_uv"]
 # fix position in UV
 uv_fix = data_params["uv_fix"]
 # If runClean=F set fit_cutout='T' if you have only cutout images but want to refit without cleaning again,
-fit_cutout = data_params["fit_cutout"]
+fit_cutout = 'F'#data_params["fit_cutout"]
 # define start and end time yourself
 def_times = data_params["def_times"]
 
@@ -165,6 +165,12 @@ cellSize = [data_params["cellSize"]] * 2
 taylorTerms = data_params["taylorTerms"]
 myStokes = data_params["myStokes"]
 thre = data_params["thre"]
+#put threshold in Jy for image convergence test below
+thre_unit=re.findall("[a-zA-Z]+", thre)
+if thre_unit == 'uJy':
+    thre_num=float(re.findall(r"[-+]?\d*\.\d+|\d+",thre)[0])/1e6
+elif thre_unit == 'mJy':
+    thre_num=float(re.findall(r"[-+]?\d*\.\d+|\d+",thre)[0])/1e3
 spw_choice = data_params["spw_choice"]
 # If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
 # also need to be set if outlier file is to be used.
@@ -500,6 +506,7 @@ print 'Clean is starting-->'
 if runClean == "T":
 	for interval, time, interval_uv, time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
 		print 'cleaning interval:', interval
+		counter_fail=0
         	if outlierFile == '':
             		intervalString=interval.replace(':', '.').replace('/','_')
             		clean(vis=visibility, imagename=outputPath+label+intervalString, mask=maskPath, selectdata=T, timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural', usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
@@ -519,10 +526,10 @@ if runClean == "T":
 					imSuffix = '.image'
 		    		else:
 					imSuffix = '.image.tt0'
-
+				imstat_conv_check = imstat(imagename=outputPath+label+intervalString+imSuffix,mask=outputPath+label+intervalString+'.mask')
 		    		# For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
 		   		 # An if statement is used to pass over these intervals, avoiding runtime errors.
-		    		if os.path.exists(outputPath+label+intervalString+imSuffix):
+		    		if os.path.exists(outputPath+label+intervalString+imSuffix) and imstat_conv_check['max'][0] <= thre_num:
 					# In most cases imhead returns a dictionary with the value located by the key 'value'
 					beamMajor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beammajor')
 					beamMajor = str(beamMajor['value'])+'arcsec'
@@ -589,6 +596,7 @@ if runClean == "T":
 					fluxError_real.append(result_box1['rms'][0])
 		    		else:
 					print '\nCLEAN failed on interval ' + interval + '.'
+					counter_fail=counter_fail+1
 					# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
 					timeIntervals.remove(interval)
 					mjdTimes.remove(time)
@@ -637,6 +645,7 @@ if runClean == "T":
 if big_data == 'F' or runClean == "F":
 	for interval, time, interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
 	    # Get beam parameters using imhead.
+            counter_fail=0
 
 	    intervalString=interval.replace(':', '.').replace('/','_')
 	    print intervalString,
@@ -649,10 +658,10 @@ if big_data == 'F' or runClean == "F":
 		imSuffix = '.image'
 	    else:
 		imSuffix = '.image.tt0'
-
+            imstat_conv_check = imstat(imagename=outputPath+label+intervalString+imSuffix,mask=outputPath+label+intervalString+'.mask')
 	    # For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
 	    # An if statement is used to pass over these intervals, avoiding runtime errors.
-	    if os.path.exists(outputPath+label+intervalString+imSuffix):
+	    if os.path.exists(outputPath+label+intervalString+imSuffix) and imstat_conv_check['max'][0] <= thre_num:
 		# In most cases imhead returns a dictionary with the value located by the key 'value'
 		beamMajor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beammajor')
 		beamMajor = str(beamMajor['value'])+'arcsec'
@@ -728,6 +737,7 @@ if big_data == 'F' or runClean == "F":
 	    else:
 		print '\nCLEAN failed on interval ' + interval + '.'
 		# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
+		counter_fail=counter_fail+1
 		timeIntervals.remove(interval)
 		mjdTimes.remove(time)
 		#timeIntervals_uv.remove(interval)
@@ -1176,14 +1186,17 @@ for k in length:
 #########################################################################
 data = open(dataPath, 'w')
 if integ_fit == 'B':
+	data.write('{0}\n'.format('The number of timebins where CLEAN failed/did not converge was',counter_fail))
 	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
 elif integ_fit == 'B' and uv_fit == 'T':
 	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
 elif integ_fit=='T':
+	data.write('{0}\n'.format('The number of timebins where CLEAN failed/did not converge was',counter_fail))
 	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
 elif integ_fit=='T' and uv_fit=='T':
 	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
 elif integ_fit=='F':
+	data.write('{0}\n'.format('The number of timebins where CLEAN failed/did not converge was',counter_fail))
 	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
 elif integ_fit=='F' and uv_fit=='T':
 	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
@@ -1294,14 +1307,15 @@ if var_anal=='T':
 	var_file=open(dataPathVar,'w')
 	print 'Performing Variiability Tests'
 	chi_tot,dof,null,wm,wmerr,ex_var,ex_var_error,frac_rms,frac_rms_error=var_analysis(fluxvar,fluxerrvar)
-	var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
-	var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))
-	var_file.write('{0} {1} {2}\n'.format('Excess Variance/Error',ex_var,ex_var_error))
-	var_file.write('{0} {1} {2}\n'.format('Fractional RMS/Error',frac_rms,frac_rms_error))
-	var_file.close()
 	if power_spec=='T':
 		print 'Creating Power Spectrum'
-		lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeS),labelP)
+		sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeS),labelP)
+    var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
+    var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))
+    var_file.write('{0} {1} {2}\n'.format('Excess Variance/Error',ex_var,ex_var_error))
+    var_file.write('{0} {1} {2}\n'.format('Fractional RMS/Error',frac_rms,frac_rms_error))
+    var_file.write('{0} {1} {2}\n'.format('95% and 99% Significance Levels for Periodogram',sig95,sig99))
+    var_file.close()
 
 #remove temp files and .last/.log files created by CASA/ipython
 os.system('rm -rf *.last')

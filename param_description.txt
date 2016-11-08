@@ -41,7 +41,7 @@ tele: telescope for latutude determination by aegean; string, default is 'VLA'
 
 lat: only set if not on list (VLA, SMA, NOEMA) in scope2lat func of aegean.py; string
 
-runObj: toggle to run object detection; string, options are 'T' or 'F'
+runObj: toggle to run object detection; string, options are 'T' or 'F'; **hard coded to 'F'
 
 ind: target object index in object detection list, only set if doing object detection; 
 integer, default is 1 (i.e.brightest object)
@@ -52,20 +52,20 @@ annulus_rad_inner: inner radius in pixels of rms annulus for error determintion;
 
 annulus_rad_outer: outer radius in pixels of rms annulus for error determintion; integer, default is 20
 
-cutout: toggle to create cutout images of each time bin; string, options are 'T' or 'F', 'T' recommended to save disk space.
+cutout: toggle to create cutout images of each time bin; string, options are 'T' or 'F', 'T' recommended to save disk space.; **hard coded to 'T'
 
 pix_shift_cutout: set size of cutout images if cutout='T' in pixels from target box; integer, default is 20
 
 big_data: toggle to clean, fit, cutout, delete original image for each timebin; string, options are 'T' or 'F',
-'T' is recommended to save disk space
+'T' is recommended to save disk space; ; **hard coded to 'T'
 
 outlierFile: provide path to outlier file for clean if needed; string
 
 runClean: toggle to run clean, if off can refit a data set provided images were saved (if saved images a cutout 
-then fit_cutout must be 'T'); string, options are 'T' or 'F'
+then fit_cutout must be 'T'); string, options are 'T' or 'F'; **hard coded to 'T'
 
 fit_cutout: toggle to re-fit each time bin image with no cleaning if you saved cutout images rather then whole images:
-string, options are 'T' or 'F'
+string, options are 'T' or 'F'; **hard coded to 'F'
 
 fix_pos: toggle to fix position in individual images to that of whole data set fit; string, options are 'T' or 'F'
 
@@ -77,7 +77,7 @@ par_fix: parameters to fix in fit if fix_pos='T'; string, x (peak x pos), y (pea
 b (minor axis), p (position angle), recommended use is 'xyabp'
 
 integ_fit: toggle to write both integrated and peak flux to data file; string, options are 'B' (both), 'T' (integrated only),
-'F' (peak only), default is 'B'
+'F' (peak only), default is 'B'; **hard coded to 'B'
 
 uv_fit: toggle to do uv plane fitting; string, options are 'T' or 'F'
 
@@ -102,4 +102,4 @@ lc_scale_unit: unit for lightcurve flux density; string, options are '' (Jy), 'm
 lc_scale_time: unit for lightcurve time; string, options are 'H' (hours), 'M' (minutes), 'S' (seconds), default is 'M'
 
 opt_clean: toggle to optimize cleanining, i.e. change image size to closest 2^n size; string, options are 'T' or 'F', 
-default is 'F'
+default is 'F'; **hard coded to 'F'

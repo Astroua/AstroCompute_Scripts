@@ -34,11 +34,18 @@ try:
 
     params = convert_param_format("param.txt", to="dict")
 
+    # Add in the user parameters.
+    params["user_email"] = "koch.eric.w@gmail.com"
+    params["user_name"] = "Dill Pickle"
+    params["time_limit"] = 1
+    params["summary_url"] = "https://server-name"
+    params["project_email"] = "ualberta.astrocompute@gmail.com"
     start_time = timestring()
 
     print("Uploading at: " + human_time())
     upload_to_s3(params['target'].lower() + "_" + start_time,
-                 '/media/eric/Data_3/VLA/V404/v404_jun22_B_Cc7_bp.ms',
+                 # '/media/eric/Data_3/VLA/V404/v404_jun22_B_Cc7_bp.ms',
+                 '/Users/eric/Data/V404/v404_jun22_B_Cc7_bp.ms',
                  key_prefix="data/", create_bucket=True)
 
     time.sleep(10)
@@ -51,7 +58,8 @@ try:
     print("Downloading results at: " + human_time())
     download_from_s3("data_products/*",
                      params['target'].lower() + "_" + start_time,
-                     output_dir="/media/eric/Data_3/VLA/V404/")
+                     output_dir="/Users/eric/Data/V404/")
+                     # output_dir="/media/eric/Data_3/VLA/V404/")
 
 except Exception as e:
     print("Failed at " + human_time())

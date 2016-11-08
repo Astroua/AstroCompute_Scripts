@@ -136,10 +136,10 @@ def test_outlierFile(form,field):
 #	allowed=['T','F']
 #	if field.data not in allowed:
 #		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-def test_fit_cutout(form,field):
-	allowed=['T','F']
-	if field.data not in allowed:
-		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
+#def test_fit_cutout(form,field):
+#	allowed=['T','F']
+#	if field.data not in allowed:
+#		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
 def test_fix_pos(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:

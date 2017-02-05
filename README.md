@@ -1,5 +1,5 @@
 # AstroCompute CASA Scripts
-A collection of python scripts to create high time resolution light curves from calibrated interferometric data sets. These scripts run in the Common Astronomy Software Application ([CASA]: (http://casa.nrao.edu)) and have been tested with VLA, SMA and NOEMA data sets.
+A collection of python scripts to create high time resolution light curves from calibrated interferometric data sets. These scripts run in the Common Astronomy Software Application ([CASA](http://casa.nrao.edu)) and have been tested with VLA, SMA and NOEMA data sets.
 
 ## Links for importing data into CASA
 * VLA: Can be downloaded from archive in CASA format.
@@ -7,7 +7,8 @@ A collection of python scripts to create high time resolution light curves from 
 * NOEMA: Must be calibrated beforehand. Follow instructions [here](http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf) to convert to a CASA MS data set for use by these scripts.
 
 ##Requires the following python packages
-* casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python)) to install the following packages in CASA python
+* casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python))
+   * use this package to install the following packages in CASA python (use `casa-pip install [package]`)
 * jdcal
 * astropy
 * astroML

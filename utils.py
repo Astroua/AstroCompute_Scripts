@@ -4,6 +4,11 @@ import re
 import astroML.time_series
 from scipy.stats import norm
 import matplotlib.pyplot as pp
+import numpy as np
+from scipy.stats import chi2
+import casac
+from tasks import *
+from taskinit import *
 
 
 def convert_param_format(filename, to="json"):
@@ -73,7 +78,7 @@ def is_power2(num):
     '''
     return(num != 0 and ((num & (num-1)) == 0))
 
-def run_aegean(tables,cellSize):
+def run_aegean(tables,cellSize_string):
     '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),
     to extract positional information on sources in field
 
@@ -89,7 +94,7 @@ def run_aegean(tables,cellSize):
     maj_list=[]
     min_list=[]
     pos_list=[]
-    cellSize_string=cellSize[0]
+    #cellSize_string=cellSize[0]
     cellSize_list=re.findall('\d+|\D+', cellSize_string)
     cellSize0=float(cellSize_list[0]+cellSize_list[1]+cellSize_list[2])
     with open(tables) as f:
@@ -103,6 +108,17 @@ def run_aegean(tables,cellSize):
     	min_list.append(float(lin_split[16])/cellSize0)#pix
     	pos_list.append(float(lin_split[18]))#deg
     return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
+
+def initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre):
+    clean(vis=visibility,
+          imagename=os.path.join(outputPath, label+'whole_dataset'),
+          field='', mode='mfs', imsize=imageSize, cell=cellSize,
+          weighting='natural', spw=spw_choice, nterms=taylorTerms,
+          niter=numberIters, gain=0.1,
+          threshold=thre, interactive=False)
+    exportfits(imagename=os.path.join(outputPath, label+'whole_dataset.image'),
+               fitsimage=os.path.join(outputPath, label+'whole_dataset.fits'),
+               history=False)
 
 def errf(ampl,y,er):
    ''' Residual function for Chi2 calculation
@@ -159,8 +175,8 @@ def lomb_scargle(time,flux,fluxerr,interval,label):
    fig=pp.figure()
    ax1=fig.add_subplot(111)
    ax1.plot(omega/(2*np.pi),(lsg))
-   plt.axhline(y=sig[0],linewidth=4,ls='--',color='m')
-   plt.axhline(y=sig[1],linewidth=4,ls='--',color='c')
+   pp.axhline(y=sig[0],linewidth=4,ls='--',color='m')
+   pp.axhline(y=sig[1],linewidth=4,ls='--',color='c')
    pp.xlim(min(omega)/(2.*np.pi),max(omega)/(2.*np.pi))
    #pp.xscale("log")
    #pp.yscale("log")

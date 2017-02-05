@@ -124,13 +124,6 @@ def test_do_monte(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:
 		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-def test_par_fix(form,field):
-	if not isinstance(field.data,str):
-		raise ValueError("Value entered is not a string. Please change input to a string format.")
-	allowed=['x','y','b','a','p']
-	string_list=list(field.data)
-	if not set(string_list).issubset(set(allowed)):
-		raise ValueError("Value entered is invalid. Elements of string may be x (peak x pos), y (peak y pos), f (peak flux), a (major axis),b (minor axis) or, p (position angle).")
 def test_integ_fit(form,field):
 	allowed=['B','T','F']
 	if field.data not in allowed:
@@ -143,9 +136,6 @@ def test_uv_fix(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:
 		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-def test_stokes_param(form,field):
-	if not isinstance(field.data,str):
-		raise ValueError("Value entered is not a string. Please change input to a string format.")
 def test_def_times(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:

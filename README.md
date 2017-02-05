@@ -3,19 +3,19 @@ A collection of python scripts to create high time resolution light curves from 
 
 ## Links for importing data into CASA
 * VLA: Can be downloaded from archive in CASA format.
-* SMA: Can be calibrated in CASA. Follow instructions [here]: (https://www.cfa.harvard.edu/sma/casa) for reduction details and details on how to convert to a CASA MS data set for use by these scripts
-* NOEMA: Must be calibrated beforehand. Follow instructions [here]: (http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf) to convert to a CASA MS data set for use by these scripts.
+* SMA: Can be calibrated in CASA. Follow instructions [here](https://www.cfa.harvard.edu/sma/casa) for reduction details and details on how to convert to a CASA MS data set for use by these scripts
+* NOEMA: Must be calibrated beforehand. Follow instructions [here](http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf) to convert to a CASA MS data set for use by these scripts.
 
 ##Requires the following python packages
-*casa-python executable wrapper (get it [here]: (https://github.com/radio-astro-tools/casa-python)) to install the following packages in CASA python
-*jdcal
-*astropy
-*astroML
-*uvmultifit (get it [here]: (http://nordic-alma.se/support/software-tools))
-   *this package also needs gsl libraries to build (get them [here]: (http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal))
-*analysisUtils (get it [here]: (https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
-*aegean (get it [here]: (https://github.com/PaulHancock/Aegean))
-   *this package also needs lmfit-0.7.4 (get it [here]: (http://github.com/lmfit/lmfit-py.git@0.7.4))
+* casa-python executable wrapper (get it [here]: (https://github.com/radio-astro-tools/casa-python)) to install the following packages in CASA python
+* jdcal
+* astropy
+* astroML
+* uvmultifit (get it [here]: (http://nordic-alma.se/support/software-tools))
+   * this package also needs gsl libraries to build (get them [here]: (http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal))
+* analysisUtils (get it [here]: (https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
+* aegean (get it [here]: (https://github.com/PaulHancock/Aegean))
+   * this package also needs lmfit-0.7.4 (get it [here]: (http://github.com/lmfit/lmfit-py.git@0.7.4))
 
 
 ##Description of scripts
@@ -29,14 +29,14 @@ A collection of python scripts to create high time resolution light curves from 
          * Calculate fractional RMS (Vaughn et al. 2003; Bell et al., 2015), and
          * Make power spectrum using generalized lomb-periodogram (Zechmeister and Kurster, 2009)
 2. Other scripts:
-   **Aegean_ObjDet.py**: object detection algorithm.
+   * **Aegean_ObjDet.py**: object detection algorithm.
       * Is integrated into casa_timing_script.py, but can be run on its own too.
       * A data file of detected object properties is output.
-   **utils.py**: module of tools used in casa_timing_script.py.
-   **download_data_AWS.py**: downloads data from an AWS bucket.
-   **upload_data_AWS.py**: uploads data to an AWS bucket.
-   **remove_bucket_AWS.py**: removes a bucket from AWS.
-   **sim.py**: creates a simulated CASA MS of time-variable source for testing using CASA's simulation toolbox.
+   * **utils.py**: module of tools used in casa_timing_script.py.
+   * **download_data_AWS.py**: downloads data from an AWS bucket.
+   * **upload_data_AWS.py**: uploads data to an AWS bucket.
+   * **remove_bucket_AWS.py**: removes a bucket from AWS.
+   * **sim.py**: creates a simulated CASA MS of time-variable source for testing using CASA's simulation toolbox.
 
 ##User Parameters
 * All input parameters for casa_timing_script.py are set in the parameter file (param.txt)

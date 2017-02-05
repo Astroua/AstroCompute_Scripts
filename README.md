@@ -24,14 +24,11 @@ A collection of python scripts to create high time resolution light curves from 
 4. **download_data_AWS.py**: downloads data from an AWS bucket.
 5. **upload_data_AWS.py**: uploads data to an AWS bucket.
 6. **remove_bucket_AWS.py**: removes a bucket from AWS.
+7. **sim.py**: creates a simulated CASA MS of time-variable source for testing using CASA's simulation toolbox.
 
 ###User Parameters
 * All input parameters are set in the parameter file (param.txt)
 * A complete description of each parameter is provided in param_description.txt.
-
-###Additional Notes
-* **sim.py**: creates a simulated CASA MS of time-variable source for testing.
-* simulated data for testing is in test_data directory
 
 ####
 Support from the SKA/AWS AstroCompute Program

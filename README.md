@@ -10,18 +10,18 @@ A collection of python scripts to create high time resolution light curves from 
 * casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python))
    * use this to install these python packages within CASA python
       * jdcal (`casa-pip install jdcal`)
-      * astropy (`casa-pip install jdcal`)
+      * astropy (`casa-pip install astropy`)
       * astroML (`casa-pip install astroML`)
 * uvmultifit (get it [here](http://nordic-alma.se/support/software-tools))
    * this package also needs gsl libraries to build (get them [here](http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal))
 * analysisUtils (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
-* aegean (get it [here](https://github.com/PaulHancock/Aegean))
+* (optional) aegean (get it [here](https://github.com/PaulHancock/Aegean))
    * this package also needs lmfit-0.7.4 (get it [here](http://github.com/lmfit/lmfit-py.git@0.7.4))
 
 
 ##Description of scripts
 1. Primary script:
-   * **casa_timing_script.py**: intended to be run within CASA. This is the primary script that does all the hard work.
+   * **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.
       * All parameters need to be carefully considered and changed for each new data set.
       * If you have a complicated field with other sources it is recommended that you use your own mask file (with clean boxes     around bright sources; mask_option='file') for cleaning, or run object detection, which will create a mask file with a       boxed region around each detected source (mask_option='aegean').
       * Included in casa_timing_script.py is the option to run basic variability analysis:

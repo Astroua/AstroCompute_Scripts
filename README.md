@@ -6,7 +6,8 @@ A collection of python scripts to create high time resolution light curves from 
 * SMA: Can be calibrated in CASA. Follow instructions [here](https://www.cfa.harvard.edu/sma/casa) for reduction details and details on how to convert to a CASA MS data set for use by these scripts
 * NOEMA: Must be calibrated beforehand. Follow instructions [here](http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf) to convert to a CASA MS data set for use by these scripts.
 
-##Requires the following python packages
+##Requires
+* CASA (get it [here](https://svn.cv.nrao.edu/casa/linux_distro/release/el6), scripts tested with version 4.6.0)
 * casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python))
    * use this to install these python packages within CASA python
       * jdcal (`casa-pip install jdcal`)

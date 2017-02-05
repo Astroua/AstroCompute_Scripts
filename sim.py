@@ -10,6 +10,7 @@ from astropy.time import Time
 #User input
 ####################
 path_dir = '/mnt/bigdata/tetarenk/timing_test'
+
 #flux model vs time
 integ=10.
 total_time=10.*60.
@@ -18,9 +19,9 @@ time_bins=np.arange(integ,total_time+integ,integ)#end of bins
 noise=np.random.randn(len(time_bins))
 fluxarray=5.*np.sin((2*np.pi/160)*time_bins)+10+noise*0.5
 plt.plot(time_bins,fluxarray,marker='o',ls='')
-raw_input('press enter to continue')
+
 #array config
-#configf='/Applications/CASA-4.6.app/Contents/data/alma/simmos/vla.c.cfg'
+#MAC:configf='/Applications/CASA-4.6.app/Contents/data/alma/simmos/vla.c.cfg'
 configf='/usr/local/bin/CASA-4.6/casa-release-4.6.0-el6/data/alma/simmos/vla.c.cfg'
 data = ascii.read(configf,data_start=1,\
 	names=['X','Y','Z','DIAM','ANT'],guess=True)
@@ -28,6 +29,7 @@ xx=data['X']
 yy=data['Y']
 zz=data['Z']
 diam=data['DIAM']
+
 #src info
 loca="J2000 10h00m00.00s -30d00m00.0s"
 hrsref=loca.split(' ')[1].split('h')[0]+'h'
@@ -40,15 +42,15 @@ imsize=256
 cellsize='0.3arcsec'
 starttime='2017/02/10/07:00:02.00'
 ####################
+
+#makes an MS for each time bin with a point source of flux equal to fluxarray for that time bin
 mslist=[]
 for i in range(0,len(time_bins)):
-	#starttime=Time('2017-02-10 07:00:00.00',format='iso')
+	#make point source model image for each time bin
 	cl.done()
 	cl.addcomponent(dir=loca,\
 		flux=fluxarray[i],fluxunit='Jy', freq=freq, shape="Gaussian",\
 		majoraxis=mj,minoraxis=ma, positionangle=pa)
-	#cl.rename('Gauss_point.cl')
-	#cl.done()
 	ia.fromshape(path_dir+"Gaussian.im",[imsize,imsize,1,1],overwrite=True)
 	cs=ia.coordsys()
 	cs.setunits(['rad','rad','','Hz'])
@@ -60,18 +62,16 @@ for i in range(0,len(time_bins)):
 	ia.setcoordsys(cs.torecord())
 	ia.setbrightnessunit("Jy/pixel")
 	ia.modify(cl.torecord(),subtract=False)
-	#raw_input('press')
+
+	#make simulated MS for each time bin
 	os.system('rm -rf '+path_dir+'testsrc'+str(i)+'.ms')
 	sm.open(path_dir+'testsrc'+str(i)+'.ms')
-	mslist.append(path_dir+'testsrc'+str(i)+'.ms')
-	# do configuration  
+	mslist.append(path_dir+'testsrc'+str(i)+'.ms') 
 	posvla = me.observatory('vla') 
 	sm.setconfig(telescopename='VLA', x=xx, y=yy, z=zz, dishdiameter=diam,mount='alt-az',\
 		antname='VLA',coordsystem='local', referencelocation=posvla) 
-	# Initialize the spectral windows  
 	sm.setspwindow(spwname='band', freq=freq,deltafreq='50MHz',freqresolution='50MHz',nchannels=128,\
-		stokes='RR RL LR LL')   
-	# Initialize the source and calibrater  
+		stokes='RR RL LR LL')    
 	sm.setfield(sourcename='MyPointSrc',sourcedirection=loca.split(' ')) 
 	#sm.setlimits(shadowlimit=0.001, elevationlimit='8.0deg')  
 	sm.setauto(autocorrwt=0.0)  
@@ -83,16 +83,23 @@ for i in range(0,len(time_bins)):
 	sm.setnoise(mode='tsys-atm',pwv='4mm')  
 	sm.close()
 	print 'Done ',i,' of ',len(time_bins),'.'
+
+#concat all time bin MSs	
 concat(mslist,concatvis=path_dir+'testconcat.ms')
+
+#check output and clean to make sure everything works!
 os.system('rm -rf '+path_dir+'testsrc*.ms')
+
 listobs(path_dir+'testconcat.ms',listfile=path_dir+'listobs.txt')
 os.system('pluma '+path_dir+'listobs.txt &')
-raw_input('stop')
+
 plotms(vis=path_dir+'testconcat.ms',xaxis="time",yaxis="amp",coloraxis="field",iteraxis="antenna",avgtime='60s')
-raw_input('stop')
+
 clean(vis=path_dir+'testconcat.ms', imagename=path_dir+'whole_dataset', field='', mode='mfs',\
 imsize=imsize, cell=cellsize, weighting='natural',spw='', nterms=1,\
 niter=0, gain=0.1, threshold='100mJy', interactive=T)
+
 imview(path_dir+'whole_dataset.image')
+
 exportfits(imagename=path_dir+'whole_dataset.image',fitsimage=path_dir+'whole_dataset.fits')
 

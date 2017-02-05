@@ -1,17 +1,26 @@
-'''CASA Script #2-->Timing script
-Input: Calibrated and Split MS
-Output: Produces a lightcurve with a user specified time bin (plot + data file)
-Note: This script is theoretically compatible with any data that can be imported
-into CASA
-Original version written by C. Gough; additions and updates by A. Tetarenko & E. Koch'''
+##################################
+#CASA Timing script
+##################################
+''' CASA script to produce high time res light curves from calibrated continuum MS
+INPUT: Calibrated and Split MS, parameter file (param_file below)
+OUTPUT: (1) Lightcurve plot--> [path_dir]/data_products/[target]+[lab]_[intervalSizeH]hour_[intervalSizeM]min_[intervalSizeS]sec_[refFrequency]_[obsDate]_[type].eps
+        (2) Lightcurve data file-->[path_dir]/data_products/[target]_[obsDate]_[refFrequency]_[intervalSizeH]hours_[intervalSizeM]min_[intervalSizeS]sec.txt
+NOTES: This script is theoretically compatible with any data that can be imported into a CASA MS,
+       but has only been tested with VLA, SMA, and NOEMA data.
 
-'''Import modules:
+Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
+Last Updated: February 1 2017
+'''
+
+'''MODULES USED:
 To ensure all modules used in this script are callable:
 1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
-#with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils,lmfit)
+with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils,lmfit)
 2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
-#(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
-3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities'''
+(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
+3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
+4. (optional) Aegean object detection pkg (https://github.com/PaulHancock/Aegean); this also needs lmfit 0.7.4,
+Remember to put location in python path (defined in Aegean_ObjDet.py).'''
 import tempfile
 import os
 import linecache
@@ -29,30 +38,50 @@ from scipy.stats import norm
 import re
 import sys
 import astroML.time_series
-from utils import convert_param_format,run_aegean,var_analysis,lomb_scargle,chi2_calc,errf
+from utils import convert_param_format,initial_clean,run_aegean,var_analysis,lomb_scargle,chi2_calc,errf
+import imp
+import warnings
+warnings.filterwarnings('ignore')
+from Aegean_ObjDet import objdet
 
-################################################################################################################
-#User Input Section and Setup-->read in from parameters file
-#WARNING-->The following variables need to be carefully considered and changed for each new data set
-################################################################################################################
+##################################
+#User Input Section and Setup
+##################################
 
 #set initial path to where input/output is to be stored
-#NOTE: MS's need to be in path_dir/data, all output needs to be in path_dir/data_products,
-#both directories need to be created beforehand
-# path_dir='/home/ubuntu/'
+#NOTE: MS's need to be in path_dir/data, all output goes to path_dir/data_products, 
+#put AstroCompute_Scripts in path_dir_ac
 
-path_dir = sys.argv[-1]
-
+path_dir = sys.argv[-1]#make sure to including trailing / !!!
+path_dir_ac='/home/ubuntu/'
 param_file = sys.argv[-2]
 
-sys.path.append(os.path.join(path_dir, "AstroCompute_Scripts/"))
+if not os.path.isdir(path_dir+'data_products/'):
+    os.system('sudo mkdir '+path_dir+'data_products')
+if not os.path.isdir(path_dir+'data/'):
+    os.system('sudo mkdir '+path_dir+'data')
+    raise Exception(path_dir+'data/ created. Please move your MS into that directory.')
+if not os.path.isdir(path_dir_ac+'AstroCompute_Scripts/'):
+    raise Exception('Please move AstroCompute_Scripts directory into '+path_dir_ac)
+
+sys.path.append(os.path.join(path_dir_ac, "AstroCompute_Scripts/"))
 
 #get input parameters from file
 from utils import load_json
 data_params = load_json(param_file)
-#to convert txt param file to dictionary do this,
+##to convert txt param file to dictionary do this:
 #data_params = convert_param_format(param_file, to="dict")
 
+#for test simulated data set CASA put a bunch of garbadge lines in listobs
+#for test data set
+linelo=69
+#for real data sets
+#linelo=7
+
+##################################
+#Reading in Parameters
+##################################
+print 'Reading in parameters...\n'
 '''DATA SET PARAMETERS'''
 # Target name
 target = data_params["target"]
@@ -63,15 +92,17 @@ refFrequency =data_params["refFrequency"]
 # Label for casa output directories and files
 label = target + '_' + refFrequency + '_' + obsDate + '_'
 # Length of time bins (H,M,S); see below if you want manual input (line 288)
-intervalSizeH = data_params["intervalSizeH"]
-intervalSizeM = data_params["intervalSizeM"]
-intervalSizeS = data_params["intervalSizeS"]
-frac,whole=m.modf(intervalSizeS)
+intervalSizeH = int(data_params["intervalSizeH"])
+intervalSizeM = int(data_params["intervalSizeM"])
+intervalSizeS = int(data_params["intervalSizeS"])
+frac,whole=m.modf(float(intervalSizeS))
 intervalSizemicro = int(frac*(1e6))
 intervalSizeSec = int(whole)
-# Name of visibliity - should include full path if script is not being run from vis location.
+# Name of visibliity
 visibility = path_dir+'data/'+ data_params["visibility"]
-visibility_uv = path_dir+'data/'+ data_params["visibility"]
+#make copy for uv fitting
+visibility_uv=visibility.strip('.ms')+'_uv.ms'
+os.system('sudo cp -r '+visibility+' '+visibility_uv)
 
 ''' Variability Analysis'''
 #Do you want a basic variability analysis?
@@ -90,7 +121,8 @@ labelP = \
 
 '''DIRECTORY AND FILE NAME PARAMETERS'''
 # Set path to directory where all output from this script is saved.
-outputPath = path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
+outputPath = path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+\
+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
 
 # dataPath contains the path and filename in which data file will be saved.
 # This script can be run on several epochs of data from the same observation without changing this path.
@@ -100,7 +132,7 @@ dataPath = \
                  '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
                  str(intervalSizeS)+'sec.txt')
 
-#make output directory (within data_products directory)--> done in initial clean, but check if didn't run that
+#make output directory (within data_products directory)--> done in initial clean script too
 if not os.path.isdir(os.path.join(path_dir,
                                   'data_products/images_'+target+ '_' + obsDate +'_' +
                                   refFrequency+'_'+str(intervalSizeH) +
@@ -108,25 +140,18 @@ if not os.path.isdir(os.path.join(path_dir,
                                   str(intervalSizeS)+'sec')):
 	mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 	mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-	mkdir_perm2='sudo chmod -R 777 '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_perm2='sudo chmod -R u+rwx '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
 	os.system(mkdir_string)
 	os.system(mkdir_perm1)
 	os.system(mkdir_perm2)
 
-#Object detection file-->output from Aegean_ObjDet.py
-tables = outputPath+label+'whole_dataset_objdet_comp.tab'
-
 '''FLAGS'''
 # flag to run object detection
-runObj = 'F'#data_params["runObj"]
-# Is the data set large enough that you only want to save a cutout?
-# If cutout='T' & big_data='T' --> clean,fit, cutout, delete original image each interval
-# If cutout='T' & big_data='F' --> clean all, fit all, then delete.
-# If cutout='F' & big_data='F' --> clean all full size, fit all full size, no delete
-cutout = 'T'#data_params["cutout"]
-big_data = 'T'#data_params["big_data"]
-# Clean can be toggled on/off here (T/F).
-runClean = 'T'#data_params["runClean"]
+runObj = data_params["runObj"]
+# Is the data set large enough that you only want to save a cutout? Always yes now!
+cutout = 'T'
+# Clean can be toggled on/off here (T/F/U).
+runClean = data_params["runClean"]
 # optimize cleaning
 opt_clean = 'F'#data_params["opt_clean"]
 # do you want to fix parameters in fits from full data set fit? (T of F)
@@ -134,24 +159,24 @@ fix_pos = data_params["fix_pos"]
 # if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
 do_monte = data_params["do_monte"]
 # do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
-integ_fit = 'B'#data_params["integ_fit"]
+integ_fit = data_params["integ_fit"]
 # do you want to do uv fitting (T or F) as well?
-# Source parameters are: x offset (arcsec east), y offset (arcsec north),flux (Jy);
 uv_fit = data_params["uv_fit"]
-# if fixed parameters do you want to mc sample the fixed parameters (T) or take the best fit (F)?
-do_monte_uv = data_params["do_monte_uv"]
 # fix position in UV
 uv_fix = data_params["uv_fix"]
-# If runClean=F set fit_cutout='T' if you have only cutout images but want to refit without cleaning again,
-fit_cutout = 'F'#data_params["fit_cutout"]
+# If runClean=F set fit_cutout='T' to make sure all coordinates correct
+if runClean=='F':
+	fit_cutout = 'T'
+else:
+	fit_cutout = 'F'
 # define start and end time yourself
 def_times = data_params["def_times"]
 
 '''CLEAN PARAMETERS'''
-# The clean command (line 505) should be inspected closely to ensure all arguments are appropriate before
+# The clean command (line 530) should be inspected closely to ensure all arguments are appropriate before
 # running script on a new data set.
 # The following arguments will be passed to casa's clean, imfit or imstat functions:
-imageSize = [data_params["imageSize"]] * 2
+imageSize = [int(data_params["imageSize"])] * 2
 if opt_clean == 'T':
 	if not is_power2(imageSize[0]):
 		print 'Clean will run faster if image size is 2^n'
@@ -160,9 +185,9 @@ if opt_clean == 'T':
              int(pow(2, m.ceil(np.log(imageSize[0])/np.log(2))))]
         	print 'imagesize is now set to ', imageSize
     	print 'imagesize remains at ', imageSize, 'due to user request'
-numberIters = data_params["numberIters"]
+numberIters = int(data_params["numberIters"])
 cellSize = [data_params["cellSize"]] * 2
-taylorTerms = data_params["taylorTerms"]
+taylorTerms = int(data_params["taylorTerms"])
 myStokes = data_params["myStokes"]
 thre = data_params["thre"]
 #put threshold in Jy for image convergence test below
@@ -171,8 +196,12 @@ if thre_unit == 'uJy':
     thre_num=float(re.findall(r"[-+]?\d*\.\d+|\d+",thre)[0])/1e6
 elif thre_unit == 'mJy':
     thre_num=float(re.findall(r"[-+]?\d*\.\d+|\d+",thre)[0])/1e3
+elif thre_unit == 'nJy':
+    thre_num=float(re.findall(r"[-+]?\d*\.\d+|\d+",thre)[0])/1e3
+else:
+    thre_num=float(re.findall(r"[-+]?\d*\.\d+|\d+",thre)[0])/1.
 spw_choice = data_params["spw_choice"]
-# If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). myThreshold will
+# If an outlier file is to be used in the clean, set outlierFile to the filename (path inluded). thre will
 # also need to be set if outlier file is to be used.
 # If not, set outlierFile to ''.
 outlierFile = data_params["outlierFile"]
@@ -181,25 +210,38 @@ outlierFile = data_params["outlierFile"]
 '''OBJECT DETECTION AND SELECTION PARAMETERS'''
 mask_option=data_params["mask_option"]
 if runObj == 'T':
-    #object detection with Aegean algorithm--> Need to run initial_clean.py in CASA, and Aegean_ObjDet.py outside
-    #CASA first
-    src_l,ra_l,dec_l,maj_l,min_l,pos_l=run_aegean(tables,cellSize)
-    ind = data_params["ind"]
-    # target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
-    #use with rest of script
-    mask_file_OD=open('aegean_mask.txt','w')
-    for i in range(0,len(src_l)):
-    	pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(i)-1]+' '+dec_l[int(i)-1])
-    	bbox_halfwidth=np.sqrt((min_l[int(i)-1]*np.cos(pos_l[int(i)-1]))**2+(min_l[int(i)-1]*np.sin(pos_l[int(i)-1]))**2)+3
-    	bbox_halfheight=np.sqrt((maj_l[int(i)-1]*np.cos(pos_l[int(i)-1]+(np.pi/2.)))**2+(maj_l[int(i)-1]*np.sin(pos_l[int(i)-1]+(np.pi/2.)))**2)+3
-    	Box = str(pos[0]-bbox_halfwidth)+','+ str(pos[1]-bbox_halfheight)+','+str(pos[0]+bbox_halfwidth)+','+ str(pos[1]+bbox_halfheight)
-    	mask_file_OD.write('{0}\n'.format(Box))
-    mask_file_OD.close()
-    tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
-    bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
-    bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
-    targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
-    mask_option='aegean'
+	tables = outputPath+label+'whole_dataset_objdet_comp.tab'
+	out_file0=outputPath+label+'whole_dataset_aegean.txt'
+	catalog_input_name=outputPath+label+'whole_dataset_objdet.tab'
+	tele=data_params["tele"]
+	lat=data_params["lat"]
+	seed=int(data_params["seed"])
+	flood=int(data_params["flood"])
+	fits_file=outputPath+label+'whole_dataset.fits'
+	initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre)
+	src_l,ra_l,dec_l,maj_l,min_l,pos_l=objdet(tele,lat,out_file0,fits_file,seed,flood,tables,catalog_input_name,cellSize[0])	
+	if len(src_l)==0:
+		raise Exception('No sources detected.')
+	elif len(src_l)==1:
+		ind=1
+	else:
+		ind=raw_input('Please enter target source ID--> ')	
+	# target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
+	#use with rest of script
+	mask_file_OD=open(outputPath+'aegean_mask.txt','w')
+	mask_file_OD.write('{0}\n'.format('#CRTFv0'))
+	for i in range(0,len(src_l)):
+		pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(i)-1]+' '+dec_l[int(i)-1])
+		bbox_halfwidth=np.sqrt((min_l[int(i)-1]*np.cos(pos_l[int(i)-1]))**2+(min_l[int(i)-1]*np.sin(pos_l[int(i)-1]))**2)+3
+		bbox_halfheight=np.sqrt((maj_l[int(i)-1]*np.cos(pos_l[int(i)-1]+(np.pi/2.)))**2+(maj_l[int(i)-1]*np.sin(pos_l[int(i)-1]+(np.pi/2.)))**2)+3
+		Box = str(pos[0]-bbox_halfwidth)+','+ str(pos[1]-bbox_halfheight)+','+str(pos[0]+bbox_halfwidth)+','+ str(pos[1]+bbox_halfheight)
+		mask_file_OD.write('{0}\n'.format('box[['+Box.split(',')[0]+'pix,'+Box.split(',')[1]+'pix], ['+Box.split(',')[2]+'pix,'+Box.split(',')[3]+'pix]]'))
+	mask_file_OD.close()
+	tar_pos=au.findRADec(outputPath+label+'whole_dataset.image',ra_l[int(ind)-1]+' '+dec_l[int(ind)-1])
+	bbox_halfwidth=np.sqrt((min_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]))**2+(min_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]))**2)+3
+	bbox_halfheight=np.sqrt((maj_l[int(ind)-1]*np.cos(pos_l[int(ind)-1]+(np.pi/2.)))**2+(maj_l[int(ind)-1]*np.sin(pos_l[int(ind)-1]+(np.pi/2.)))**2)+3
+	targetBox = str(tar_pos[0]-bbox_halfwidth)+','+ str(tar_pos[1]-bbox_halfheight)+','+str(tar_pos[0]+bbox_halfwidth)+','+ str(tar_pos[1]+bbox_halfheight)
+	mask_option='aegean'
 elif runObj == 'F':
     # input target box in pixels if not running object detection
     targetBox = data_params["targetBox"] # #'2982,2937,2997,2947'
@@ -208,29 +250,28 @@ else:
 
 #mask for clean based on target box or mask file for complicated fields
 if mask_option == 'box':
-	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
+	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+\
+    'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 elif mask_option == 'file':
-	maskPath = path_dir+'data/'+data_params["mask_file"]
+	maskPath = data_params["mask_file"]#path_dir+'data/'+data_params["mask_file"]
 elif mask_option == 'aegean':
-	maskPath='aegean_mask.txt'
+	maskPath=outputPath+'aegean_mask.txt'
 else:
 	raise ValueError("mask_option must be 'box' or 'file'. Value given is ", mask_option)
 
 '''IMAGE PRODUCT PARAMETERS: CUTOUT AND RMS/ERROR IN IMAGE PLANE HANDLING'''
-#define rms boxes for realistic error calculation
+#define rms boxes for realistic error calculation:
 #pix_shift_cutout is how many pixels past target bx you want in cutout images rms calculation
-pix_shift_cutout=data_params["pix_shift_cutout"]
-annulus_rad_inner=data_params["annulus_rad_inner"]
-annulus_rad_outer=data_params["annulus_rad_outer"]
-cut_reg=str(float(targetBox.split(',')[0])-pix_shift_cutout)+','+str(float(targetBox.split(',')[1])-pix_shift_cutout)+','+str(float(targetBox.split(',')[2])+pix_shift_cutout)+','+str(float(targetBox.split(',')[3])+pix_shift_cutout)#'2962,2917,3017,2967'
+#annulus_rad_inner/outer is inner and outer radius in pixels from source
+pix_shift_cutout=30
+annulus_rad_inner=20
+annulus_rad_outer=30
+cut_reg=str(float(targetBox.split(',')[0])-float(pix_shift_cutout))+','+str(float(targetBox.split(',')[1])-float(pix_shift_cutout))+\
+','+str(float(targetBox.split(',')[2])+float(pix_shift_cutout))+','+str(float(targetBox.split(',')[3])+float(pix_shift_cutout))#'2962,2917,3017,2967'
 x_sizel=float(targetBox.split(',')[0])
 x_sizeu=float(targetBox.split(',')[2])
 y_sizel=float(targetBox.split(',')[1])
 y_sizeu=float(targetBox.split(',')[3])
-#local rms around target box but inside cutout region (not as accurate as annulus)
-#rmsbox1=str(x_sizel-(3./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_cutout)+','+str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizel-(1./4.)*pix_shift_cutout)
-#rmsbox2=str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizel-(3./4.)*pix_shift_cutout)+','+str(x_sizeu+(3./4.)*pix_shift_cutout)+','+str(y_sizel-(1./4.)*pix_shift_cutout)
-#rmsbox3=str(x_sizel-(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(1./4.)*pix_shift_cutout)+','+str(x_sizeu+(1./4.)*pix_shift_cutout)+','+str(y_sizeu+(3./4.)*pix_shift_cutout)
 #annulus region parameters
 cen_annulus='['+str(((x_sizeu-x_sizel)/2.)+x_sizel)+'pix,'+str(((y_sizeu-y_sizel)/2.)+y_sizel)+'pix]'
 cen_radius='['+str(annulus_rad_inner)+'pix,'+str(annulus_rad_outer)+'pix]'
@@ -240,26 +281,18 @@ if lc_scale_unit=='m':
 	lc_scale_factor=1.0e03
 elif lc_scale_unit=='u':
 	lc_scale_factor=1.0e06
+elif lc_scale_unit=='n':
+    lc_scale_factor=1.0e09
 elif lc_scale_unit=='':
 	lc_scale_factor=1.0
+else:
+    lc_scale_factor=1.0
 #what time scale do you want in light curve
 lc_scale_time=data_params["lc_scale_time"]
 #if remainder of obstime/interval > this # then it is included in time intervals (in minutes)
-rem_int=data_params["rem_int"]
+rem_int=5.
 
-'''REFITTTING WITHOUT CLEANING PARAMETERS'''
-#make sure rms boxes are set to local.
-if fit_cutout == 'T':
-	targetBox = str(float(targetBox.split(',')[0])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[1])-float(cut_reg.split(',')[1]))+','+str(float(targetBox.split(',')[2])-float(cut_reg.split(',')[0]))+','+str(float(targetBox.split(',')[3])-float(cut_reg.split(',')[1]))
-	cx_sizel=float(targetBox.split(',')[0])
-	cx_sizeu=float(targetBox.split(',')[2])
-	cy_sizel=float(targetBox.split(',')[1])
-	cy_sizeu=float(targetBox.split(',')[3])
-	#rmsbox1=str(cx_sizel-(3./4.)*pix_shift_cutout)+','+str(cy_sizel-(3./4.)*pix_shift_cutout)+','+str(cx_sizel-(1./4.)*pix_shift_cutout)+','+str(cy_sizel-(1./4.)*pix_shift_cutout)
-	#rmsbox2=str(cx_sizeu+(1./4.)*pix_shift_cutout)+','+str(cy_sizel-(3./4.)*pix_shift_cutout)+','+str(cx_sizeu+(3./4.)*pix_shift_cutout)+','+str(cy_sizel-(1./4.)*pix_shift_cutout)
-	#rmsbox3=str(cx_sizel-(1./4.)*pix_shift_cutout)+','+str(cy_sizeu+(1./4.)*pix_shift_cutout)+','+str(cx_sizeu+(1./4.)*pix_shift_cutout)+','+str(cy_sizeu+(3./4.)*pix_shift_cutout)
-	cen_annulus='['+str(((cx_sizeu-cx_sizel)/2.)+cx_sizel)+','+str(((cy_sizeu-cy_sizel)/2.)+cy_sizel)+']'
-	cen_radius='[10pix,20pix]'
+
 
 '''IMAGE FITTING PARAMETERS'''
 if do_monte == 'T':
@@ -269,59 +302,86 @@ else:
 	lab='_bestfit_'
 # number of MC simulations if MC position sampling chosen
 nsim=100
-#if fixing parameters, what parameters do you want to fix in fits? f= peak flux, x=peak x pos, y=peak y pos, a=major axis (arcsec), b=minor axis (arcsec), p=position angle (deg)
-#a, b, p convolved with beam values not deconvolved values!!!
+#if fixing parameters, what parameters do you want to fix in fits? f= peak flux, x=peak x pos, y=peak y pos, 
+#a=major axis (arcsec), b=minor axis (arcsec), p=position angle (deg)
+#a, b, p "convolved with beam" values not "deconvolved" values!!!
 #format is [value,error] from fit of full data set
 if fix_pos == 'T':
-    par_fix=data_params["par_fix"]
-    if runObj == 'F':
-    	print 'Cleaning Full Data Set-->'
-    	clean(vis=visibility, imagename=outputPath+label+'whole_dataset', field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
-    print 'Fitting full data set in Image Plane-->'
-    full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_dataset.txt')
-    imfitFilefull=open(outputPath+label+'whole_dataset.txt','r')
-    for line in imfitFilefull:
-        if ('--- ra:' in line) & ('pixels' in line):
-            ra_string=line
-        if ('--- dec:' in line) & ('pixels' in line):
-            dec_string=line
-    pmra=ra_string.find('+/-')
-    pmdec=dec_string.find('+/-')
-    pixra=ra_string.find('pixels')
-    pixdec=dec_string.find('pixels')
+	par_fix=data_params["par_fix"]
+	if runObj == 'F':
+		print 'Cleaning Full Data Set-->'
+		os.system('rm -rf '+outputPath+label+'whole_dataset.*')
+		initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre)
+	print 'Fitting full data set in Image Plane-->'
+	os.system('rm -rf '+outputPath+label+'whole_dataset.txt')
+	full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_datasetfit.txt')
+	imfitFilefull=open(outputPath+label+'whole_datasetfit.txt','r')
+	for line in imfitFilefull:
+		if ('--- ra:' in line) & ('pixels' in line):
+			ra_string=line
+		if ('--- dec:' in line) & ('pixels' in line):
+			dec_string=line
+	pmra=ra_string.find('+/-')
+	pmdec=dec_string.find('+/-')
+	pixra=ra_string.find('pixels')
+	pixdec=dec_string.find('pixels')
+	rara=ra_string.find('ra:')
+	decdec=dec_string.find('dec:')
+	imfitFilefull.close()
 
-    peak_x=[float(ra_string[16:pmra]),float(ra_string[29:pixra])]#[2988.63,0.02]
-    peak_y=[float(dec_string[16:pmdec-1]),float(dec_string[29:pixdec-1])]#[2942.09,0.01]
-    if fit_cutout=='T':
-        peak_x=[peak_x[0]-float(cut_reg.split(',')[0]),peak_x[1]]
-        peak_y=[peak_y[0]-float(cut_reg.split(',')[1]),peak_y[1]]
-    b_maj=[full_fit['results']['component0']['shape']['majoraxis']['value'],full_fit['results']['component0']['shape']['majoraxiserror']['value']]#[0.154,0.001]
-    b_min=[full_fit['results']['component0']['shape']['minoraxis']['value'],full_fit['results']['component0']['shape']['minoraxiserror']['value']]#[0.099,0.0005]
-    pos_ang=[full_fit['results']['component0']['shape']['positionangle']['value'],full_fit['results']['component0']['shape']['positionangleerror']['value']]#[67.41,0.42]
+	peak_x=[float(ra_string[rara+4:pmra]),float(ra_string[pmra+3:pixra])]#[2988.63,0.02]
+	peak_y=[float(dec_string[decdec+4:pmdec-1]),float(dec_string[pmdec+3:pixdec-1])]#[2942.09,0.01]
+	if fit_cutout=='T':
+		peak_x=[peak_x[0]-float(cut_reg.split(',')[0]),peak_x[1]]
+		peak_y=[peak_y[0]-float(cut_reg.split(',')[1]),peak_y[1]]
+	b_maj=[full_fit['results']['component0']['shape']['majoraxis']['value'],\
+	full_fit['results']['component0']['shape']['majoraxiserror']['value']]#[0.154,0.001]
+	b_min=[full_fit['results']['component0']['shape']['minoraxis']['value'],\
+	full_fit['results']['component0']['shape']['minoraxiserror']['value']]#[0.099,0.0005]
+	pos_ang=[full_fit['results']['component0']['shape']['positionangle']['value'],\
+	full_fit['results']['component0']['shape']['positionangleerror']['value']]#[67.41,0.42]
+
+'''REFITTTING WITHOUT CLEANING PARAMETERS'''
+#make sure rms boxes are set to local.
+if fit_cutout == 'T':
+	targetBox = str(float(targetBox.split(',')[0])-float(cut_reg.split(',')[0]))+','+\
+    str(float(targetBox.split(',')[1])-float(cut_reg.split(',')[1]))+','+\
+    str(float(targetBox.split(',')[2])-float(cut_reg.split(',')[0]))+','+\
+    str(float(targetBox.split(',')[3])-float(cut_reg.split(',')[1]))
+	cx_sizel=float(targetBox.split(',')[0])
+	cx_sizeu=float(targetBox.split(',')[2])
+	cy_sizel=float(targetBox.split(',')[1])
+	cy_sizeu=float(targetBox.split(',')[3])
+	cen_annulus='['+str(((cx_sizeu-cx_sizel)/2.)+cx_sizel)+'pix,'+str(((cy_sizeu-cy_sizel)/2.)+cy_sizel)+'pix]'
+	cen_radius='['+str(annulus_rad_inner)+'pix,'+str(annulus_rad_outer)+'pix]'
 
 '''UV FITTING PARAMETERS'''
+if runClean=='U':
+    uv_fit='T'
 #only point sources right now
 comp_uv='delta'
-#Not tested on anything other than I; for VLA 'I', for SMA 'LL' (from listobs)
+#for VLA 'I,Q,U,V', for SMA 'LL' (from listobs)
 stokes_param=data_params["stokes_param"]
 if uv_fit=='T':
-    print 'Fitting full data set in UV Plane-->'
-    fitfulluv=uvm.uvmultifit(vis=visibility_uv, spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=['p[0],p[1],p[2]'],outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
-    if uv_fix=='F':
-    	uv_var='p[0],p[1],p[2]'#'2.8194e-02,8.5502e-03,p[2]'
-    elif uv_fix=='T':
-    	uv_var=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+',p[2]'#'2.8194e-02,8.5502e-03,p[2]'
-    src_uv_init=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+','+str(fitfulluv.result['Parameters'][2])#[2.8194e-02,8.5502e-03 , 1.3508e-01]
-    src_uv_err=str(fitfulluv.result['Uncertainties'][0])+','+str(fitfulluv.result['Uncertainties'][1])+','+str(fitfulluv.result['Uncertainties'][2])#[4.7722e-05 , 3.7205e-05, 1.1192e-04]
+	print 'Fitting full data set in UV Plane-->'
+	combuv=visibility_uv.strip('.ms')
+	mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
+	fitfulluv=uvm.uvmultifit(vis=combuv+'_mstransform.ms', spw=spw_choice, column = "data", uniform=False, model=[comp_uv],stokes = stokes_param, var=['p[0],p[1],p[2]'],outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False,finetune=False, method="levenberg")
+	if uv_fix=='F':
+		uv_var='p[0],p[1],p[2]'#'2.8194e-02,8.5502e-03,p[2]'
+	elif uv_fix=='T':
+		uv_var=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+',p[2]'#'2.8194e-02,8.5502e-03,p[2]'
+	src_uv_init=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+','+\
+	str(fitfulluv.result['Parameters'][2])#[2.8194e-02,8.5502e-03 , 1.3508e-01]
+	src_uv_err=str(fitfulluv.result['Uncertainties'][0])+','+str(fitfulluv.result['Uncertainties'][1])+','+\
+	str(fitfulluv.result['Uncertainties'][2])#[4.7722e-05 , 3.7205e-05, 1.1192e-04]
+##################################
 
-############################################################################################################
-#End of User Input Section and Setup
-############################################################################################################
 
-############################################################################################################
-#Calculate time bins
-############################################################################################################
-
+##################################
+#Calculating time bins
+##################################
+print 'Calculating time-bins...\n'
 # Run listobs and store as a text file.
 listobs(vis=visibility, listfile=outputPath + label + 'listobs.text')
 
@@ -330,7 +390,7 @@ listobs(vis=visibility, listfile=outputPath + label + 'listobs.text')
 # are identical between listobs executions. Therefore we can be confident that the time info will
 # always be located at the same position.
 
-listobsLine7 = linecache.getline(outputPath + label + 'listobs.text', 7)
+listobsLine7 = linecache.getline(outputPath + label + 'listobs.text', linelo)
 
 startTimeH = int(listobsLine7[31:33])
 startTimeM = int(listobsLine7[34:36])
@@ -360,12 +420,12 @@ endDateMJD = gcal2jd(yeare, monthInte, daye)
 # Optional: Define start and end times manually (i.e., if only want subset of observation )
 #
 if def_times=='T':
-	startTimeH = data_params["startTimeH"] #input('Enter start time hour >| ')
-	startTimeM = data_params["startTimeM"] #input('Enter start time minute >| ')
-	startTimeS = data_params["startTimeS"] #input('Enter start time seconds >| ')
-	endTimeH = data_params["endTimeH"] #input('Enter finish time hour >| ')
-	endTimeM = data_params["endTimeM"] #input('Enter finish time minute >| ')
-	endTimeS = data_params["endTimeS"] #input('Enter start time seconds >| ')
+	startTimeH = int(data_params["startTimeH"])#input('Enter start time hour >| ')
+	startTimeM = int(data_params["startTimeM"])#input('Enter start time minute >| ')
+	startTimeS = int(data_params["startTimeS"])#input('Enter start time seconds >| ')
+	endTimeH = int(data_params["endTimeH"])#input('Enter finish time hour >| ')
+	endTimeM = int(data_params["endTimeM"])#input('Enter finish time minute >| ')
+	endTimeS = int(data_params["endTimeS"])#input('Enter start time seconds >| ')
 ####################################################################################################
 
 # We require a list of time interval strings to pass to the clean function.
@@ -399,11 +459,14 @@ print '\nTotal observation time is ' + str(time.isoformat(observationDuration))
 #
 # The interval length is converted to a datetime.timedelta object
 intervalSize = time(intervalSizeH, intervalSizeM, intervalSizeSec,intervalSizemicro)
-intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeSec,microseconds=intervalSizemicro)
+intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeSec,\
+    microseconds=intervalSizemicro)
 #
-# Calculate number of intervals. This is done by converting the duration and interval size, which are both datetime.time objects, into an integer number of minutes. Integer division is then used.
+# Calculate number of intervals. This is done by converting the duration and interval size, 
+#which are both datetime.time objects, into an integer number of minutes. Integer division is then used.
 durationSeconds = (observationDuration.hour)*3600 + (observationDuration.minute)*60+(observationDuration.second)
-intervalSeconds = (intervalSize.hour)*3600 + (intervalSize.minute)*60 + (intervalSize.second)+(intervalSize.microsecond*1e-6)
+intervalSeconds = (intervalSize.hour)*3600 + (intervalSize.minute)*60 + (intervalSize.second)+\
+(intervalSize.microsecond*1e-6)
 if intervalSeconds > durationSeconds:
     raise Exception("The observation duration (", str(durationSeconds),
                     "sec) is less than the given interval (",
@@ -437,23 +500,37 @@ for element in range(numIntervals):
     # The next element in the list is generated by adding the fractional number of days since the start
     # of the observation to the MJD start time.
     if float(endTimeDelta.days) == 0:
-    	mjdTimes[element] = startDateMJD[1] + long((datetime.min+endTimeDelta).time().hour)/24.0 + long((datetime.min+endTimeDelta).time().minute)/60.0/24.0 + long((datetime.min+endTimeDelta).time().second)/60.0/60.0/24.0+ long((datetime.min+endTimeDelta).time().microsecond)/60.0/60.0/24.0/(1.0e6)
+    	mjdTimes[element] = startDateMJD[1] + long((datetime.min+endTimeDelta).time().hour)/24.0 + \
+        long((datetime.min+endTimeDelta).time().minute)/60.0/24.0 + \
+        long((datetime.min+endTimeDelta).time().second)/60.0/60.0/24.0+ \
+        long((datetime.min+endTimeDelta).time().microsecond)/60.0/60.0/24.0/(1.0e6)
     	date_conv=jd2gcal(startDateMJD[0],startDateMJD[1])
-    	month_0={1: '01', 2: '02', 3: '03', 4: '04', 5: '05', 6: '06', 7: '07', 8: '08', 9: '09', 10: '10', 11: '11', 12: '12'}[date_conv[1]]
+    	month_0={1: '01', 2: '02', 3: '03', 4: '04', 5: '05', 6: '06', 7: '07', 8: '08',\
+         9: '09', 10: '10', 11: '11', 12: '12'}[date_conv[1]]
 
     else:
-    	mjdTimes[element] = endDateMJD[1] + long((datetime.min+endTimeDelta).time().hour)/24.0 + long((datetime.min+endTimeDelta).time().minute)/60.0/24.0 + long((datetime.min+endTimeDelta).time().second)/60.0/60.0/24.0+ long((datetime.min+endTimeDelta).time().microsecond)/60.0/60.0/24.0/(1.0e6)
+    	mjdTimes[element] = endDateMJD[1] + long((datetime.min+endTimeDelta).time().hour)/24.0 + \
+        long((datetime.min+endTimeDelta).time().minute)/60.0/24.0 + \
+        long((datetime.min+endTimeDelta).time().second)/60.0/60.0/24.0+ \
+        long((datetime.min+endTimeDelta).time().microsecond)/60.0/60.0/24.0/(1.0e6)
     	date_conv2=jd2gcal(endDateMJD[0],endDateMJD[1])
-    	month_2={1: '01', 2: '02', 3: '03', 4: '04', 5: '05', 6: '06', 7: '07', 8: '08', 9: '09', 10: '10', 11: '11', 12: '12'}[date_conv2[1]]
+    	month_2={1: '01', 2: '02', 3: '03', 4: '04', 5: '05', 6: '06', 7: '07',\
+         8: '08', 9: '09', 10: '10', 11: '11', 12: '12'}[date_conv2[1]]
 
     # The start and end times of the interval are converted to strings in a format ready to be
     # passed to clean, ie. 'hh:mm:ss~hh:mm:ss'.
     if float(endTimeDelta.days) == 0 and float(startTimeDelta.days)==0:
-    	timeIntervals[element] = str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+startTimeDelta).time())) + '~' +str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+endTimeDelta).time()))
+    	timeIntervals[element] = str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +\
+        '/' + str(time.isoformat((datetime.min+startTimeDelta).time())) + '~' +str(date_conv[0]) +'/'+\
+         str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+endTimeDelta).time()))
     elif float(endTimeDelta.days) != 0 and float(startTimeDelta.days)==0:
-    	timeIntervals[element] = str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+startTimeDelta).time())) + '~' +str(date_conv2[0]) +'/'+ str(month_2) +'/'+str(str(date_conv2[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+endTimeDelta).time()))
+    	timeIntervals[element] = str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +\
+        '/' + str(time.isoformat((datetime.min+startTimeDelta).time())) + '~' +str(date_conv2[0]) +'/'+\
+         str(month_2) +'/'+str(str(date_conv2[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+endTimeDelta).time()))
     elif float(endTimeDelta.days) != 0 and float(startTimeDelta.days)!=0:
-    	timeIntervals[element] = str(date_conv2[0]) +'/'+ str(month_2) +'/'+str(str(date_conv2[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+startTimeDelta).time())) + '~' +str(date_conv2[0]) +'/'+ str(month_2) +'/'+str(str(date_conv2[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+endTimeDelta).time()))
+    	timeIntervals[element] = str(date_conv2[0]) +'/'+ str(month_2) +'/'+str(str(date_conv2[2]).zfill(2)) +\
+        '/' + str(time.isoformat((datetime.min+startTimeDelta).time())) + '~' +str(date_conv2[0]) +'/'+\
+         str(month_2) +'/'+str(str(date_conv2[2]).zfill(2)) +'/' + str(time.isoformat((datetime.min+endTimeDelta).time()))
     else:
         raise Exception('Something went wrong finding time intervals,'
                         'please review input')
@@ -463,656 +540,549 @@ for element in range(numIntervals):
 # to timeIntervals and mjdTimes.
 if remainder >= rem_int:
     if float(startDateMJD[1]) != float(endDateMJD[1]):
-    	timeIntervals = timeIntervals + [str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat(endTime))]
-    	mjdTimes = mjdTimes + [endDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
+    	timeIntervals = timeIntervals + [str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +\
+        '/'+str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv2[0])+'/'+str(month_2)+'/'\
+        +str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat(endTime))]
+    	mjdTimes = mjdTimes + [endDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ \
+        long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
     else:
-    	timeIntervals = timeIntervals + [str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +'/' +str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +'/' +str(time.isoformat(endTime))]
-    	mjdTimes = mjdTimes + [startDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
+    	timeIntervals = timeIntervals + [str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +\
+        '/' +str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv[0]) +'/'+ str(month_0) +\
+        '/'+str(str(date_conv[2]).zfill(2)) +'/' +str(time.isoformat(endTime))]
+    	mjdTimes = mjdTimes + [startDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ \
+        long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
 
 # The results are printed for the user.
 print '\nThe observation will be divided into the following intervals: '
 print timeIntervals
 print '\nmjdTimes'
 print mjdTimes
+##################################
 
-############################################################################################
-# Clean each chunk individually and fit.
-############################################################################################
-# Imfit will be run on each image with a given set of estimates. These estimates need to be
-# given as a text file with a particular layout.
-# The estimates can be gathered from the output of running imhead() on each image.
-# For each image the for loop runs imhead(), creates a temporary estimates text file from its
-#output, and then runs imfit() using these estimates. The resulting imfits are saved as
-#text files.
-############################################################################################
+##################################
+# CLEAN + Fit each chunk
+##################################
 
 #initialize lists
-#result_box1rms=[]
-#result_box2rms=[]
-#result_box3rms=[]
 fluxError_real=[]
 uv_fitval=[]
 uv_fiterr=[]
 #make copy of mjdTimes and timeIntervals for uv fitting
 mjdTimes_uv=mjdTimes
 timeIntervals_uv=timeIntervals
+#count failed intervals
+counter_fail=0
 
-print 'Clean is starting-->'
 if runClean == "T":
+	print 'CLEAN is starting-->'
 	for interval, time, interval_uv, time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
-		print 'cleaning interval:', interval
-		counter_fail=0
-        	if outlierFile == '':
-            		intervalString=interval.replace(':', '.').replace('/','_')
-            		clean(vis=visibility, imagename=outputPath+label+intervalString, mask=maskPath, selectdata=T, timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural', usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre, interactive=F)
-
-			if big_data == 'T':
-
-				#
-
-		    		intervalString=interval.replace(':', '.').replace('/','_')
-		    		print intervalString,
-
-		   		 # Depending on the nuber of terms used for the Taylor expansion in clean, the image file name will end in either
-		    		# .image or .image.tt0. This is handled with the following if statement.
-		    		if outlierFile != '':
-					imSuffix = '_0.image'
-		    		elif taylorTerms == 1:
-					imSuffix = '.image'
-		    		else:
-					imSuffix = '.image.tt0'
-				imstat_conv_check = imstat(imagename=outputPath+label+intervalString+imSuffix,mask=outputPath+label+intervalString+'.mask')
-		    		# For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
-		   		 # An if statement is used to pass over these intervals, avoiding runtime errors.
-		    		if os.path.exists(outputPath+label+intervalString+imSuffix) and imstat_conv_check['max'][0] <= thre_num:
-					# In most cases imhead returns a dictionary with the value located by the key 'value'
-					beamMajor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beammajor')
-					beamMajor = str(beamMajor['value'])+'arcsec'
-					beamMinor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beamminor')
-					beamMinor = str(beamMinor['value'])+'arcsec'
-					beamPA = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beampa')
-					beamPA = str(beamPA['value'])+'deg'
-					imstatOut = imstat(imagename=outputPath+label+intervalString+imSuffix,box=targetBox)
-					peak = imstatOut['max']
-					peak = str(peak[0])
-					peakPosValue = imstatOut['maxpos']
-					# In this case 'value' references an array. The x and y coordinates can be retieved by indexing.
-					peakPosX = str(peakPosValue[0])
-					peakPosY = str(peakPosValue[1])
-					# Save parameters in a temp file which will be passed to imfit. The correct layout is:
-					# peak intensity, peak x-pixel value, peak y-pixel value, major axis, minor axis, position angle, fixed
-					# the fixed parameter can contain any of the following:
-					#'f' (peak intensity), 'x' (peak x position), 'y' (peak y position), 'a' (major axis), 'b' (minor axis), 'p' (position angle)
-		#        tempFile = tempfile.NamedTemporaryFile()
-					tempFile = open('tempfile.txt','w')
-					mystring = str(peak+', '+peakPosX+', '+peakPosY+', '+beamMajor+', '+beamMinor+', '+beamPA+',abp')
-					tempFile.write(mystring)
-		    			# Run imfit using the above beam parameters.
-					tempFile.close()
-					print timeIntervals.index(interval),':',outputPath+label+intervalString+imSuffix
-					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text', estimates=tempFile.name, append=F, overwrite = T)
-		    			if fix_pos == 'T':
-						if do_monte == 'T':
-							samp_px=np.random.normal(0,1,nsim)
-							samp_py=np.random.normal(0,1,nsim)
-							samp_bmaj=np.random.normal(0,1,nsim)
-							samp_bmin=np.random.normal(0,1,nsim)
-							samp_pos=np.random.normal(0,1,nsim)
-							for i in range(0,len(samp_px)):
-								peak_x1=(samp_px[i]*peak_x[1])+peak_x[0]
-								peak_y1=(samp_py[i]*peak_y[1])+peak_y[0]
-								b_maj1=(samp_bmaj[i]*b_maj[1])+b_maj[0]
-								b_min1=(samp_bmin[i]*b_min[1])+b_min[0]
-								pos_ang1=(samp_pos[i]*pos_ang[1])+pos_ang[0]
-								tempFile2 = open('tempfile2.txt','w')
-								mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
-								tempFile2.write(mystring2)
-								tempFile2.close()
-								imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text', estimates=tempFile2.name,append=F, overwrite = T)
-						elif do_monte =='F':
-		    					tempFile2 = open('tempfile2.txt','w')
-							mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
-							tempFile2.write(mystring2)
-		    					tempFile2.close()
-							imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text', estimates=tempFile2.name,append=F, overwrite = T)
-						else:
-							print 'Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)'
-		    			else:
-		    				imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',append=F, overwrite = T)
-
-					result_box1 = imstat(imagename=outputPath+label+intervalString+imSuffix,
-                                         region='annulus['+cen_annulus+','+cen_radius+']')
-					#result_box2=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox2)
-					#result_box3=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox3)
-					#result_box1rms.append(result_box1['rms'][0])
-					#result_box2rms.append(result_box2['rms'][0])
-					#result_box3rms.append(result_box3['rms'][0])
-					#rms_array=np.array([result_box1['rms'],result_box2['rms'],result_box3['rms']])
-					fluxError_real.append(result_box1['rms'][0])
-		    		else:
-					print '\nCLEAN failed on interval ' + interval + '.'
-					counter_fail=counter_fail+1
-					# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
-					timeIntervals.remove(interval)
-					mjdTimes.remove(time)
-					#timeIntervals_uv.remove(interval_uv)
-					#mjdTimes_uv.remove(time_uv)
-		    		if uv_fit =='T' and os.path.exists(outputPath+label+intervalString+imSuffix):
-					if do_monte_uv == 'T':
-						monte_uvval=[]
-						samp_x_uv=np.random.normal(0,1,nsim)
-						samp_y_uv=np.random.normal(0,1,nsim)
-						for i in range(0,len(samp_x_uv)):
-							x_uv1=(samp_x_uv[i]*src_uv_err[1])+src_uv[1]
-							y_uv1=(samp_y_uv[i]*src_uv_err[2])+src_uv[2]
-							if np.where(np.array(timeIntervals)==interval)[0][0]==0:
-								fit=uvm.uvmultifit(vis=visibility_uv, MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]'], p_ini=[x_uv1,y_uv1,src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'_'+str(i)+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
-							else:
-								fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
-								fit.var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]']
-								fit.p_ini=[x_uv1,y_uv1,src_uv_init[2]]
-								fit.fit(redo_fixed=False,reinit_model=False)
-							monte_uvval.append(fit.result['Parameters'][2])
-						uv_fitval.append(monte_uvval)
-
-					elif do_monte_uv =='F':
-						if np.where(np.array(timeIntervals)==interval)[0][0]==0:
-							fit=uvm.uvmultifit(vis=visibility_uv, MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[uv_var], p_ini=[src_uv_init[0],src_uv_init[1],src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
-						else:
-							fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
-							fit.fit(redo_fixed=False,reinit_model=False)
-						uv_fitval.append(fit.result['Parameters'][2])
-						uv_fiterr.append(fit.result['Uncertainties'][2])
-					else:
-						print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
-	    			if cutout== 'T':#and os.path.exists(outputPath+label+intervalString+imSuffix):box=rmsbox1
-	    				immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
-					immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
-					#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
-					#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
-
-					comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
-					comm_and2='mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix
-					os.system(comm_and1)
-					os.system(comm_and2)
-
-
-if big_data == 'F' or runClean == "F":
-	for interval, time, interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
-	    # Get beam parameters using imhead.
-            counter_fail=0
-
-	    intervalString=interval.replace(':', '.').replace('/','_')
-	    print intervalString,
-
-	    # Depending on the nuber of terms used for the Taylor expansion in clean, the image file name will end in either
-	    # .image or .image.tt0. This is handled with the following if statement.
-	    if outlierFile != '':
-		imSuffix = '_0.image'
-	    elif taylorTerms == 1:
-		imSuffix = '.image'
-	    else:
-		imSuffix = '.image.tt0'
-            imstat_conv_check = imstat(imagename=outputPath+label+intervalString+imSuffix,mask=outputPath+label+intervalString+'.mask')
-	    # For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
-	    # An if statement is used to pass over these intervals, avoiding runtime errors.
-	    if os.path.exists(outputPath+label+intervalString+imSuffix) and imstat_conv_check['max'][0] <= thre_num:
-		# In most cases imhead returns a dictionary with the value located by the key 'value'
-		beamMajor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beammajor')
-		beamMajor = str(beamMajor['value'])+'arcsec'
-		beamMinor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beamminor')
-		beamMinor = str(beamMinor['value'])+'arcsec'
-		beamPA = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beampa')
-		beamPA = str(beamPA['value'])+'deg'
-		imstatOut = imstat(imagename=outputPath+label+intervalString+imSuffix,box=targetBox)
-		peak = imstatOut['max']
-		peak = str(peak[0])
-		peakPosValue = imstatOut['maxpos']
-		# In this case 'value' references an array. The x and y coordinates can be retieved by indexing.
-		peakPosX = str(peakPosValue[0])
-		peakPosY = str(peakPosValue[1])
+		print 'CLEANing interval: ', interval
+		if outlierFile == '':
+			intervalString=interval.replace(':', '.').replace('/','_')
+			clean(vis=visibility, imagename=outputPath+label+intervalString, mask=maskPath, selectdata=T,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F)
+			if taylorTerms == 1:
+				imSuffix = '.image'
+			else:
+				imSuffix = '.image.tt0'
+		else:
+			intervalString=interval.replace(':', '.').replace('/','_')
+			clean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=T,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F,outlierfile=outlierFile)
+			imSuffix = '_0.image'
+		#imstat_conv_check = imstat(imagename=outputPath+label+intervalString+imSuffix,mask=outputPath+label+intervalString+'.mask')
+		# For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
+		# An if statement is used to pass over these intervals, avoiding runtime errors.
+		if os.path.exists(outputPath+label+intervalString+imSuffix):# and imstat_conv_check['max'][0] <= thre_num:
+			beamMajor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beammajor')
+			beamMajor = str(beamMajor['value'])+'arcsec'
+			beamMinor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beamminor')
+			beamMinor = str(beamMinor['value'])+'arcsec'
+			beamPA = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beampa')
+			beamPA = str(beamPA['value'])+'deg'
+			imstatOut = imstat(imagename=outputPath+label+intervalString+imSuffix,box=targetBox)
+			peak = imstatOut['max']
+			peak = str(peak[0])
+			peakPosValue = imstatOut['maxpos']
+			peakPosX = str(peakPosValue[0])
+			peakPosY = str(peakPosValue[1])
 		# Save parameters in a temp file which will be passed to imfit. The correct layout is:
 		# peak intensity, peak x-pixel value, peak y-pixel value, major axis, minor axis, position angle, fixed
 		# the fixed parameter can contain any of the following:
 		#'f' (peak intensity), 'x' (peak x position), 'y' (peak y position), 'a' (major axis), 'b' (minor axis), 'p' (position angle)
-	#        tempFile = tempfile.NamedTemporaryFile()
-		tempFile = open('tempfile.txt','w')
-		mystring = str(peak+', '+peakPosX+', '+peakPosY+', '+beamMajor+', '+beamMinor+', '+beamPA+',abp')
-		tempFile.write(mystring)
-	    	# Run imfit using the above beam parameters.
-		tempFile.close()
-		print timeIntervals.index(interval),':',outputPath+label+intervalString+imSuffix
-		imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text', estimates=tempFile.name, append=F, overwrite = T)
-	    	if fix_pos == 'T':
-			if do_monte == 'T':
-				samp_px=np.random.normal(0,1,nsim)
-				samp_py=np.random.normal(0,1,nsim)
-				samp_bmaj=np.random.normal(0,1,nsim)
-				samp_bmin=np.random.normal(0,1,nsim)
-				samp_pos=np.random.normal(0,1,nsim)
-				for i in range(0,len(samp_px)):
-					peak_x1=(samp_px[i]*peak_x[1])+peak_x[0]
-					peak_y1=(samp_py[i]*peak_y[1])+peak_y[0]
-					b_maj1=(samp_bmaj[i]*b_maj[1])+b_maj[0]
-					b_min1=(samp_bmin[i]*b_min[1])+b_min[0]
-					pos_ang1=(samp_pos[i]*pos_ang[1])+pos_ang[0]
+		#tempFile = tempfile.NamedTemporaryFile()
+			tempFile = open('tempfile.txt','w')
+			mystring = str(peak+', '+peakPosX+', '+peakPosY+', '+beamMajor+', '+beamMinor+', '+beamPA+',abp')
+			tempFile.write(mystring)
+			tempFile.close()
+		# Run imfit using the above beam parameters.
+			if fix_pos== 'F':
+				imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=F, overwrite = T)
+			elif fix_pos == 'T':
+				if do_monte == 'T':
+					samp_px=np.random.normal(0,1,nsim)
+					samp_py=np.random.normal(0,1,nsim)
+					#samp_bmaj=np.random.normal(0,1,nsim)
+					#samp_bmin=np.random.normal(0,1,nsim)
+					#samp_pos=np.random.normal(0,1,nsim)
+					for i in range(0,len(samp_px)):
+						peak_x1=(samp_px[i]*peak_x[1])+peak_x[0]
+						peak_y1=(samp_py[i]*peak_y[1])+peak_y[0]
+						b_maj1=b_maj[0]#(samp_bmaj[i]*b_maj[1])+b_maj[0]
+						b_min1=b_min[0]#(samp_bmin[i]*b_min[1])+b_min[0]
+						pos_ang1=pos_ang[0]#(samp_pos[i]*pos_ang[1])+pos_ang[0]
+						tempFile2 = open('tempfile2.txt','w')
+						mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
+						tempFile2.write(mystring2)
+						tempFile2.close()
+						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+				elif do_monte =='F':
 					tempFile2 = open('tempfile2.txt','w')
-					mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
+					mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
 					tempFile2.write(mystring2)
 					tempFile2.close()
-					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text', estimates=tempFile2.name,append=F, overwrite = T)
-			elif do_monte =='F':
-	    			tempFile2 = open('tempfile2.txt','w')
-				mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
-				tempFile2.write(mystring2)
-	    			tempFile2.close()
-				imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text', estimates=tempFile2.name,append=F, overwrite = T)
-			else:
-				print 'Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)'
-	    	else:
-	    		imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox, logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',append=F, overwrite = T)
-		if fit_cutout=='T':
-			result_box1=imstat(imagename=outputPath+label+intervalString+'_rms'+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
-			#result_box2=imstat(imagename=outputPath+label+intervalString+'_rms2'+imSuffix,box=rmsbox2)
-			#result_box3=imstat(imagename=outputPath+label+intervalString+'_rms3'+imSuffix,box=rmsbox3)
-		else:
-			result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,
-                               region='annulus['+cen_annulus+','+cen_radius+']')
-			#result_box2=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox2)
-			#result_box3=imstat(imagename=outputPath+label+intervalString+imSuffix,box=rmsbox3)
-		#result_box1rms.append(result_box1['rms'][0])
-		#result_box2rms.append(result_box2['rms'][0])
-		#result_box3rms.append(result_box3['rms'][0])
-		#rms_array=np.array([result_box1['rms'],result_box2['rms'],result_box3['rms']])
-		fluxError_real.append(result_box1['rms'][0])
-		#comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
-		#comm_and2='mv temp_'+outputPath+label+intervalString+'.image '+outputPath+label+intervalString+'.image'
-		#os.system(comm_and1)
-		#os.system(comm_and2)
-	    else:
-		print '\nCLEAN failed on interval ' + interval + '.'
-		# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
-		counter_fail=counter_fail+1
-		timeIntervals.remove(interval)
-		mjdTimes.remove(time)
-		#timeIntervals_uv.remove(interval)
-		#mjdTimes_uv.remove(time)
-	    if uv_fit =='T' and os.path.exists(outputPath+label+intervalString+imSuffix):
-		if do_monte_uv == 'T':
-			monte_uvval=[]
-			samp_x_uv=np.random.normal(0,1,nsim)
-			samp_y_uv=np.random.normal(0,1,nsim)
-			for i in range(0,len(samp_x_uv)):
-				x_uv1=(samp_x_uv[i]*src_uv_err[1])+src_uv[1]
-				y_uv1=(samp_y_uv[i]*src_uv_err[2])+src_uv[2]
-				if np.where(np.array(timeIntervals)==interval)[0][0]==0:
-					fit=uvm.uvmultifit(vis=visibility_uv, MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]'], p_ini=[x_uv2,y_uv1,src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'_'+str(i)+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=F, overwrite = T)
 				else:
-					fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
-					fit.var=[str(x_uv1)+','+str(y_uv1)+','+'p[2]']
-					fit.p_ini=[x_uv2,y_uv1,src_uv_init[2]]
-					fit.fit(redo_fixed=False,reinit_model=False)
-				monte_uvval.append(fit.result['Parameters'][2])
-			uv_fitval.append(monte_uvval)
-		elif do_monte_uv =='F':
+					raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
+			result_box1 = imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
+			fluxError_real.append(result_box1['rms'][0])
+			if cutout== 'T':
+				immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
+				immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
+				os.system('rm -rf '+outputPath+label+intervalString+'.*')
+				os.system('mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix)
+		else:
+			print '\nCLEAN failed on interval ' + interval + '.'
+			counter_fail=counter_fail+1
+			# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
+			timeIntervals.remove(interval)
+			mjdTimes.remove(time)
+		#uvfitting if requested
+		if uv_fit =='T':
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
-				fit=uvm.uvmultifit(vis=visibility_uv,MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv], spw=spw_choice, column = "data", uniform=False, write_model=False, model=[comp_uv],stokes = stokes_param, var=[uv_var], p_ini=[src_uv_init[0],src_uv_init[1],src_uv_init[2]],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt', OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				combuv=visibility_uv.strip('.ms')
+				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
+				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=[comp_uv],stokes = stokes_param,var=[uv_var], p_ini=[float(src_uv_init.split(',')[0]),float(src_uv_init.split(',')[1]),float(src_uv_init.split(',')[2])],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
 				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
 				fit.fit(redo_fixed=False,reinit_model=False)
 			uv_fitval.append(fit.result['Parameters'][2])
 			uv_fiterr.append(fit.result['Uncertainties'][2])
+elif runClean == "F":
+	print 'Fitting is starting-->'
+	counter_fail=0
+	for interval, time, interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
+		print 'Fitting interval: ', interval
+		intervalString=interval.replace(':', '.').replace('/','_')
+		if outlierFile == '':
+			if taylorTerms == 1:
+				imSuffix = '.image'
+			else:
+				imSuffix = '.image.tt0'
 		else:
-			print 'Please specify whether you wish to perform a Monte Carlo fit o uv, (T) or not(F)'
-	    if cutout== 'T':
-		immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
-		immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
-		#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox2,outfile=outputPath+label+intervalString+'_rms2.image')
-		#immath(imagename=outputPath+label+intervalString+'.image',mode='evalexpr',expr='IM0',box=rmsbox3,outfile=outputPath+label+intervalString+'_rms3.image')
-		comm_and1='rm -rf '+outputPath+label+intervalString+'.*'
-		comm_and2='mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix
-		os.system(comm_and1)
-		os.system(comm_and2)
-
+			imSuffix = '_0.image'
+		#newmaskname=outputPath+label+intervalString+'.mask'
+		#newmaskname1=newmaskname.replace('.', '_').replace('~','_')
+		#newmaskname2=newmaskname1.replace('_mask','.mask')
+		#os.system('sudo cp -r '+outputPath+label+intervalString+'.mask '+newmaskname2)
+		#imstat_conv_check = imstat(imagename=outputPath+label+intervalString+imSuffix,mask=newmaskname2)
+		if os.path.exists(outputPath+label+intervalString+imSuffix):# and imstat_conv_check['max'][0] <= thre_num:
+			beamMajor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beammajor')
+			beamMajor = str(beamMajor['value'])+'arcsec'
+			beamMinor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beamminor')
+			beamMinor = str(beamMinor['value'])+'arcsec'
+			beamPA = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beampa')
+			beamPA = str(beamPA['value'])+'deg'
+			imstatOut = imstat(imagename=outputPath+label+intervalString+imSuffix,box=targetBox)
+			peak = imstatOut['max']
+			peak = str(peak[0])
+			peakPosValue = imstatOut['maxpos']
+			peakPosX = str(peakPosValue[0])
+			peakPosY = str(peakPosValue[1])
+			tempFile = open('tempfile.txt','w')
+			mystring = str(peak+', '+peakPosX+', '+peakPosY+', '+beamMajor+', '+beamMinor+', '+beamPA+',abp')
+			tempFile.write(mystring)
+			tempFile.close()
+			if fix_pos=='F':
+				imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=F, overwrite = T)
+			else:
+				if do_monte == 'T':
+					samp_px=np.random.normal(0,1,nsim)
+					samp_py=np.random.normal(0,1,nsim)
+					#samp_bmaj=np.random.normal(0,1,nsim)
+					#samp_bmin=np.random.normal(0,1,nsim)
+					#samp_pos=np.random.normal(0,1,nsim)
+					for i in range(0,len(samp_px)):
+						peak_x1=(samp_px[i]*peak_x[1])+peak_x[0]
+						peak_y1=(samp_py[i]*peak_y[1])+peak_y[0]
+						b_maj1=b_maj[0]#(samp_bmaj[i]*b_maj[1])+b_maj[0]
+						b_min1=b_min[0]#(samp_bmin[i]*b_min[1])+b_min[0]
+						pos_ang1=pos_ang[0]#(samp_pos[i]*pos_ang[1])+pos_ang[0]
+						tempFile2 = open('tempfile2.txt','w')
+						mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
+						tempFile2.write(mystring2)
+						tempFile2.close()
+						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+				elif do_monte =='F':
+					tempFile2 = open('tempfile2.txt','w')
+					mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
+					tempFile2.write(mystring2)
+					tempFile2.close()
+					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+				else:
+					raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
+			result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
+			fluxError_real.append(result_box1['rms'][0])
+		else:
+			print '\nCLEAN failed on interval ' + interval + '. No fitting done'
+			# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
+			counter_fail=counter_fail+1
+			timeIntervals.remove(interval)
+			mjdTimes.remove(time)
+		if uv_fit =='T':
+			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
+				combuv=visibility_uv.strip('.ms')
+				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
+				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=[comp_uv],stokes = stokes_param,var=[uv_var], p_ini=[float(src_uv_init.split(',')[0]),float(src_uv_init.split(',')[1]),float(src_uv_init.split(',')[2])],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+			else:
+				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
+				fit.fit(redo_fixed=False,reinit_model=False)
+			uv_fitval.append(fit.result['Parameters'][2])
+			uv_fiterr.append(fit.result['Uncertainties'][2])
+elif runClean == 'U':
+	print 'You selected only UV plane analysis. No image plane analysis will be done.'
+	for interval, time, interval_uv, time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
+		print 'UV analysis on interval: ', interval
+		intervalString=interval.replace(':', '.').replace('/','_')
+		if uv_fit =='T':
+			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
+				combuv=visibility_uv.strip('.ms')
+				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
+				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=[comp_uv],stokes = stokes_param,var=[uv_var], p_ini=[float(src_uv_init.split(',')[0]),float(src_uv_init.split(',')[1]),float(src_uv_init.split(',')[2])],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+			else:
+				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
+				fit.fit(redo_fixed=False,reinit_model=False)
+			uv_fitval.append(fit.result['Parameters'][2])
+			uv_fiterr.append(fit.result['Uncertainties'][2])
 
 uv_fitval_arr=np.array(uv_fitval)
 uv_fiterr_arr=np.array(uv_fiterr)
+##################################
 
-############################################################################################
-# Read values from all fitting files into lists for plotting and creating output data file
-############################################################################################
-# Initialise lists.
-fluxDensity = []
-fluxDensity2 =[]
-fluxDensity3 =[]
+##################################
+# Creating output data arrays
+##################################
+print 'Creating output flux arrays...\n'
+fluxDensity = []#integ
+fluxDensity2 =[]#peak
+fluxDensity3 =[]#UV plane
+fluxError = []#integ
+fluxError2 =[]#peak
+fluxError3 =[]#UV plane
+suffix = []#integ
+suffix2 = []#peak
+suffix3 = []#UV plane
 timerange = []
-fluxError = []
-fluxError2 =[]
-fluxError3 =[]
-suffix = []
-suffix2 = []
-suffix3 = []
 
 # Create flux density, flux density error, suffix and timerange vectors. In each case get values from imfit text files.
 # The exact layout of the imfit outputs are somewhat unpredictable. Therefore find() is used here to reliably locate
 # the relavent information.
-
 for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
-    # For some intervals the imfit may have failed, in which case the imfit text file will not contain the required information.
-    # Such files will end with the string '*** FIT FAILED ***', and an if statement is used to pass over these files.
-    flux_uv=[]
-    fluxerr_uv=[]
-    if do_monte =='T':
-	FD_list=[]
-	FDE_list=[]
-	FD2_list=[]
-	FDE2_list=[]
-
+	flux_uv=[]
 	fluxerr_uv=[]
-	for i in range(0,len(samp_px)):
-		intervalString=interval.replace(':', '.').replace('/','_')
+	if runClean != 'U':
+		if do_monte =='T':
+			FD_list=[]
+			FDE_list=[]
+			FD2_list=[]
+			FDE2_list=[]
+			fluxerr_uv=[]
+			for i in range(0,len(samp_px)):
+				intervalString=interval.replace(':', '.').replace('/','_')
+				imfitFile = open(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text', 'r')
+				imfitText = imfitFile.read()
+				imfitFile.close()
+				end = imfitText[-19:-1]
+				if end != '*** FIT FAILED ***':
+					if integ_fit == 'T':
+						startWord = '--- Integrated:'
+						endWord = '--- Peak:'
+						startPos = imfitText.find(startWord)
+						endPos = imfitText.find(endWord)
+						fluxString = imfitText[startPos:endPos]
+						plusMinusPos = fluxString.find('+/-')
+						unitsPos = fluxString.find('Jy')
+						plot_label_unit=''
+						fluxD=float(fluxString[16:plusMinusPos])
+						fluxE=float(fluxString[plusMinusPos+3:unitsPos-1])
+						suff = str(fluxString[unitsPos-1])
+						if suff == 'u':
+							fluxD=fluxD*[1.0e-6]
+							fluxE=fluxE*[1.0e-6]
+						elif suff == 'm':
+							fluxD=fluxD*[1.0e-3]
+							fluxE=fluxE*[1.0e-3]
+						elif suff == ' ':
+							fluxD=fluxD*[1.0]
+							fluxE=fluxE*[1.0]
+						elif suff == 'n':
+							fluxD=fluxD*[1.0e-9]
+							fluxE=fluxE*[1.0e-9]
+						else:
+							fluxD=fluxD*[1.0]
+							fluxE=fluxE*[1.0]
+						FD_list.append(fluxD)
+						FDE_list.append(fluxE)
+					elif integ_fit == 'F':
+						startWord = '--- Peak:'
+						endWord = '--- Polarization:'
+						startPos = imfitText.find(startWord)
+						endPos = imfitText.find(endWord)
+						fluxString = imfitText[startPos:endPos]
+						plot_label_unit='/beam)'
+						plusMinusPos = fluxString.find('+/-')
+						unitsPos = fluxString.find('Jy/b')
+						fluxD=float(fluxString[10:plusMinusPos])
+						fluxE=float(fluxString[plusMinusPos+3:unitsPos-1])
+						suff = str(fluxString[unitsPos-1])
+						if suff == 'u':
+							fluxD=fluxD*1.0e-6
+							fluxE=fluxE*1.0e-6
+						elif suff == 'm':
+							fluxD=fluxD*1.0e-3
+							fluxE=fluxE*1.0e-3
+						elif suff == ' ':
+							fluxD=fluxD*1.0
+							fluxE=fluxE*1.0
+						elif suff == 'n':
+							fluxD=fluxD*1.0e-9
+							fluxE=fluxE*1.0e-9
+						else:
+							fluxD=fluxD*1.0
+							fluxE=fluxE*1.0
+						FD_list.append(fluxD)
+						FDE_list.append(fluxE)
+					elif integ_fit == 'B':
+						startWord = '--- Integrated:'
+						startWord2 = '--- Peak:'
+						endWord = '--- Peak:'
+						endWord2 = '--- Polarization:'
+						startPos = imfitText.find(startWord)
+						startPos2 = imfitText.find(startWord2)
+						endPos = imfitText.find(endWord)
+						endPos2 = imfitText.find(endWord2)
+						fluxString = imfitText[startPos:endPos]
+						fluxString2 = imfitText[startPos2:endPos2]
+						plusMinusPos = fluxString.find('+/-')
+						plusMinusPos2 = fluxString2.find('+/-')
+						unitsPos = fluxString.find('Jy')
+						unitsPos2 = fluxString2.find('Jy/b')
+						plot_label_unit=''
+						plot_label_unit2='/beam)'
+						fluxD1=float(fluxString[16:plusMinusPos])
+						fluxE1=float(fluxString[plusMinusPos+3:unitsPos-1])
+						fluxD2=float(fluxString2[10:plusMinusPos2])
+						fluxE2=float(fluxString2[plusMinusPos2+3:unitsPos2-1])
+						suff = str(fluxString[unitsPos-1])
+						suff2 = str(fluxString2[unitsPos2-1])
+						if suff == 'u':
+							fluxD1=fluxD1*1.0e-6
+							fluxE1=fluxE1*1.0e-6
+						elif suff == 'm':
+							fluxD1=fluxD1*1.0e-3
+							fluxE1=fluxE1*1.0e-3
+						elif suff == ' ':
+							fluxD1=fluxD1*1.0
+							fluxE1=fluxE1*1.0
+						elif suff == 'n':
+							fluxD1=fluxD1*1.0e-9
+							fluxE1=fluxE1*1.0e-9
+						else:
+							fluxD1=fluxD1*1.0
+							fluxE1=fluxE1*1.0
+						if suff2 == 'u':
+							fluxD2=fluxD2*1.0e-6
+							fluxE2=fluxE2*1.0e-6
+						elif suff2 == 'm':
+							fluxD2=fluxD2*1.0e-3
+							fluxE2=fluxE2*1.0e-3
+						elif suff2 == 'n':
+							fluxD2=fluxD2*1.0e-9
+							fluxE2=fluxE2*1.0e-9
+						else:
+							fluxD2=fluxD2*1.0
+							fluxE2=fluxE2*1.0
+						
+						FD_list.append(fluxD1)
+						FDE_list.append(fluxE1)
+						FD2_list.append(fluxD2)
+						FDE2_list.append(fluxE2)
+			if len(FD_list) < nsim/2.:
+				print '\nImage Fit failed on interval ' + interval
+				# The corresponding time intervals need to be removed from the
+				timeIntervals.remove(interval)
+				mjdTimes.remove(time)
+			GaussPer=norm.cdf(1)
+			median=np.percentile(FD_list,50)
+			pct15=np.percentile(FD_list,(1-GaussPer)*100.0)
+			pct85=np.percentile(FD_list,GaussPer*100.0)
+			upp_err=pct85-median
+			low_err=median-pct15
+			era=(upp_err+low_err)/2.
+			fluxDensity = fluxDensity + [median*1e3]
+			fluxError = fluxError + [era*1e3]
+			if integ_fit == 'B':
+				median2=np.percentile(FD2_list,50)
+				pct152=np.percentile(FD2_list,(1-GaussPer)*100.0)
+				pct852=np.percentile(FD2_list,GaussPer*100.0)
+				upp_err2=pct852-median2
+				low_err2=median2-pct152
+				era2=(upp_err2+low_err2)/2.
+				fluxDensity2 = fluxDensity2 + [median2*1e3]
+				fluxError2 = fluxError2 + [era2*1e3]
+				suffix2 = suffix2 + ['m']
+			timerange = timerange + [interval]
+			suffix = suffix + ['m']
+		elif do_monte == 'F':
+			intervalString=interval.replace(':', '.').replace('/','_')
+			imfitFile = open(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text', 'r')
+			imfitText = imfitFile.read()
+			imfitFile.close()
+			end = imfitText[-19:-1]
+			if end != '*** FIT FAILED ***':
+				if integ_fit == 'T':
+					startWord = '--- Integrated:'
+					endWord = '--- Peak:'
+					startPos = imfitText.find(startWord)
+					endPos = imfitText.find(endWord)
+					fluxString = imfitText[startPos:endPos]
+					plusMinusPos = fluxString.find('+/-')
+					unitsPos = fluxString.find('Jy')
+					plot_label_unit=''
+					fluxDensity = fluxDensity + [float(fluxString[16:plusMinusPos])]
+					fluxError = fluxError + [float(fluxString[plusMinusPos+3:unitsPos-1])]
+					suffix = suffix + [str(fluxString[unitsPos-1])]
+				elif integ_fit == 'F':
+					startWord = '--- Peak:'
+					endWord = '--- Polarization:'
+					startPos = imfitText.find(startWord)
+					endPos = imfitText.find(endWord)
+					fluxString = imfitText[startPos:endPos]
+					plot_label_unit='/beam)'
+					plusMinusPos = fluxString.find('+/-')
+					unitsPos = fluxString.find('Jy/b')
+					fluxDensity = fluxDensity + [float(fluxString[10:plusMinusPos])]
+					fluxError = fluxError + [float(fluxString[plusMinusPos+3:unitsPos-1])]
+					suffix = suffix + [str(fluxString[unitsPos-1])]
+				elif integ_fit == 'B':
+					startWord = '--- Integrated:'
+					endWord = '--- Peak:'
+					startPos = imfitText.find(startWord)
+					endPos = imfitText.find(endWord)
+					fluxString = imfitText[startPos:endPos]
+					plusMinusPos = fluxString.find('+/-')
+					unitsPos = fluxString.find('Jy')
+					plot_label_unit=''
+					fluxDensity= fluxDensity +[float(fluxString[16:plusMinusPos])]
+					fluxError=fluxError +[float(fluxString[plusMinusPos+3:unitsPos-1])]
+					suffix = suffix + [str(fluxString[unitsPos-1])]
+					startWord2 = '--- Peak:'
+					endWord2 = '--- Polarization:'
+					startPos2 = imfitText.find(startWord2)
+					endPos2 = imfitText.find(endWord2)
+					fluxString2 = imfitText[startPos2:endPos2]
+					plot_label_unit2='/beam)'
+					plusMinusPos2 = fluxString2.find('+/-')
+					unitsPos2 = fluxString2.find('Jy/b')
+					fluxDensity2=fluxDensity2+[float(fluxString2[10:plusMinusPos2])]
+					fluxError2=fluxError2+[float(fluxString2[plusMinusPos2+3:unitsPos2-1])]
+					suffix2 = suffix2 + [str(fluxString2[unitsPos2-1])]
+				timerange = timerange + [interval]
+			else:
+				print '\nFit failed on interval ' + interval
+				fluxError_real.remove(fluxError_real[timeIntervals.index(interval)])
+				timeIntervals.remove(interval)
+				mjdTimes.remove(time)
 
-    		imfitFile = open(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text', 'r')
-    		imfitText = imfitFile.read()
-    		imfitFile.close()
-    		end = imfitText[-19:-1]
-		if end != '*** FIT FAILED ***':
-        		# Find the position of the peak flux value.
-    			if integ_fit == 'T':
-    				startWord = '--- Integrated:'
-        			endWord = '--- Peak:'
-    				startPos = imfitText.find(startWord)
-        			endPos = imfitText.find(endWord)
-        			fluxString = imfitText[startPos:endPos]
-    				plusMinusPos = fluxString.find('+/-')
-        			unitsPos = fluxString.find('Jy')
-    				plot_label_unit=')'
-    				fluxD=float(fluxString[16:plusMinusPos])
-				fluxE=float(fluxString[plusMinusPos+3:unitsPos-1])
-				suff = str(fluxString[unitsPos-1])
-				if suff == 'u':
-        				fluxD=fluxD*[1.0e-6]
-					fluxE=fluxE*[1.0e-6]
-    				elif suff == 'm':
-        				fluxD=fluxD*[1.0e-3]
-					fluxE=fluxE*[1.0e-3]
-    				elif suff == ' ':
-        				fluxD=fluxD*[1.0]
-					fluxE=fluxE*[1.0]
-    				elif suff == 'n':
-        				fluxD=fluxD*[1.0e-9]
-					fluxE=fluxE*[1.0e-9]
-				FD_list.append(fluxD)
-				FDE_list.append(fluxE)
-    			elif integ_fit == 'F':
-        			startWord = '--- Peak:'
-        			endWord = '--- Polarization:'
-        			startPos = imfitText.find(startWord)
-        			endPos = imfitText.find(endWord)
-        			fluxString = imfitText[startPos:endPos]
-    				plot_label_unit='/beam)'
-        		# fluxString now contains something like "--- Peak:     432.1 +/- 4.6 uJy/beam"
-       	 		# There may or may not be decimals in the values, and this tends to shift the exact
-        		# positions of the values between imfits. As a workaround the '+/-' and 'Jy/b' are
-        		# located as reference points.
-        			plusMinusPos = fluxString.find('+/-')
-        			unitsPos = fluxString.find('Jy/b')
-        			fluxD=float(fluxString[10:plusMinusPos])
-				fluxE=float(fluxString[plusMinusPos+3:unitsPos-1])
-				suff = str(fluxString[unitsPos-1])
-				if suff == 'u':
-        				fluxD=fluxD*1.0e-6
-					fluxE=fluxE*1.0e-6
-    				elif suff == 'm':
-        				fluxD=fluxD*1.0e-3
-					fluxE=fluxE*1.0e-3
-    				elif suff == ' ':
-        				fluxD=fluxD*1.0
-					fluxE=fluxE*1.0
-    				elif suff == 'n':
-        				fluxD=fluxD*1.0e-9
-					fluxE=fluxE*1.0e-9
-				FD_list.append(fluxD)
-				FDE_list.append(fluxE)
-			elif integ_fit == 'B':
-				startWord = '--- Integrated:'
-        			endWord = '--- Peak:'
-    				startPos = imfitText.find(startWord)
-        			endPos = imfitText.find(endWord)
-        			fluxString = imfitText[startPos:endPos]
-    				plusMinusPos = fluxString.find('+/-')
-        			unitsPos = fluxString.find('Jy')
-    				plot_label_unit=')'
-    				fluxD1=float(fluxString[16:plusMinusPos])
-				fluxE1=float(fluxString[plusMinusPos+3:unitsPos-1])
-				suff = str(fluxString[unitsPos-1])
-				if suff == 'u':
-        				fluxD1=fluxD1*1.0e-6
-					fluxE1=fluxE1*1.0e-6
-    				elif suff == 'm':
-        				fluxD1=fluxD1*1.0e-3
-					fluxE1=fluxE1*1.0e-3
-    				elif suff == ' ':
-        				fluxD1=fluxD1*1.0
-					fluxE1=fluxE1*1.0
-    				elif suff == 'n':
-        				fluxD1=fluxD1*1.0e-9
-					fluxE1=fluxE1*1.0e-9
-				startWord2 = '--- Peak:'
-        			endWord2 = '--- Polarization:'
-        			startPos2 = imfitText.find(startWord2)
-        			endPos2 = imfitText.find(endWord2)
-        			fluxString2 = imfitText[startPos2:endPos2]
-    				plot_label_unit2='/beam)'
-				plusMinusPos2 = fluxString2.find('+/-')
-        			unitsPos2 = fluxString2.find('Jy/b')
-        			fluxD2=float(fluxString2[10:plusMinusPos2])
-				fluxE2=float(fluxString2[plusMinusPos2+3:unitsPos2-1])
-				suff2 = str(fluxString2[unitsPos2-1])
-				if suff2 == 'u':
-        				fluxD2=fluxD2*1.0e-6
-					fluxE2=fluxE2*1.0e-6
-    				elif suff2 == 'm':
-        				fluxD2=fluxD2*1.0e-3
-					fluxE2=fluxE2*1.0e-3
-    				elif suff2 == ' ':
-        				fluxD2=fluxD2*1.0
-					fluxE2=fluxE2*1.0
-    				elif suff2 == 'n':
-        				fluxD2=fluxD2*1.0e-9
-					fluxE2=fluxE2*1.0e-9
-				FD_list.append(fluxD1)
-				FDE_list.append(fluxE1)
-				FD2_list.append(fluxD2)
-				FDE2_list.append(fluxE2)
-        		#fluxE=float(fluxString[plusMinusPos+3:unitsPos-1])
-        		#suffix = suffix + [str(fluxString[unitsPos-1])]
-        		#timerange = timerange + [interval]
-			#FD_list.append(fluxD)
-			#FDE_list.append(fluxE)
+		else:
+			raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
+		if uv_fit == 'T':
+			flux_uv1=uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0]
+			fluxerr_uv1=uv_fiterr_arr[np.where(np.array(timeIntervals)==interval)[0]][0]
+			fluxDensity3 = fluxDensity3 + [flux_uv1]
+			fluxError3 = fluxError3 + [fluxerr_uv1]
+			suffix3 = suffix3 + [' ']
+	elif runClean=='U':
+		if uv_fit == 'T':
+			flux_uv1=uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0]
+			fluxerr_uv1=uv_fiterr_arr[np.where(np.array(timeIntervals)==interval)[0]][0]
+			fluxDensity3 = fluxDensity3 + [flux_uv1]
+			fluxError3 = fluxError3 + [fluxerr_uv1]
+			suffix3 = suffix3 + [' ']
+##################################
 
-	if len(FD_list) < nsim/2.:
-		print '\nImage Fit failed on interval ' + interval
-        	# The corresponding time intervals need to be removed from the
-        	timeIntervals.remove(interval)
-        	mjdTimes.remove(time)
 
-	GaussPer=norm.cdf(1)
-	median=np.percentile(FD_list,50)
-	pct15=np.percentile(FD_list,(1-GaussPer)*100.0)
-	pct85=np.percentile(FD_list,GaussPer*100.0)
-	upp_err=pct85-median
-	low_err=median-pct15
-	era=(upp_err+low_err)/2.
-	fluxDensity = fluxDensity + [median*1e3]
-	fluxError = fluxError + [era*1e3]
-
+##################################
+#Print raw results to terminal
+##################################
+print 'Printing raw results for user...\n'
+if runClean != 'U':
 	if integ_fit == 'B':
-		median2=np.percentile(FD2_list,50)
-		pct152=np.percentile(FD2_list,(1-GaussPer)*100.0)
-		pct852=np.percentile(FD2_list,GaussPer*100.0)
-		upp_err2=pct852-median2
-		low_err2=median2-pct152
-		era2=(upp_err2+low_err2)/2.
-		fluxDensity2 = fluxDensity2 + [median2*1e3]
-		fluxError2 = fluxError2 + [era2*1e3]
-		suffix2 = suffix2 + ['m']
+		if len(fluxDensity)==0 or fluxDensity2==0:
+			raise Exception('CLEAN failed on all intervals. Please review input.')
+		print '\nFlux desities extracted from imfit (integ):'
+		print fluxDensity
+		print '\nFlux errors extracted from imfit (integ):'
+		print fluxError
+		print '\nUnits extracted from imfit (integ):'
+		print suffix
+		print '\nFlux desities extracted from imfit (peak):'
+		print fluxDensity2
+		print '\nFlux errors extracted from imfit (peak):'
+		print fluxError2
+		print '\nUnits extracted from imfit (peak):'
+		print suffix2
+		print '\nRealistic Error from regions (Jy):'
+		print fluxError_real
+	else:
+		if len(fluxDensity)==0:
+			raise Exception('CLEAN failed on all intervals. Please review input.')
+		print '\nFlux desities extracted from imfit:'
+		print fluxDensity
+		print '\nFlux errors extracted from imfit:'
+		print fluxError
+		print '\nUnits extracted from imfit:'
+		print suffix
+		print '\nRealistic Error from regions (Jy):'
+		print fluxError_real
 
-	#
-	#
-	timerange = timerange + [interval]
-	suffix = suffix + ['m']
-    		#else:
-        		#print '\nFit failed on interval ' + interval
-        		# The corresponding time intervals need to be removed from the
-        		#timeIntervals.remove(interval)
-        		#mjdTimes.remove(time)
-
-
-
-    elif do_monte == 'F':
-    	intervalString=interval.replace(':', '.').replace('/','_')
-
-    	imfitFile = open(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text', 'r')
-    	imfitText = imfitFile.read()
-    	imfitFile.close()
-    	end = imfitText[-19:-1]
-    	if end != '*** FIT FAILED ***':
-        	# Find the position of the peak flux value.
-    		if integ_fit == 'T':
-    			startWord = '--- Integrated:'
-        		endWord = '--- Peak:'
-    			startPos = imfitText.find(startWord)
-        		endPos = imfitText.find(endWord)
-        		fluxString = imfitText[startPos:endPos]
-    			plusMinusPos = fluxString.find('+/-')
-        		unitsPos = fluxString.find('Jy')
-    			plot_label_unit=')'
-    			fluxDensity = fluxDensity + [float(fluxString[16:plusMinusPos])]
-			fluxError = fluxError + [float(fluxString[plusMinusPos+3:unitsPos-1])]
-			suffix = suffix + [str(fluxString[unitsPos-1])]
-    		elif integ_fit == 'F':
-        		startWord = '--- Peak:'
-        		endWord = '--- Polarization:'
-        		startPos = imfitText.find(startWord)
-        		endPos = imfitText.find(endWord)
-        		fluxString = imfitText[startPos:endPos]
-    			plot_label_unit='/beam)'
-        	# fluxString now contains something like "--- Peak:     432.1 +/- 4.6 uJy/beam"
-       	 	# There may or may not be decimals in the values, and this tends to shift the exact
-        	# positions of the values between imfits. As a workaround the '+/-' and 'Jy/b' are
-        	# located as reference points.
-        		plusMinusPos = fluxString.find('+/-')
-        		unitsPos = fluxString.find('Jy/b')
-        		fluxDensity = fluxDensity + [float(fluxString[10:plusMinusPos])]
-			fluxError = fluxError + [float(fluxString[plusMinusPos+3:unitsPos-1])]
-			suffix = suffix + [str(fluxString[unitsPos-1])]
-		elif integ_fit == 'B':
-				startWord = '--- Integrated:'
-        			endWord = '--- Peak:'
-    				startPos = imfitText.find(startWord)
-        			endPos = imfitText.find(endWord)
-        			fluxString = imfitText[startPos:endPos]
-    				plusMinusPos = fluxString.find('+/-')
-        			unitsPos = fluxString.find('Jy')
-    				plot_label_unit=')'
-    				fluxDensity= fluxDensity +[float(fluxString[16:plusMinusPos])]
-				fluxError=fluxError +[float(fluxString[plusMinusPos+3:unitsPos-1])]
-				suffix = suffix + [str(fluxString[unitsPos-1])]
-				startWord2 = '--- Peak:'
-        			endWord2 = '--- Polarization:'
-        			startPos2 = imfitText.find(startWord2)
-        			endPos2 = imfitText.find(endWord2)
-        			fluxString2 = imfitText[startPos2:endPos2]
-    				plot_label_unit2='/beam)'
-				plusMinusPos2 = fluxString2.find('+/-')
-        			unitsPos2 = fluxString2.find('Jy/b')
-        			fluxDensity2=fluxDensity2+[float(fluxString2[10:plusMinusPos2])]
-				fluxError2=fluxError2+[float(fluxString2[plusMinusPos2+3:unitsPos2-1])]
-				suffix2 = suffix2 + [str(fluxString2[unitsPos2-1])]
-        	#fluxError = fluxError + [float(fluxString[plusMinusPos+3:unitsPos-1])]
-        	#suffix = suffix + [str(fluxString[unitsPos-1])]
-        	timerange = timerange + [interval]
-    	else:
-        	print '\nFit failed on interval ' + interval
-        	# The corresponding time intervals need to be removed from the
-		fluxError_real.remove(fluxError_real[timeIntervals.index(interval)])
-        	timeIntervals.remove(interval)
-        	mjdTimes.remove(time)
-
-    else:
-	print 'Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)'
-    GaussPer=norm.cdf(1)
-    if uv_fit == 'T'and do_monte_uv=='T':
-		median3=np.percentile(uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0],50)
-		pct153=np.percentile(uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0],(1-GaussPer)*100.0)
-		pct853=np.percentile(uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0],GaussPer*100.0)
-		upp_err3=pct853-median3
-		low_err3=median3-pct153
-		era3=(upp_err3+low_err3)/2.
-		fluxDensity3 = fluxDensity3 + [median3]
-		fluxError3 = fluxError3 + [era3]
-		suffix3 = suffix3 + [' ']
-
-		if len(uv_fitval[np.where(np.array(timeIntervals)==interval)[0]]) < nsim/2.:
-			print '\nUV Fit failed on interval ' + interval
-        		# The corresponding time intervals need to be removed from the
-        		#timeIntervals_uv.remove(interval_uv)
-        		#mjdTimes_uv.remove(time_uv)
-
-    if uv_fit == 'T'and do_monte_uv=='F':
-		flux_uv1=uv_fitval_arr[np.where(np.array(timeIntervals)==interval)[0]][0]
-		fluxerr_uv1=uv_fiterr_arr[np.where(np.array(timeIntervals)==interval)[0]][0]
-		fluxDensity3 = fluxDensity3 + [flux_uv1]
-		fluxError3 = fluxError3 + [fluxerr_uv1]
-		suffix3 = suffix3 + [' ']
-
-########################################################################
-#Print results to stdout for user--> probably should get rid of this,
-#maybe just a 'script successful' message?
-#########################################################################
-#print image plane fitting results for user
-if integ_fit == 'B':
-	print '\nFlux desities extracted from imfit (integ):'
-	print fluxDensity
-	print '\nFlux errors extracted from imfit (integ):'
-	print fluxError
-	print '\nUnits extracted from imfit (integ):'
-	print suffix
-	print '\nFlux desities extracted from imfit (peak):'
-	print fluxDensity2
-	print '\nFlux errors extracted from imfit (peak):'
-	print fluxError2
-	print '\nUnits extracted from imfit (peak):'
-	print suffix2
-	print '\nRealistic Error from regions (Jy):'
-	print fluxError_real
+	if uv_fit == 'T':
+		if len(fluxDensity3)==0:
+			raise Exception('UV fitting failed on all intervals. Please review input.')
+		print '\nFlux desities extracted from uvmodelfit:'
+		print fluxDensity3
+		print '\nFlux errors extracted from uvmodelfit:'
+		print fluxError3
+		print '\nUnits extracted from uvmodelfit:'
+		print suffix3
 else:
-	print '\nFlux desities extracted from imfit:'
-	print fluxDensity
-	print '\nFlux errors extracted from imfit:'
-	print fluxError
-	print '\nUnits extracted from imfit:'
-	print suffix
-	print '\nRealistic Error from regions (Jy):'
-	print fluxError_real
-
-#print uv fitting results for user, if requested
-if uv_fit == 'T':
+	if len(fluxDensity3)==0:
+		raise Exception('UV fitting failed on all intervals. Please review input.')
 	print '\nFlux desities extracted from uvmodelfit:'
 	print fluxDensity3
 	print '\nFlux errors extracted from uvmodelfit:'
 	print fluxError3
 	print '\nUnits extracted from uvmodelfit:'
 	print suffix3
+##################################
 
-########################################################################
-#Make sure verything is in the right units
-#########################################################################
-# The flux values will be plotted in uJy/bm, however the imfit outputs will not necessarily be in these
+
+##################################
+#Convert to consistent units
+##################################
+print 'Checking flux units...\n'
+# The flux values will be plotted in a user specified unit, however the imfit outputs will not necessarily be in these
 # units. To get around this the units for each value are recorded in the suffix list created in the above
 # for loop. The following loop will use this list to create a multiplier list, which will be used to
-# convert all values to Jy/bm. They can then all be scaled to uJy/bm ready for plotting.
+# convert all values to Jy. They can then all be scaled to be ready for plotting.
 multiplier = []
 multiplier2 = []
 multiplier3 = []
@@ -1125,100 +1095,122 @@ for x in suffix:
         multiplier = multiplier + [1.0]
     elif x == 'n':
         multiplier = multiplier + [1.0e-9]
-print multiplier
+    else:
+        multiplier = multiplier + [1.0]
 if integ_fit=='B':
-	for x in suffix2:
-    		if x == 'u':
-        		multiplier2 = multiplier2 + [1.0e-6]
-    		elif x == 'm':
-        		multiplier2 = multiplier2 + [1.0e-3]
-    		elif x == ' ':
-        		multiplier2 = multiplier2 + [1.0]
-    		elif x == 'n':
-			multiplier2 = multiplier2 + [1.0e-9]
-	print 'peak', multiplier2
+    for x in suffix2:
+        if x == 'u':
+            multiplier2 = multiplier2 + [1.0e-6]
+        elif x == 'm':
+            multiplier2 = multiplier2 + [1.0e-3]
+        elif x == ' ':
+            multiplier2 = multiplier2 + [1.0]
+        elif x == 'n':
+            multiplier2 = multiplier2 + [1.0e-9]
+        else:
+            multiplier2 = multiplier2 + [1.0]
 if uv_fit=='T':
-	for x in suffix3:
-    		if x == 'u':
-        		multiplier3 = multiplier3 + [1.0e-6]
-    		elif x == 'm':
-        		multiplier3 = multiplier3 + [1.0e-3]
-    		elif x == ' ':
-        		multiplier3 = multiplier3 + [1.0]
-    		elif x == 'n':
-			multiplier3 = multiplier3 + [1.0e-9]
-	print 'uv peak', multiplier3
+    for x in suffix3:
+        if x == 'u':
+            multiplier3 = multiplier3 + [1.0e-6]
+        elif x == 'm':
+            multiplier3 = multiplier3 + [1.0e-3]
+        elif x == ' ':
+            multiplier3 = multiplier3 + [1.0]
+        elif x == 'n':
+            multiplier3 = multiplier3 + [1.0e-9]
+        else:
+            multiplier3 = multiplier3 + [1.0]
 
 # Multiplier() should now contain a list of multiplication factors ready to be applied to the flux data. The
 #end result is in Jy
-length = range(len(fluxDensity))
-for n in length:
-    if integ_fit == 'B':
-	fluxDensity2[n] = fluxDensity2[n] * multiplier2[n]
-    	fluxError2[n] = fluxError2[n] * multiplier2[n]
-    if uv_fit == 'T':
-	fluxDensity3[n] = fluxDensity3[n] * multiplier3[n]
-    	fluxError3[n] = fluxError3[n] * multiplier3[n]
-    fluxDensity[n] = fluxDensity[n] * multiplier[n]
-    fluxError[n] = fluxError[n] * multiplier[n]
+if runClean=='U':
+	length= range(len(fluxDensity3))
+	for n in length:
+		fluxDensity3[n] = fluxDensity3[n] * multiplier3[n]
+		fluxError3[n] = fluxError3[n] * multiplier3[n]
+else:
+	length = range(len(fluxDensity))
+	for n in length:
+		fluxDensity[n] = fluxDensity[n] * multiplier[n]
+		fluxError[n] = fluxError[n] * multiplier[n]
+		if integ_fit == 'B':
+		    fluxDensity2[n] = fluxDensity2[n] * multiplier2[n]
+		    fluxError2[n] = fluxError2[n] * multiplier2[n]
+		if uv_fit == 'T':
+		    fluxDensity3[n] = fluxDensity3[n] * multiplier3[n]
+		    fluxError3[n] = fluxError3[n] * multiplier3[n]
 
 # The flux values will be plotted in a user specified unit, so they are scaled here,
 #along with error values.
-for k in length:
-    if integ_fit == 'B':
-	fluxDensity2[k] = fluxDensity2[k]*lc_scale_factor
-    	fluxError2[k] = fluxError2[k]*lc_scale_factor
-    if uv_fit == 'T':
-	fluxDensity3[k] = fluxDensity3[k]*lc_scale_factor
-    	fluxError3[k] = fluxError3[k]*lc_scale_factor
-    fluxDensity[k] = fluxDensity[k]*lc_scale_factor
-    fluxError[k] = fluxError[k]*lc_scale_factor
-    fluxError_real[k]=fluxError_real[k]*lc_scale_factor
-
-
-########################################################################
-#Write results to data file
-#########################################################################
-data = open(dataPath, 'w')
-if integ_fit == 'B':
-	data.write('{0}\n'.format('The number of timebins where CLEAN failed/did not converge was',counter_fail))
-	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
-elif integ_fit == 'B' and uv_fit == 'T':
-	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
-elif integ_fit=='T':
-	data.write('{0}\n'.format('The number of timebins where CLEAN failed/did not converge was',counter_fail))
-	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
-elif integ_fit=='T' and uv_fit=='T':
-	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
-elif integ_fit=='F':
-	data.write('{0}\n'.format('The number of timebins where CLEAN failed/did not converge was',counter_fail))
-	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
-elif integ_fit=='F' and uv_fit=='T':
-	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
-for i in range(0,len(fluxDensity)):
-	if integ_fit == 'B':
-		#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
-		data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxError_real[i]))
+if runClean=='U':
+	length= range(len(fluxDensity3))
+	for k in length:
+		fluxDensity3[k] = fluxDensity3[k]*lc_scale_factor
+		fluxError3[k] = fluxError3[k]*lc_scale_factor
+else:
+	length= range(len(fluxDensity))
+	for k in length:
+		fluxDensity[k] = fluxDensity[k]*lc_scale_factor
+		fluxError[k] = fluxError[k]*lc_scale_factor
+		fluxError_real[k]=fluxError_real[k]*lc_scale_factor
+		if integ_fit == 'B':
+		    fluxDensity2[k] = fluxDensity2[k]*lc_scale_factor
+		    fluxError2[k] = fluxError2[k]*lc_scale_factor
 		if uv_fit == 'T':
-			#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
-			data.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
-	elif integ_fit =='T':
-		#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
-		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
-		if uv_fit=='T':
-			#data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
-			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
-	elif integ_fit =='F':
-		#data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
-		data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
-		if uv_fit=='T':
-			#data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
-			data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
+		    fluxDensity3[k] = fluxDensity3[k]*lc_scale_factor
+		    fluxError3[k] = fluxError3[k]*lc_scale_factor
+##################################    
+    
+    
+##################################
+#Write results to data file
+##################################
+print 'Writing light curve data file...\n'
+data = open(dataPath, 'w')
+if runClean != 'U':
+    data.write('{0} {1}\n'.format('The number of timebins where CLEAN failed/did not converge was',counter_fail))
+    if integ_fit == 'B':
+    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
+    elif integ_fit == 'B' and uv_fit == 'T':
+    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
+    elif integ_fit=='T':
+    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
+    elif integ_fit=='T' and uv_fit=='T':
+    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
+    elif integ_fit=='F':
+    	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
+    elif integ_fit=='F' and uv_fit=='T':
+    	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
+    for i in range(0,len(fluxDensity)):
+        if integ_fit == 'B':
+            data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
+                fluxError2[i],fluxError_real[i]))
+            if uv_fit == 'T':
+                data.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
+                    fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
+        elif integ_fit =='T':
+            data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
+            if uv_fit=='T':
+                data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
+                    fluxError3[i],fluxError_real[i]))
+        elif integ_fit =='F':
+            data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
+            if uv_fit=='T':
+                data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
+                    fluxError3[i],fluxError_real[i]))
+else:
+    data.write('{0}\n'.format('#MJD|uv flux|uverr'))
+    for i in range(0,len(fluxDensity3)):
+        data.write('{0} {1} {2}\n'.format(mjdTimes[i],fluxDensity3[i],fluxError3[i]))
 data.close()
+print dataPath+' is saved.'
+##################################
 
-########################################################################
+##################################
 #Plot Lightcurves
-#########################################################################
+##################################
+print 'Plotting Light curves...\n'
 minutesElapsed=[]
 secondsElapsed=[]
 hoursElapsed=[]
@@ -1233,86 +1225,123 @@ elif lc_scale_time=='S':
 	Elapsed=secondsElapsed
 elif lc_scale_time=='H':
 	Elapsed=hoursElapsed
+if runClean != 'U':
+    if integ_fit == 'B':
+    	fig1=pp.figure()
+    	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+    	pp.xlabel('Time since start of observation (mins)')
+    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
+    	pp.ylabel(y_label_name)
+    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+    	savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.eps'
+    	pp.savefig(savestring)
+    	print savestring, ' is saved'
+    	fig2=pp.figure()
+    	pp.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
+    	pp.xlabel('Time since start of observation (mins)')
+    	y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
+    	pp.ylabel(y_label_name2)
+    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+    	savestring2 = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.eps'
+    	pp.savefig(savestring2)
+    	print savestring2, ' is saved'
+    	if uv_fit=='T':
+    		fig3=pp.figure()
+    		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+    		pp.xlabel('Time since start of observation (mins)')
+    		y_label_name='Flux Density (mJy/beam)'
+    		pp.ylabel(y_label_name)
+    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+    		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+            str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
+    		pp.savefig(savestring)
+    		print savestring, ' is saved'
 
-if integ_fit == 'B':
-	fig1=pp.figure()
-	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-	pp.xlabel('Time since start of observation (mins)')
-	y_label_name='Flux Density (mJy'+plot_label_unit+')'
-	pp.ylabel(y_label_name)
-	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_integ.eps'
-	pp.savefig(savestring)
-	print savestring, ' is saved'
-	fig2=pp.figure()
-	pp.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
-	pp.xlabel('Time since start of observation (mins)')
-	y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
-	pp.ylabel(y_label_name2)
-	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	savestring2 = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_peak.eps'
-	pp.savefig(savestring2)
-	print savestring2, ' is saved'
-	if uv_fit=='T':
-		fig3=pp.figure()
-		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-		pp.xlabel('Time since start of observation (mins)')
-		y_label_name='Flux Density (mJy/beam)'
-		pp.ylabel(y_label_name)
-		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
-		pp.savefig(savestring)
-		print savestring, ' is saved'
-
+    else:
+    	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+    	pp.xlabel('Time since start of observation (mins)')
+    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
+    	pp.ylabel(y_label_name)
+    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+    	savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.eps'
+    	pp.savefig(savestring)
+    	print savestring, ' is saved'
+    	if uv_fit=='T':
+    		fig3=pp.figure()
+    		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+    		pp.xlabel('Time since start of observation (mins)')
+    		y_label_name='Flux Density (mJy/beam)'
+    		pp.ylabel(y_label_name)
+    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+    		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+            str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps'
+    		pp.savefig(savestring)
+    		print savestring, ' is saved'
 else:
-	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-	pp.xlabel('Time since start of observation (mins)')
-	y_label_name='Flux Density (mJy'+plot_label_unit+')'
-	pp.ylabel(y_label_name)
-	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc.eps'
-	pp.savefig(savestring)
-	print savestring, ' is saved'
-	if uv_fit=='T':
-		fig3=pp.figure()
-		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-		pp.xlabel('Time since start of observation (mins)')
-		y_label_name='Flux Density (mJy/beam)'
-		pp.ylabel(y_label_name)
-		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
-		pp.savefig(savestring)
-		print savestring, ' is saved'
-########################
+    fig4=pp.figure()
+    pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+    pp.xlabel('Time since start of observation (mins)')
+    y_label_name='Flux Density (mJy/beam)'
+    pp.ylabel(y_label_name)
+    pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+    pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+    savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+    str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps'
+    pp.savefig(savestring)
+    print savestring, ' is saved'
+##################################
+
+
+##################################
 #Basic Variability Tests
-########################
+##################################
 if var_anal=='T':
-	fluxerrvar=np.array(fluxError_real)
-	if integ_fit=='T':
-		fluxvar=np.array(fluxDensity)
-	elif integ_fit=='F':
-		fluxvar=np.array(fluxDensity2)
+	print 'Performing Variability Analysis...\n'
+	if runClean =='U':
+		fluxvar=np.array(fluxDensity3)
+		fluxerrvar=np.array(fluxError3)
 	else:
-		fluxvar=np.array(fluxDensity2)
+		fluxerrvar=np.array(fluxError_real)
+		if integ_fit=='T':
+			fluxvar=np.array(fluxDensity)
+		elif integ_fit=='F':
+			fluxvar=np.array(fluxDensity2)
+		else:
+			fluxvar=np.array(fluxDensity2)
 	var_file=open(dataPathVar,'w')
 	print 'Performing Variiability Tests'
 	chi_tot,dof,null,wm,wmerr,ex_var,ex_var_error,frac_rms,frac_rms_error=var_analysis(fluxvar,fluxerrvar)
 	if power_spec=='T':
 		print 'Creating Power Spectrum'
 		sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeS),labelP)
-    var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
-    var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))
-    var_file.write('{0} {1} {2}\n'.format('Excess Variance/Error',ex_var,ex_var_error))
-    var_file.write('{0} {1} {2}\n'.format('Fractional RMS/Error',frac_rms,frac_rms_error))
-    var_file.write('{0} {1} {2}\n'.format('95% and 99% Significance Levels for Periodogram',sig95,sig99))
-    var_file.close()
+		print labelP+' is saved.'
+	var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
+	var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))
+	var_file.write('{0} {1} {2}\n'.format('Excess Variance/Error',ex_var,ex_var_error))
+	var_file.write('{0} {1} {2}\n'.format('Fractional RMS/Error',frac_rms,frac_rms_error))
+	if power_spec=='T':
+		var_file.write('{0} {1} {2}\n'.format('95% and 99% Significance Levels for Periodogram',sig95,sig99))
+	var_file.close()
+	print dataPathVar+ 'is saved.'
+##################################
 
+##################################
+#cleaning up
+##################################
+print 'Cleaning up...\n'
 #remove temp files and .last/.log files created by CASA/ipython
 os.system('rm -rf *.last')
 os.system('rm -rf *.log')
 os.system('rm -rf tempfile.txt tempfile2.txt')
+print '*********************************************************'
+print 'Script finished. Please inspect resulting data products'
+print '*********************************************************'
+##################################

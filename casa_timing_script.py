@@ -104,7 +104,7 @@ visibility = path_dir+'data/'+ data_params["visibility"]
 visibility_uv=visibility.strip('.ms')+'_uv.ms'
 os.system('sudo cp -r '+visibility+' '+visibility_uv)
 
-''' Variability Analysis'''
+''' VARIABILITY ANALYSIS'''
 #Do you want a basic variability analysis?
 var_anal=data_params["var_anal"]
 power_spec=data_params["power_spec"]
@@ -307,7 +307,7 @@ nsim=100
 #a, b, p "convolved with beam" values not "deconvolved" values!!!
 #format is [value,error] from fit of full data set
 if fix_pos == 'T':
-	par_fix=data_params["par_fix"]
+	par_fix='xy'#data_params["par_fix"]
 	if runObj == 'F':
 		print 'Cleaning Full Data Set-->'
 		os.system('rm -rf '+outputPath+label+'whole_dataset.*')
@@ -361,7 +361,7 @@ if runClean=='U':
 #only point sources right now
 comp_uv='delta'
 #for VLA 'I,Q,U,V', for SMA 'LL' (from listobs)
-stokes_param=data_params["stokes_param"]
+stokes_param=myStokes#data_params["stokes_param"]
 if uv_fit=='T':
 	print 'Fitting full data set in UV Plane-->'
 	combuv=visibility_uv.strip('.ms')

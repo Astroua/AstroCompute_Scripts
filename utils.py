@@ -110,6 +110,19 @@ def run_aegean(tables,cellSize_string):
     return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
 
 def initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre):
+    '''CLEAN full data set and makes FITS image
+    
+    visibility: MS name
+    outputPath: output directory location
+    label: image name
+    imageSize: image dimensions in pixels; e.g. 256
+    cellSize: pixel size; e.g. 'xxarcsec'
+    spw_choice: spw selection; e.g. '0~5:5~58'
+    taylorTerms: number of taylor terms; e.g. 2
+    numerIters: number of iterations for CLEAN; e.g. 5000
+    thre: threashold for clean; e.g. '4mJy'
+
+    return: CLEANed image in CASA image format and FITS format'''
     clean(vis=visibility,
           imagename=os.path.join(outputPath, label+'whole_dataset'),
           field='', mode='mfs', imsize=imageSize, cell=cellSize,

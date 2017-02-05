@@ -15,7 +15,7 @@ Last Updated: February 1 2017
 '''MODULES USED:
 To ensure all modules used in this script are callable:
 1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
-with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils,lmfit)
+with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,jdcal,lmfit)
 2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
 (http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
 3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities

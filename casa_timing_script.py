@@ -102,7 +102,8 @@ intervalSizeSec = int(whole)
 visibility = path_dir+'data/'+ data_params["visibility"]
 #make copy for uv fitting
 visibility_uv=visibility.strip('.ms')+'_uv.ms'
-os.system('sudo cp -r '+visibility+' '+visibility_uv)
+if not os.path.isdir(visibility_uv):
+    os.system('sudo cp -r '+visibility+' '+visibility_uv)
 
 ''' VARIABILITY ANALYSIS'''
 #Do you want a basic variability analysis?

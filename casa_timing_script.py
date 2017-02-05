@@ -253,7 +253,7 @@ if mask_option == 'box':
 	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+\
     'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 elif mask_option == 'file':
-	maskPath = data_params["mask_file"]#path_dir+'data/'+data_params["mask_file"]
+	maskPath = path_dir+'data/'+data_params["mask_file"]
 elif mask_option == 'aegean':
 	maskPath=outputPath+'aegean_mask.txt'
 else:

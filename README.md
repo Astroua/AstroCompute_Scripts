@@ -8,10 +8,10 @@ A collection of python scripts to create high time resolution light curves from 
 
 ##Requires the following python packages
 * casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python))
-   * use this package to install the following packages in CASA python (use `casa-pip install [package]`)
-* jdcal
-* astropy
-* astroML
+   * use this to install these python packages within CASA python
+      * jdcal (`casa-pip install jdcal`)
+      * astropy (`casa-pip install jdcal`)
+      * astroML (`casa-pip install astroML`)
 * uvmultifit (get it [here](http://nordic-alma.se/support/software-tools))
    * this package also needs gsl libraries to build (get them [here](http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal))
 * analysisUtils (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))

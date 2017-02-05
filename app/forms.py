@@ -8,105 +8,76 @@ from folder_upload import FolderField
 from wtforms import validators
 
 
-
 class InputForm(Form):
     email = TextField("Email address",
                       validators=[Required("Please provide a valid email address"),
                                   Length(min=6, message=(u'Email address is too short')),
                                   Email(message=(u'That is not a valid email address.'))])
-    filename = FolderField('File Name', validators=[DataRequired()])
-    source_detect = BooleanField('', default=False)
-    runObj = source_detect
-    target_name = StringField('Name of target', validators=[DataRequired()])
-    obsdate = StringField("Observation Date", validators=[DataRequired()])
-    reffreq = StringField("Reference Frequency (with units!)",
+##
+    choice_bool = [("T","T"),("F","F")]
+##DATA SET PARAMETERS
+    visibility = FolderField('MS Name', validators=[DataRequired()])
+    target = StringField('Target Name', validators=[DataRequired()])
+    obsDate = StringField("Observation Date", validators=[DataRequired()])
+    refFrequency = StringField("Reference Frequency (with units)",
                           validators=[DataRequired()])
-    imageSize = IntegerField("Image size", default=6000)
-    numberIters = IntegerField("Clean iterations", default=5000)
-    cellSize = StringField("Cell size", default='0.02arcsec')
-    taylorTerms = IntegerField("Clean Taylor terms", default=1)
-    myStokes = StringField("Stokes terms", default='I')
-    thre = StringField("Clean threshold", default='10mJy')
-    spw_choice = StringField("Clean SPW & Channel select", default='0~7:5~58')
-    # only for Aegean_ObjDet.py
-    seed = IntegerField("Aegean Seed", default=134656956)
+    spw_choice = StringField("SPW & Channel selection", default='')
+##FLAGS
+    choice_run=[("T","T"),("U","U")]
+    runClean = SelectMultipleField("Analysis Plane Choice; Only UV Plane (U), only Image Plane or Both (T)",\
+        choices = choice_run, default =["T"])
+    runObj = SelectMultipleField("Run Source Detection Algorithm?",choices = choice_bool, default =["F"])
+    def_times = SelectMultipleField("Manually define start and stop times? (set to F if you want to use full observation)",\
+        choices = choice_bool, default =["F"])
+##TIMEBINS
+    intervalSizeH = IntegerField("Hour Interval Size (allowed values -> 0 to 23)", default=0)
+    intervalSizeM = IntegerField("Minute Interval Size (allowed values -> 0 to 59)", default=1)
+    intervalSizeS = IntegerField("Second Interval Size (allowed values -> 1e-6 to 59)", default=0)
+    startTimeH = StringField("UTC Hour Start Time (specify if def_times=T)", default='')
+    startTimeM = StringField("UTC Minute Start Time (specify if def_times=T)", default='')
+    startTimeS = StringField("UTC Second Start Time (specify if def_times=T)", default='')
+    endTimeH = StringField("UTC Hour End Time (specify if def_times=T)", default='')
+    endTimeM = StringField("UTC Minute End Time (specify if def_times=T)", default='')
+    endTimeS = StringField("UTC Second End Time (specify if def_times=T)", default='')
+##CLEAN PARAMETERS
+    imageSize = IntegerField("Image Size", default=256)
+    numberIters = IntegerField("# of CLEAN iterations", default=5000)
+    cellSize = StringField("Pixel Size (with units)", default='0.3arcsec')
+    taylorTerms = IntegerField("# of Taylor Terms", default=1)
+    myStokes = StringField("Stokes Axis", default='I')
+    thre = StringField("CLEAN Threshold (with units)", default='1mJy')
+    outlierFile = FileField("Outlier file for CLEAN")
+##OBJECT DETECTION AND SELECTION PARAMETERS-->only need to specify if runObj = 'T'
+    seed = IntegerField("Aegean Seed level", default=5)
     flood = IntegerField("Aegean flood level", default=4)
-    # Define custom requirement.
     choice_tels=[("VLA","VLA"),("SMA","SMA"),("NOEMA","NOEMA"),("OTHER","OTHER")]
-    tele = SelectMultipleField("Telescope",choices = choice_tels, default =["VLA"])
-    # only set if not on list in scope2lat func of aegean.py
-    lat = StringField("Latitude (specify if telescope = OTHER)", default='')  # if no telescope given
-    # only for casa_timing_script.py
-    #ind = IntegerField("Nth detection to run timing on",
-    #                   default=1) **enable multiple objects later**
-
-    # only set if not doing OD
-    mask_option = BooleanField('', default=False)
-    targetBox = StringField("Size of box around object (pixels)",
-                            default='2982,2937,2997,2947')
-
-    # Annulus size to define source vs. bkg properties
-    annulus_rad_inner = FloatField("Inner annulus radius (pixels)", default=10.)
-    annulus_rad_outer = FloatField("Outer annulus radius (pixels)", default=20.)
-
-    # Run timing script on cutout of image.
-    cutout = BooleanField("Cutout region around object", default=True)
-    pix_shift_cutout = IntegerField("Size of cutout image (pixels from target box)", default=20)
-
-    # Define an internal parameter for "big data"
-    big_data = BooleanField('delete original image to save space?', default=True)
-
-    outlierFile = FileField("Clean outlier file")
-
-    # Why does this need to be set? Or can you also feed it an image?
-    runClean = BooleanField('run clean?', default=True)
-
-    #why is this here?
-    fit_cutout = BooleanField('re-fit each time bin image with no cleaning?', default=False)
-
-    fix_pos = BooleanField('fix position in individual images?', default=True)
-
-    # Monte Carlo settings
-    do_monte = BooleanField("Use monte carlo sample position of full data set", default=False)
-    nsim = IntegerField("Monte Carlo iterations", default=100)
-
-    # Unsure
-    #par_fix = 'xyabp' wtf alex??
-    #integ_fit = 'B' wtf alex?? if you want a lsit of options use SelectMultipleField?
-    uv_fit = BooleanField("uv plane fitting??", default=False)
-    do_monte_uv = BooleanField("monte carlo sample fixed position in uv fitting?", default=False)
-    uv_fix = BooleanField("fix position in uv fitting?", default=False)
-
-    # for uv fit
-    stokes_param = StringField("stokes parameter for uv fitting", default='I')
-
-    # Set time periods to fit.
-    def_times = BooleanField("Manually define start and stop times to fit to:",
-                             default=False)
-
-    # Interval sizes
-    intervalSizeH = IntegerField("Hour Interval Size", default=0)
-    intervalSizeM = IntegerField("Minute Interval Size", default=0)
-    intervalSizeS = IntegerField("Second Interval Size", default=2)
-
-    # only set if def_times='T'
-    startTimeH = StringField("Hour Start Time", default='')
-    startTimeM = StringField("Minute Start Time", default='')
-    startTimeS = StringField("Second Start Time", default='')
-    endTimeH = StringField("Hour End Time", default='')
-    endTimeM = StringField("Minute End Time", default='')
-    endTimeS = StringField("Second End Time", default='')
-
-    # check amount of remaining time after dividing time bins
-    rem_int = IntegerField("if remaining time >, include in time intervals", default=5)
-
-    # Time units
+    tele = SelectMultipleField("Aegean telescope selection",choices = choice_tels, default =["VLA"])
+    lat = StringField("Aegean telescope latitude (specify if telescope = OTHER)", default='')
+##IMAGE FITTING PARAMETERS-->only need to specify if runClean=T
+    choice_mask=[("box","specified targetBox"),("file","CASA .mask file"),("aegean","box around all aegean detected objects")]
+    mask_option = SelectMultipleField("CLEAN mask selection",choices = choice_mask, default =["box"])
+    mask_file = StringField("CLEAN mask file (specify if mask_option = file)", default='')
+    targetBox = StringField("Location of target (pixels; needs to be set if runObj=F)",default='')
+    fix_pos = SelectMultipleField("Fix xy position of source for all time-bins?",\
+        choices = choice_bool, default =["F"])
+    do_monte = SelectMultipleField("Use monte carlo sampling when fitting? (specify if fix_pos=T)",\
+        choices = choice_bool, default =["F"])
+    choice_integ=[("B","both"),("T","integrated flux"),("F","peak flux")]
+    integ_fit = SelectMultipleField("Flux component to record",choices = choice_integ, default =["F"])
+##DATA PRODUCT PARAMETERS
     choice_units_f=[("","Jy"),("m","mJy"),("u","uJy")]
     choice_units_t=[("H","hours"),("M","minutes"),("S","seconds")]
     lc_scale_unit = SelectMultipleField("Flux Units",choices = choice_units_f, default =["m"])
     lc_scale_time = SelectMultipleField("Time Units",choices = choice_units_t, default =["M"])
+##UV FITTING PARAMETERS
+    uv_fit = SelectMultipleField("Fit in the UV plane in addition to Image Plane? (only specify if runClean=T)",\
+        choices = choice_bool, default =["F"])
+    uv_fix = SelectMultipleField("Fix xy position of source for all time-bins in UV fitting?",\
+        choices = choice_bool, default =["F"])
+##VARIABILITY ANALYSIS
+    var_anal = SelectMultipleField("Do variability analysis?",choices = choice_bool, default =["T"])
+    power_spec = SelectMultipleField("Make a power spectrum?",choices = choice_bool, default =["T"])
 
-    opt_clean = StringField("Optimize clean parameters", default='F') #wtf alex??
 
 
 class LoginForm(Form):

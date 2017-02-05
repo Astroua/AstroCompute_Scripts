@@ -54,17 +54,12 @@ fix_pos: toggle to fix position in individual images to that of whole data set f
 
 do_monte: toggle to monte carlo sample position of full data set if fix_pos='T'; string, options are 'T' or 'F'
 
-par_fix: parameters to fix in fit if fix_pos='T'; string, x (peak x pos), y (peak y pos), f (peak flux), a (major axis),
-b (minor axis), p (position angle), recommended use is 'xy'
-
 integ_fit: toggle to write both integrated and peak flux to data file; string, options are 'B' (both), 'T' (integrated only),
 'F' (peak only), default is 'B';
 
 uv_fit: toggle to do uv plane fitting; string, options are 'T' or 'F'
 
 uv_fix: toggle to fix position in uv fitting from position of whole data set; string, options are 'T' or 'F'
-
-stokes_param: stokes parameter for uv fitting; string, default is 'I' (SMA is 'LL')
 
 def_times: toggle to manually define start and end times (next 6 params), default is start and end of observation; string,
 options are 'T' or 'F'

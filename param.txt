@@ -1,58 +1,42 @@
-#param file for initial_clean.py, Aegean_ObjDet.py, and casa_timing_script.py
-##common to all 3 scripts
-target = 'v404_test'
-obsDate = 'jun22'
-refFrequency ='7GHz'
+target = 'Test'
+obsDate = 'Date'
+refFrequency ='6GHz'
 intervalSizeH = 0
 intervalSizeM = 0
-intervalSizeS = 30
-visibility = 'v404_jun22_B_Cc7_bp.ms'
-#visibility_uv='v404_jun22_B_Cc7_bp.ms'
-imageSize = 1024
+intervalSizeS = 10
+visibility = 'testconcat.ms'
+imageSize = 256
 numberIters = 5000
-cellSize = '0.1arcsec'
+cellSize = '0.3arcsec'
 taylorTerms = 1
 myStokes = 'I'
-thre ='1mJy'
+thre ='50mJy'
 spw_choice =''
-mask_option =''
-mask_file=''
-var_anal='F'
-power_spec='F'
-##only for Aegean_ObjDet.py
-seed = 5
+seed = 10
 flood = 4
 tele = 'VLA'
-lat=''#only set if not on list in scope2lat func of aegean.py
-##only for casa_timing_script.py
+lat=''
 runObj='F'
-ind=1#only set if doing OD
-targetBox=''#only set if not doing OD
-annulus_rad_inner=10
-annulus_rad_outer=20
-cutout='T'
-pix_shift_cutout=20
-big_data='T'
+targetBox='110,115,145,144'
+mask_option='file'
+mask_file='whole_dataset.mask'
 outlierFile=''
 runClean='T'
-fit_cutout='F'
-fix_pos='T'
+fix_pos='F'
 do_monte='F'
-nsim=100
-par_fix='xyabp'
+par_fix='xy'
 integ_fit='B'
 uv_fit='F'
-do_monte_uv='F'
 uv_fix='F'
 stokes_param='I'
 def_times='F'
-startTimeH=''#only set if def_times='T'
-startTimeM=''#only set if def_times='T'
-startTimeS=''#only set if def_times='T'
-endTimeH=''#only set if def_times='T'
-endTimeM=''#only set if def_times='T'
-endTimeS=''#only set if def_times='T'
-rem_int=5
+startTimeH=''
+startTimeM=''
+startTimeS=''
+endTimeH=''
+endTimeM=''
+endTimeS=''
 lc_scale_unit='m'
 lc_scale_time='M'
-opt_clean='F'
+var_anal='T'
+power_spec='T'

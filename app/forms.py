@@ -16,10 +16,10 @@ class InputForm(Form):
 ##
     choice_bool = [("T","T"),("F","F")]
 ##DATA SET PARAMETERS
-    visibility = FolderField('MS Name', validators=[DataRequired()])
-    target = StringField('Target Name', validators=[DataRequired()])
-    obsDate = StringField("Observation Date", validators=[DataRequired()])
-    refFrequency = StringField("Reference Frequency (with units)",
+    filename = FolderField('MS Name', validators=[DataRequired()])
+    target_name = StringField('Target Name', validators=[DataRequired()])
+    obsdate = StringField("Observation Date", validators=[DataRequired()])
+    reffreq = StringField("Reference Frequency (with units)",
                           validators=[DataRequired()])
     spw_choice = StringField("SPW & Channel selection", default='')
 ##FLAGS

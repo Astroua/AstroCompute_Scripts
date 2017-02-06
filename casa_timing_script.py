@@ -15,7 +15,7 @@ Last Updated: February 1 2017
 '''MODULES USED:
 To ensure all modules used in this script are callable:
 1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
-with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,pyfits,jdcal,photutils,lmfit)
+with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,jdcal,lmfit)
 2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
 (http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
 3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
@@ -102,7 +102,8 @@ intervalSizeSec = int(whole)
 visibility = path_dir+'data/'+ data_params["visibility"]
 #make copy for uv fitting
 visibility_uv=visibility.strip('.ms')+'_uv.ms'
-os.system('sudo cp -r '+visibility+' '+visibility_uv)
+if not os.path.isdir(visibility_uv):
+    os.system('sudo cp -r '+visibility+' '+visibility_uv)
 
 ''' VARIABILITY ANALYSIS'''
 #Do you want a basic variability analysis?
@@ -253,7 +254,7 @@ if mask_option == 'box':
 	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+\
     'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
 elif mask_option == 'file':
-	maskPath = data_params["mask_file"]#path_dir+'data/'+data_params["mask_file"]
+	maskPath = path_dir+'data/'+data_params["mask_file"]
 elif mask_option == 'aegean':
 	maskPath=outputPath+'aegean_mask.txt'
 else:

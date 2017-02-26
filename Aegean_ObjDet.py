@@ -3,10 +3,10 @@
 ##################################
 '''Uses AEGEAN algorithm (https://github.com/PaulHancock/Aegean) for object detection in a radio image.
 INPUT: Cleaned FITS image of whole data set--> [fits_file]
-OUTPUT: Data file of the parameters of objects found in image--> [tab_file]
-        CASA region file of detected sources--> [path_dir]_casa_region.txt
-        DS9 region file of detected sources--> [path_dir]_ds9_region.reg
-        Image of detected sources--> [path_dir]_detected_sources.pdf
+OUTPUT: (1) Data file of the parameters of objects found in image--> [tab_file]
+        (2) CASA region file of detected sources--> [path_dir]_casa_region.txt
+        (3) DS9 region file of detected sources--> [path_dir]_ds9_region.reg
+        (4) Image of detected sources--> [path_dir]_detected_sources.pdf
 NOTE: Needs to be run with lmfit 0.7.4, otherwise it won't work.
 (casa-pip install git+git://github.com/lmfit/lmfit-py.git@0.7.4)
 

@@ -5,8 +5,9 @@
 INPUT: Calibrated and Split MS, parameter file (param_file below)
 OUTPUT: (1) Lightcurve plot--> [path_dir]/data_products/[target]+[lab]_[intervalSizeH]hour_[intervalSizeM]min_[intervalSizeS]sec_[refFrequency]_[obsDate]_[type].eps
         (2) Lightcurve data file-->[path_dir]/data_products/[target]_[obsDate]_[refFrequency]_[intervalSizeH]hours_[intervalSizeM]min_[intervalSizeS]sec.txt
-NOTES: This script is theoretically compatible with any data that can be imported into a CASA MS,
-       but has only been tested with VLA, SMA, and NOEMA data.
+NOTES: - This script is theoretically compatible with any data that can be imported into a CASA MS,
+         but has only been tested with VLA, SMA, and NOEMA data.
+       - Set the path to the AstroCompute_Scripts directory in your files system at line 27.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
 Last Updated: February 1 2017
@@ -21,6 +22,13 @@ with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (a
 3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
 4. (optional) Aegean object detection pkg (https://github.com/PaulHancock/Aegean); this also needs lmfit 0.7.4,
 Remember to put location in python path (defined in Aegean_ObjDet.py).'''
+
+import sys
+path_ac='/home/ubuntu/AstroCompute_Scripts/'
+if os.path.isdir(path_ac):
+	sys.path.append(path_ac)
+else: 
+	raise Exception('Please set the path to the AstroCompute_Scripts directory correctly.')
 import tempfile
 import os
 import linecache
@@ -36,7 +44,6 @@ from datetime import time, timedelta, datetime
 import matplotlib.pyplot as pp
 from scipy.stats import norm
 import re
-import sys
 import astroML.time_series
 from utils import convert_param_format,initial_clean,run_aegean,var_analysis,lomb_scargle,chi2_calc,errf
 import imp
@@ -50,10 +57,8 @@ from Aegean_ObjDet import objdet
 
 #set initial path to where input/output is to be stored
 #NOTE: MS's need to be in path_dir/data, all output goes to path_dir/data_products, 
-#put AstroCompute_Scripts in path_dir_ac
 
 path_dir = sys.argv[-1]#make sure to including trailing / !!!
-path_dir_ac='/home/ubuntu/'
 param_file = sys.argv[-2]
 
 if not os.path.isdir(path_dir+'data_products/'):
@@ -61,10 +66,6 @@ if not os.path.isdir(path_dir+'data_products/'):
 if not os.path.isdir(path_dir+'data/'):
     os.system('sudo mkdir '+path_dir+'data')
     raise Exception(path_dir+'data/ created. Please move your MS into that directory.')
-if not os.path.isdir(path_dir_ac+'AstroCompute_Scripts/'):
-    raise Exception('Please move AstroCompute_Scripts directory into '+path_dir_ac)
-
-sys.path.append(os.path.join(path_dir_ac, "AstroCompute_Scripts/"))
 
 #get input parameters from file
 from utils import load_json
@@ -73,10 +74,10 @@ data_params = load_json(param_file)
 #data_params = convert_param_format(param_file, to="dict")
 
 #for test simulated data set CASA put a bunch of garbadge lines in listobs
-#for test data set
-linelo=69
-#for real data sets
-#linelo=7
+#for test data set-->
+#linelo=69
+#for real data sets-->
+linelo=7
 
 ##################################
 #Reading in Parameters

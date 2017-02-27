@@ -7,8 +7,9 @@ OUTPUT: (1) Data file of the parameters of objects found in image--> [tab_file]
         (2) CASA region file of detected sources--> [path_dir]_casa_region.txt
         (3) DS9 region file of detected sources--> [path_dir]_ds9_region.reg
         (4) Image of detected sources--> [path_dir]_detected_sources.pdf
-NOTE: Needs to be run with lmfit 0.7.4, otherwise it won't work.
-(casa-pip install git+git://github.com/lmfit/lmfit-py.git@0.7.4)
+NOTE: - Needs to be run with lmfit 0.7.4, otherwise it won't work.
+        (casa-pip install git+git://github.com/lmfit/lmfit-py.git@0.7.4)
+      - Set path to aegean directory at line 20.
 
 Written by: A. Tetarenko
 Last Updated: February 2 2017'''
@@ -16,14 +17,17 @@ Last Updated: February 2 2017'''
 # Import modules
 # Make sure aegean tree of directories in path so you can import it
 import sys
-sys.path.append('/home/ubuntu/Aegean')
+path_ag='/home/ubuntu/Aegean'
+if os.path.isdir(path_ag):
+  sys.path.append(path_ag)
+else: 
+  raise Exception('Please set the path to the Aegean directory correctly.')
 import aegean
 from AegeanTools.catalogs import save_catalog
 import numpy as np
 from multiprocessing import cpu_count
 import re
 import os
-from utils import run_aegean,initial_clean
 import warnings
 warnings.filterwarnings('ignore')
 from astropy import units as u
@@ -87,7 +91,36 @@ def objdet(tele,lat,out_file0,fits_file,seed,flood,tab_file,catalog_input_name,c
   for i in range(0, len(src_l)):
     print src_l[i], ra_l[i], dec_l[i]
   return(src_l, ra_l, dec_l, maj_l, min_l, pos_l)
+def run_aegean(tables,cellSize_string):
+  '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),
+  to extract positional information on sources in field
 
+  tables: data file output form Aegean_ObjDet.py
+  cellSize: imaging parameter, arcsec/pix
+
+  return: lists of source #, RA, DEC, semi-major axis, semi-minor axis, and position angle
+  for all detected sources
+  '''
+  src_list=[]
+  ra_list=[]
+  dec_list=[]
+  maj_list=[]
+  min_list=[]
+  pos_list=[]
+  #cellSize_string=cellSize[0]
+  cellSize_list=re.findall('\d+|\D+', cellSize_string)
+  cellSize0=float(cellSize_list[0]+cellSize_list[1]+cellSize_list[2])
+  with open(tables) as f:
+    lines=f.readlines()
+  for i in range(1,len(lines)):
+    lin_split=lines[i].split('\t')
+    src_list.append(lin_split[0])
+    ra_list.append(lin_split[4])#string
+    dec_list.append(lin_split[5])#string
+    maj_list.append(float(lin_split[14])/cellSize0)#pix
+    min_list.append(float(lin_split[16])/cellSize0)#pix
+    pos_list.append(float(lin_split[18]))#deg
+  return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
 def casa_reg_file(src_l,ra_l,dec_l,maj_l,min_l,pos_l,filename,wmap1):
   '''Write CASA region file with bounding boxes around each detected source.
   NOTE: Can be used in viewer or as a mask file in CLEAN.
@@ -123,21 +156,16 @@ if __name__ == "__main__":
   ##################################
   #User Input Section and Setup
   ##################################
-  # set paths
+  # set path for input and output data products
   path_dir = '/path/to/dir/'#make sure to including trailing / !!!
-  path_dir_ac='/path/to/repo/'
-
-  sys.path.append(os.path.join(path_dir_ac, "AstroCompute_Scripts/"))
   ##################################
 
   ##################################
   #Reading in Parameters
   ##################################
   # Label for casa output directories and files.
-  fits_file = path_dir+'file.fits'
+  fits_file = path_dir+'target_source_image.fits'
   out_file0 = path_dir+'Source_XXGHz_Date_whole_dataset_aegean.txt'
-  tab_file = path_dir+'Source_XXGHz_Date_whole_dataset_objdet_comp.tab'
-  catalog_input_name = path_dir+'Source_XXGHz_Date_whole_dataset_objdet.tab'
   # aegean parameters
   seed = 10
   flood = 4
@@ -146,42 +174,58 @@ if __name__ == "__main__":
   cellSize_string = '0.2arcsec'
   ##################################
 
+  ##################################
+  #Object Detection
+  ##################################
+  #defines file paths for aegean
+  tab_file = out_file0.strip('_aegean.txt')+'_objdet_comp.tab'
+  catalog_input_name = out_file0.strip('_aegean.txt')+'_objdet.tab'
   #run aegean
   src_l, ra_l, dec_l, maj_l, min_l, pos_l=objdet(tele,lat,out_file0,fits_file,seed,\
     flood,tab_file,catalog_input_name,cellSize_string)
-  #read in fits image file for plotting and get wcs header
-  fits_file1=fits_file
-  hdulist1 = fits.open(fits_file1)[0]
-  data1=hdulist1.data
-  wmap1=wcs.WCS(hdulist1.header)
-  #write region files of detected sources
-  casa_reg_file(src_l,ra_l,dec_l,maj_l,min_l,pos_l,path_dir+'casa_region.txt',wmap1)
-  ds9_reg_file(src_l,ra_l,dec_l,maj_l,min_l,pos_l,path_dir+'ds9_region.reg',3)
-  #plot map with all detected sources labelled
-  fig=plt.figure()
-  plt.rc('xtick.major', size=4)
-  plt.rc('xtick', color='w', labelsize='large')
-  ax1 = fig.add_subplot(111, projection=wmap1.celestial)
-  im=plt.imshow(np.nan_to_num(data1[0,0,:,:])*1e6,origin="lower",cmap=cm.get_cmap('jet', 500),norm=colors.PowerNorm(gamma=0.5),vmin=0.0,vmax=300.)
-  cbar=plt.colorbar(im, orientation='vertical',fraction=0.04,pad=0)
-  cbar.set_label('uJy/beam')
-  for i in range(0,len(src_l)):
-    ra=ra_l[i]
-    dec=dec_l[i]
-    ras=ra[0:2]+'h'+ra[3:5]+'m'+ra[6:]+'s'
-    decs=dec[0:3]+'d'+dec[4:6]+'m'+dec[7:]+'s'
-    coord0=SkyCoord(ras,decs,frame='icrs')
-    x1=float(wmap1.wcs_world2pix(coord0.ra.value,coord0.dec.value,0,0,1)[0])
-    y1=float(wmap1.wcs_world2pix(coord0.ra.value,coord0.dec.value,0,0,1)[1])
-    e1 = patches.Ellipse((x1,y1), 10, 10,angle=0, linewidth=3, fill=False,color='m')
-    ax1.add_patch(e1)
-  ax1.text(x1+15,y1+15,str(src_l[i]),color='m',fontsize=15)
-  ax1.tick_params(axis='both', which='major', labelsize=15,width=3,length=7,color='k')
-  ax1.tick_params(axis='both', which='minor', labelsize=15,width=1,length=7,color='k')
-  ax1.coords['ra'].set_axislabel('Right Ascension')
-  ax1.coords['dec'].set_axislabel('Declination',minpad=-0.1)
-  ax1.coords['ra'].set_major_formatter('hh:mm:ss.s')
-  ax1.set_ylim(0,2048)
-  ax1.set_xlim(0,2048)
-  plt.savefig(path_dir+'detected_sources.pdf',bbox_inches='tight')
-  plt.show()
+  ##################################
+
+  ##################################
+  #Plotting and Region Files 
+  #of Detected Sources
+  ##################################
+  if len(src_l)>0:
+    #read in fits image file for plotting and get wcs header
+    fits_file1=fits_file
+    hdulist1 = fits.open(fits_file1)[0]
+    data1=hdulist1.data
+    wmap1=wcs.WCS(hdulist1.header)
+    #write region files of detected sources
+    casa_reg_file(src_l,ra_l,dec_l,maj_l,min_l,pos_l,path_dir+'casa_region.txt',wmap1)
+    ds9_reg_file(src_l,ra_l,dec_l,maj_l,min_l,pos_l,path_dir+'ds9_region.reg',3)
+    #plot map with all detected sources labelled
+    fig=plt.figure()
+    plt.rc('xtick.major', size=4)
+    plt.rc('xtick', color='w', labelsize='large')
+    ax1 = fig.add_subplot(111, projection=wmap1.celestial)
+    im=plt.imshow(np.nan_to_num(data1[0,0,:,:])*1e6,origin="lower",cmap=cm.get_cmap('jet', 500),norm=colors.PowerNorm(gamma=0.5),vmin=0.0,vmax=300.)
+    cbar=plt.colorbar(im, orientation='vertical',fraction=0.04,pad=0)
+    cbar.set_label('uJy/beam')
+    for i in range(0,len(src_l)):
+      ra=ra_l[i]
+      dec=dec_l[i]
+      ras=ra[0:2]+'h'+ra[3:5]+'m'+ra[6:]+'s'
+      decs=dec[0:3]+'d'+dec[4:6]+'m'+dec[7:]+'s'
+      coord0=SkyCoord(ras,decs,frame='icrs')
+      x1=float(wmap1.wcs_world2pix(coord0.ra.value,coord0.dec.value,0,0,1)[0])
+      y1=float(wmap1.wcs_world2pix(coord0.ra.value,coord0.dec.value,0,0,1)[1])
+      e1 = patches.Ellipse((x1,y1), 10, 10,angle=0, linewidth=3, fill=False,color='m')
+      ax1.add_patch(e1)
+    ax1.text(x1+15,y1+15,str(src_l[i]),color='m',fontsize=15)
+    ax1.tick_params(axis='both', which='major', labelsize=15,width=3,length=7,color='k')
+    ax1.tick_params(axis='both', which='minor', labelsize=15,width=1,length=7,color='k')
+    ax1.coords['ra'].set_axislabel('Right Ascension')
+    ax1.coords['dec'].set_axislabel('Declination',minpad=-0.1)
+    ax1.coords['ra'].set_major_formatter('hh:mm:ss.s')
+    ax1.set_ylim(0,2048)
+    ax1.set_xlim(0,2048)
+    plt.savefig(path_dir+'detected_sources.pdf',bbox_inches='tight')
+    plt.show()
+  else:
+    print 'No sources detected, so no region files or plot written.'
+  ##################################

@@ -32,8 +32,8 @@ A collection of python scripts to create high time resolution light curves from 
          * Make power spectrum using generalized lomb-periodogram (Zechmeister and Kurster, 2009)
 2. Other scripts:
    * **Aegean_ObjDet.py**: object detection algorithm.
-      * Is integrated into casa_timing_script.py, but can be run on its own too.
-      * A data file of detected object properties is output.
+      * Integrated into casa_timing_script.py.
+      * Script can also be run on its own, with a fits image as input. Output is a labelled image and region files (DS9 and CASA format) of detected sources.
    * **utils.py**: module of tools used in casa_timing_script.py.
    * **download_data_AWS.py**: downloads data from an AWS bucket.
    * **upload_data_AWS.py**: uploads data to an AWS bucket.

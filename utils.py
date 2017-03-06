@@ -170,7 +170,7 @@ def chi2_calc(flux,fluxerr):
    wei_fix=np.array(we_fix)
    dof_fix=len(flux)-1
    wm_fix=np.average(flux,weights=wei_fix)
-   un_fix=1/(np.array(we_fix).sum())
+   un_fix=1/np.sqrt((np.array(we_fix).sum()))
    residual_fix=errf(wm_fix,flux,fluxerr)
    chisquared_fix=residual_fix**2  
    chi_tot_fix=((residual_fix**2).sum())

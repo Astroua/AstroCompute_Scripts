@@ -11,7 +11,7 @@ from flask_login import (login_required, current_user, login_user,
 
 from aws_controller.upload_download_s3 import upload_to_s3, return_s3_connection
 
-from app import InputForm, LoginForm, ResultInfo
+from app import InputForm, ResultInfo
 
 from app import db
 from app.models import Data

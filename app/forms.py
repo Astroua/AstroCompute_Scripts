@@ -118,6 +118,3 @@ class EnterDBInfo(Form):
 class RetrieveDBInfo(Form):
     username_ret = TextField(label='username to retrieve', description="db_get", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
     passwd_ret = TextField(label='password to retrieve', description="db_get_pw", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
-
-
-

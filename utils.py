@@ -4,6 +4,21 @@ import re
 import astroML.time_series
 from scipy.stats import norm
 import matplotlib.pyplot as pp
+import numpy as np
+from scipy.stats import chi2
+#timing script needs these, but don't need if running object detection by itself!
+try:
+  import casac
+except ImportError:
+  pass
+try:
+  from tasks import *
+except ImportError:
+  pass
+try:
+  from taskinit import *
+except ImportError:
+  pass
 
 
 def convert_param_format(filename, to="json"):
@@ -73,7 +88,7 @@ def is_power2(num):
     '''
     return(num != 0 and ((num & (num-1)) == 0))
 
-def run_aegean(tables,cellSize):
+def run_aegean(tables,cellSize_string):
     '''Loads in and parses data file output from Aegean object detection script (Aegean_ObjDet.py),
     to extract positional information on sources in field
 
@@ -89,7 +104,7 @@ def run_aegean(tables,cellSize):
     maj_list=[]
     min_list=[]
     pos_list=[]
-    cellSize_string=cellSize[0]
+    #cellSize_string=cellSize[0]
     cellSize_list=re.findall('\d+|\D+', cellSize_string)
     cellSize0=float(cellSize_list[0]+cellSize_list[1]+cellSize_list[2])
     with open(tables) as f:
@@ -103,6 +118,30 @@ def run_aegean(tables,cellSize):
     	min_list.append(float(lin_split[16])/cellSize0)#pix
     	pos_list.append(float(lin_split[18]))#deg
     return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
+
+def initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre):
+    '''CLEAN full data set and makes FITS image
+    
+    visibility: MS name
+    outputPath: output directory location
+    label: image name
+    imageSize: image dimensions in pixels; e.g. 256
+    cellSize: pixel size; e.g. 'xxarcsec'
+    spw_choice: spw selection; e.g. '0~5:5~58'
+    taylorTerms: number of taylor terms; e.g. 2
+    numerIters: number of iterations for CLEAN; e.g. 5000
+    thre: threashold for clean; e.g. '4mJy'
+
+    return: CLEANed image in CASA image format and FITS format'''
+    clean(vis=visibility,
+          imagename=os.path.join(outputPath, label+'whole_dataset'),
+          field='', mode='mfs', imsize=imageSize, cell=cellSize,
+          weighting='natural', spw=spw_choice, nterms=taylorTerms,
+          niter=numberIters, gain=0.1,
+          threshold=thre, interactive=False)
+    exportfits(imagename=os.path.join(outputPath, label+'whole_dataset.image'),
+               fitsimage=os.path.join(outputPath, label+'whole_dataset.fits'),
+               history=False)
 
 def errf(ampl,y,er):
    ''' Residual function for Chi2 calculation
@@ -131,7 +170,7 @@ def chi2_calc(flux,fluxerr):
    wei_fix=np.array(we_fix)
    dof_fix=len(flux)-1
    wm_fix=np.average(flux,weights=wei_fix)
-   un_fix=1/(np.array(we_fix).sum())
+   un_fix=1/np.sqrt((np.array(we_fix).sum()))
    residual_fix=errf(wm_fix,flux,fluxerr)
    chisquared_fix=residual_fix**2  
    chi_tot_fix=((residual_fix**2).sum())
@@ -159,8 +198,8 @@ def lomb_scargle(time,flux,fluxerr,interval,label):
    fig=pp.figure()
    ax1=fig.add_subplot(111)
    ax1.plot(omega/(2*np.pi),(lsg))
-   plt.axhline(y=sig[0],linewidth=4,ls='--',color='m')
-   plt.axhline(y=sig[1],linewidth=4,ls='--',color='c')
+   pp.axhline(y=sig[0],linewidth=4,ls='--',color='m')
+   pp.axhline(y=sig[1],linewidth=4,ls='--',color='c')
    pp.xlim(min(omega)/(2.*np.pi),max(omega)/(2.*np.pi))
    #pp.xscale("log")
    #pp.yscale("log")

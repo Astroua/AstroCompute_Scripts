@@ -85,26 +85,23 @@ def test_power_spec(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:
 		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-#def test_seed(form,field):
-#	if not isinstance(field.data,int):
-#		raise ValueError("Value entered is not a integer. Please change input to an integer.")
-#def test_flood(form,field):
-#	if not isinstance(field.data,int):
-#		raise ValueError("Value entered is not a integer. Please change input to an integer.")
-#def test_tele(form,field):
-#	allowed=['VLA','SMA','NOEMA']
-#	if field.data not in allowed:
-#		raise ValueError("Value entered is not in the default telescope list. Please enter latitude value in degrees in lat parameter instead.")
-#def test_lat(form,field):
-#	if not isinstance(field.data,float):
-#		raise ValueError("Value entered is not a float. Please change input to an float.")
-#def test_runObj(form,field):
-#	allowed=['T','F']
-#	if field.data not in allowed:
-#		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-#def test_ind(form,field):
-#	if not isinstance(field.data,int):
-#		raise ValueError("Value entered is not a integer. Please change input to an integer.")
+def test_seed(form,field):
+	if not isinstance(field.data,int):
+		raise ValueError("Value entered is not a integer. Please change input to an integer.")
+def test_flood(form,field):
+	if not isinstance(field.data,int):
+		raise ValueError("Value entered is not a integer. Please change input to an integer.")
+def test_tele(form,field):
+	allowed=['VLA','SMA','NOEMA']
+	if field.data not in allowed:
+		raise ValueError("Value entered is not in the default telescope list. Please enter latitude value in degrees in lat parameter instead.")
+def test_lat(form,field):
+	if not isinstance(field.data,float):
+		raise ValueError("Value entered is not a float. Please change input to an float.")
+def test_runObj(form,field):
+	allowed=['T','F']
+	if field.data not in allowed:
+		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
 def test_targetBox(form,field):
 	if not isinstance(field.data,str):
 		raise ValueError("Value entered is not a string. Please change input to a string format.")
@@ -112,34 +109,13 @@ def test_targetBox(form,field):
 	str_split=string.split(',')
 	if len(str_split) != 4:
 		raise ValueError("Value entered is not in the correct format. Please change input to 'X1,Y1,X2,Y2'.")
-def test_annulus_rad_inner(form,field):
-	if not isinstance(field.data,int):
-		raise ValueError("Value entered is not a integer. Please change input to an integer.")
-def test_annulus_rad_outer(form,field):
-	if not isinstance(field.data,int):
-		raise ValueError("Value entered is not a integer. Please change input to an integer.")
-def test_cutout(form,field):
-	allowed=['T','F']
-	if field.data not in allowed:
-		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-def test_pix_shift_cutout(form,field):
-	if not isinstance(field.data,int):
-		raise ValueError("Value entered is not a integer. Please change input to an integer.")
-def test_big_data(form,field):
-	allowed=['T','F']
-	if field.data not in allowed:
-		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
 def test_outlierFile(form,field):
 	if not isinstance(field.data,str):
 		raise ValueError("Value entered is not a string. Please change input to a string format.")
-#def test_runClean(form,field):
-#	allowed=['T','F']
-#	if field.data not in allowed:
-#		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-#def test_fit_cutout(form,field):
-#	allowed=['T','F']
-#	if field.data not in allowed:
-#		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
+def test_runClean(form,field):
+	allowed=['T','F','U']
+	if field.data not in allowed:
+		raise ValueError("Value entered is invalid. Please enter 'T' or 'F' or 'U'.")
 def test_fix_pos(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:
@@ -148,16 +124,6 @@ def test_do_monte(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:
 		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-def test_nsim(form,field):
-	if not isinstance(field.data,int):
-		raise ValueError("Value entered is not a integer. Please change input to an integer.")
-def test_par_fix(form,field):
-	if not isinstance(field.data,str):
-		raise ValueError("Value entered is not a string. Please change input to a string format.")
-	allowed=['x','y','b','a','p']
-	string_list=list(field.data)
-	if not set(string_list).issubset(set(allowed)):
-		raise ValueError("Value entered is invalid. Elements of string may be x (peak x pos), y (peak y pos), f (peak flux), a (major axis),b (minor axis) or, p (position angle).")
 def test_integ_fit(form,field):
 	allowed=['B','T','F']
 	if field.data not in allowed:
@@ -166,17 +132,10 @@ def test_uv_fit(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:
 		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-def test_do_monte_uv(form,field):
-	allowed=['T','F']
-	if field.data not in allowed:
-		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
 def test_uv_fix(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:
 		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-def test_stokes_param(form,field):
-	if not isinstance(field.data,str):
-		raise ValueError("Value entered is not a string. Please change input to a string format.")
 def test_def_times(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:
@@ -211,9 +170,6 @@ def test_endTimeS(form,field):
 		raise ValueError("Value entered is not a string. Please change input to a string format.")
 	if int(field.data) < 0. or int(field.data) >= 60.:
 		raise ValueError("Value entered is invalid. Please change input to a number between 0.0 and 59.9")
-def test_rem_int(form,field):
-	if not isinstance(field.data,int):
-		raise ValueError("Value entered is not a integer. Please change input to a integer format.")
 def test_lc_scale_unit(form,field):
 	allowed=['','m','u']
 	if not isinstance(field.data,str):
@@ -226,8 +182,3 @@ def test_lc_scale_time(form,field):
 		raise ValueError("Value entered is not a string. Please change input to a string format.")
 	if field.data not in allowed:
 		raise ValueError("Value entered is invalid. Please enter 'H' or 'M', or 'S'.")
-#def test_opt_clean(form,field):
-#	allowed=['T','F']
-#	if field.data not in allowed:
-#		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
-

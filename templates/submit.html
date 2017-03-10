@@ -20,54 +20,57 @@
     <div class="boxed" style=" width:400px; margin-left: 40px;">
     {{ wtf.form_field(form.email) }}
     <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
-    <font size="+3"><u>Data Options</u></font><br><br>
+    <font size="+3"><u>Data Set Options</u></font><br><br>
     {{ wtf.form_field(form.filename) }}
     {{ wtf.form_field(form.target_name) }}
     {{ wtf.form_field(form.obsdate) }}
     {{ wtf.form_field(form.reffreq) }}
-    {{ wtf.form_field(form.intervalSizeH) }}
-    {{ wtf.form_field(form.intervalSizeM) }}
-    {{ wtf.form_field(form.intervalSizeS) }}
-    {{ wtf.form_field(form.rem_int) }}
+    {{ wtf.form_field(form.spw_choice) }}
     {{ wtf.form_field(form.def_times) }}
     start = hour: {{ form.startTimeH(size=3) }}, minute: {{ form.startTimeM(size=3) }}, second: {{form.startTimeS(size=3) }}<br>
     end = hour: {{ form.endTimeH(size=3) }}, minute: {{ form.endTimeM(size=3) }}, second: {{form.endTimeS(size=3) }}
     <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
-    <font size="+3"><u>Object Detection Options</u></font><br><br>
-    <font size="+2">{{ form.mask_option }} Use Mask File (recommended)</font><br>
-    {{ wtf.form_field(form.targetBox) }}
-    {{ wtf.form_field(form.annulus_rad_inner) }}
-    {{ wtf.form_field(form.annulus_rad_outer) }}
-    <br><font size="+2"> OR</font> <br><br>
-    <font size="+2">{{ form.source_detect }} Use Aegean Algorithm</font><br>
-    {{ wtf.form_field(form.tele) }}
-    {{ wtf.form_field(form.lat) }}
-    {{ wtf.form_field(form.seed) }}
-    {{ wtf.form_field(form.flood) }}
+    <font size="+3"><u>Light Curve Time Bins</u></font><br><br>
+    {{ wtf.form_field(form.intervalSizeH) }}
+    {{ wtf.form_field(form.intervalSizeM) }}
+    {{ wtf.form_field(form.intervalSizeS) }}
     <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
-    <font size="+3"><u>Imaging Parameters</u></font><br><br>
-    <font size="+2">{{ form.runClean }} (a) Clean Options</font><br>
-    {{ wtf.form_field(form.outlierFile) }}
+    <font size="+3"><u>Data Product Options</u></font><br><br>
+    {{ wtf.form_field(form.lc_scale_unit) }}
+    {{ wtf.form_field(form.lc_scale_time) }}
+    <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
+    <font size="+3"><u>Variability Analysis Options</u></font><br><br>
+    {{ wtf.form_field(form.var_anal) }}
+    {{ wtf.form_field(form.power_spec) }} 
+    <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
+    <font size="+3"><u>Image/UV Plane Analysis</u></font><br><br>
+    <font size="+2">{{ form.runClean }} Options</font><br>
+    <font size="+2"><u> (1a) CLEAN Parameters</u></font><br><br>
     {{ wtf.form_field(form.imageSize) }}
     {{ wtf.form_field(form.numberIters) }}
     {{ wtf.form_field(form.cellSize) }}
     {{ wtf.form_field(form.taylorTerms) }}
     {{ wtf.form_field(form.myStokes) }}
     {{ wtf.form_field(form.thre) }}
-    {{ wtf.form_field(form.spw_choice) }}
-    <font size="+2">{{ form.cutout }} (b) Cutout Options</font><br>
-    {{ wtf.form_field(form.pix_shift_cutout) }}
-    {{ wtf.form_field(form.big_data) }}
-    <font size="+2">{{ form.fix_pos }} (c) Position Options</font><br>
-    {{ wtf.form_field(form.do_monte) }} with {{ form.nsim(size=5) }} iterations<br><br>
-    <font size="+2">{{ form.uv_fit }} (d) UV Fitting</font><br>
-    {{ wtf.form_field(form.do_monte_uv) }}
+    {{ wtf.form_field(form.outlierFile) }}
+    <font size="+2"><u> (1b) Image Fitting Parameters</u></font><br><br>
+    {{ wtf.form_field(form.mask_option)  }}
+    {{ wtf.form_field(form.mask_file)  }}
+    {{ wtf.form_field(form.targetBox) }}
+    {{ wtf.form_field(form.fix_pos) }}
+    {{ wtf.form_field(form.do_monte) }}
+    {{ wtf.form_field(form.integ_fit) }}
+    <br><font size="+2"> AND/OR</font> <br><br>
+    <font size="+2"><u> (2) UV Fitting Parameters</u></font><br><br>
+    {{ wtf.form_field(form.uv_fit) }}
     {{ wtf.form_field(form.uv_fix) }}
-    {{ wtf.form_field(form.stokes_param) }}
     <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
-    <font size="+3"><u>Light Curve Parameters</u></font><br><br>
-    {{ wtf.form_field(form.lc_scale_unit) }}
-    {{ wtf.form_field(form.lc_scale_time) }}
+    <font size="+3"><u>Object Detection and Selection</u></font><br><br>
+    <font size="+2">{{ form.runObj }} Use Aegean Algorithm</font><br>
+    {{ wtf.form_field(form.tele) }}
+    {{ wtf.form_field(form.lat) }}
+    {{ wtf.form_field(form.seed) }}
+    {{ wtf.form_field(form.flood) }}
     <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
     </div>
 

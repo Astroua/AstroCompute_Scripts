@@ -6,7 +6,7 @@ A collection of python scripts to create high time resolution light curves from 
 * SMA: Can be calibrated in CASA. Follow instructions [here](https://www.cfa.harvard.edu/sma/casa) for reduction details and details on how to convert to a CASA MS data set for use by these scripts
 * NOEMA: Must be calibrated beforehand. Follow instructions [here](http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf) to convert to a CASA MS data set for use by these scripts.
 
-##Requires
+## Requires
 * CASA (get it [here](https://svn.cv.nrao.edu/casa/linux_distro/release/el6), scripts tested with version 4.6.0)
 * casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python))
    * use this to install these python packages within CASA python
@@ -20,7 +20,7 @@ A collection of python scripts to create high time resolution light curves from 
    * this package also needs lmfit-0.7.4 (get it [here](http://github.com/lmfit/lmfit-py.git@0.7.4), install with `casa-pip install git+git://github.com/lmfit/lmfit-py.git@0.7.4`)
 
 
-##Description of scripts
+## Description of scripts
 1. Primary script:
    * **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.
       * All parameters need to be carefully considered and changed for each new data set.
@@ -40,7 +40,7 @@ A collection of python scripts to create high time resolution light curves from 
    * **remove_bucket_AWS.py**: removes a bucket from AWS.
    * **sim.py**: creates a simulated CASA MS of time-variable source for testing using CASA's simulation toolbox.
 
-##User Parameters
+## User Parameters
 * All input parameters for casa_timing_script.py are set in the parameter file (param.txt)
 * A complete description of each parameter is provided in param_description.txt.
 

@@ -80,20 +80,16 @@ class InputForm(Form):
 
 
 
-class LoginForm(Form):
-    inputid = StringField('Input ID', validators=[DataRequired()])
-    passwd = PasswordField("Password", validators=[DataRequired()])
-
-
-
 class EnterDBInfo(Form):
-    username = TextField(label='enter username', description="db_enter", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])    
-    passwd = TextField(label='enter password', description="db_enter_pw", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])    
+    username = TextField(label='enter username', description="db_enter", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
+    passwd = TextField(label='enter password', description="db_enter_pw", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
     institute = TextField(label='enter insitution', description="db_enter_in", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
-    email_ad = TextField(label='enter email', description="db_enter_email", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
+    email_ad = TextField("Enter email", description="db_enter_email",
+                         validators=[Required("Please provide a valid email address"),
+                                     Length(max=128, message=(u'Email must be shorter than 128.')),
+                                     Email(message=(u'That is not a valid email address.'))])
+
+
 class RetrieveDBInfo(Form):
     username_ret = TextField(label='username to retrieve', description="db_get", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
     passwd_ret = TextField(label='password to retrieve', description="db_get_pw", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])
-
-
-

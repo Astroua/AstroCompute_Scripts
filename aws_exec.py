@@ -69,7 +69,8 @@ def run(timestamp, param_file, aws_file):
          "SECRET": secret,
          "REGION": region,
          "RESP_QUEUE_NAME": resp_queue_name,
-         "CUSTOM_LINES": 'ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts\nsu - ubuntu -c "/usr/bin/git clone git@github.com:Astroua/AstroCompute_Scripts.git"\nexport USER="ubuntu"'}
+         "CUSTOM_LINES": "/usr/bin/git clone https://github.com/Astroua/AstroCompute_Scripts.git"}
+         # "CUSTOM_LINES": 'ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts\nsu - ubuntu -c "/usr/bin/git clone git@github.com:e-koch/AstroCompute_Scripts.git"\nexport USER="ubuntu"'}
 
     inst = launch(key_name=None, region=region,
                   image_id=aws_settings['image_id'],
@@ -134,6 +135,11 @@ def run(timestamp, param_file, aws_file):
 
     # Return success/failure
 
+    # Add in the job name to parameters
+    params["job_name"] = proc_name
+
+    return params
+
 
 def json_message(params, proc_name):
     '''
@@ -145,15 +151,16 @@ def json_message(params, proc_name):
         "chmod -R 777 /home/ubuntu/data/" + params['visibility']
 
     timing_cmd = \
-        "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
+        "/home/ubuntu/casa-release-4.7.1-el7/bin/casa --nologger " \
         "--logfile data_products/" + proc_name + "_timing.log -c "\
         "/home/ubuntu/AstroCompute_Scripts/casa_timing_script.py "\
-        "/home/ubuntu/data/params.txt /home/ubuntu/"
+        "/home/ubuntu/data/params.txt /home/ubuntu/ "\
+        "/home/ubuntu/AstroCompute_Scripts/"
 
     # Check whether Object detection should be run
     if params['runObj'] == "T":
         clean_cmd = \
-            "/usr/local/bin/CASA/casa-release-4.3.1-el6/casa --nologger " \
+            "/home/ubuntu/casa-release-4.7.1-el7/bin/casa --nologger " \
             "--logfile data_products/" + proc_name + "_initclean.log -c "\
             "/home/ubuntu/AstroCompute_Scripts/initial_clean.py "\
             "/home/ubuntu/data/params.txt /home/ubuntu/"

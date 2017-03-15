@@ -6,8 +6,14 @@ Test AWS execution
 import time
 import os
 import sys
+import inspect
 from datetime import datetime
 import traceback as tr
+
+# Append the above path for imports
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir)
 
 from aws_controller.upload_download_s3 import upload_to_s3, download_from_s3
 from aws_controller.utils import timestring, human_time

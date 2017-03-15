@@ -103,7 +103,7 @@ def run(timestamp, param_file, aws_file):
     if mess is not None:
         content = json.loads(mess.get_body())
         print("Saving content.")
-        with open("tests/test_response.txt", "w") as f:
+        with open("test_response.txt", "w") as f:
             json.dump(content, f)
 
     # Clean-up queues

@@ -23,12 +23,6 @@ with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (a
 4. (optional) Aegean object detection pkg (https://github.com/PaulHancock/Aegean); this also needs lmfit 0.7.4,
 Remember to put location in python path (defined in Aegean_ObjDet.py).'''
 
-import sys
-path_ac='/home/ubuntu/AstroCompute_Scripts/'
-if os.path.isdir(path_ac):
-	sys.path.append(path_ac)
-else: 
-	raise Exception('Please set the path to the AstroCompute_Scripts directory correctly.')
 import tempfile
 import os
 import linecache
@@ -45,10 +39,20 @@ import matplotlib.pyplot as pp
 from scipy.stats import norm
 import re
 import astroML.time_series
-from utils import convert_param_format,initial_clean,run_aegean,var_analysis,lomb_scargle,chi2_calc,errf
 import imp
 import warnings
 warnings.filterwarnings('ignore')
+
+import sys
+# path_ac='/home/ubuntu/AstroCompute_Scripts/'
+path_ac = sys.argv[-1]
+if os.path.isdir(path_ac):
+    sys.path.append(path_ac)
+else:
+    raise Exception('Please set the path to the AstroCompute_Scripts directory correctly.')
+
+from utils import (convert_param_format,initial_clean,run_aegean,
+                   var_analysis,lomb_scargle,chi2_calc,errf)
 from Aegean_ObjDet import objdet
 
 ##################################
@@ -56,15 +60,15 @@ from Aegean_ObjDet import objdet
 ##################################
 
 #set initial path to where input/output is to be stored
-#NOTE: MS's need to be in path_dir/data, all output goes to path_dir/data_products, 
+#NOTE: MS's need to be in path_dir/data, all output goes to path_dir/data_products,
 
-path_dir = sys.argv[-1]#make sure to including trailing / !!!
-param_file = sys.argv[-2]
+path_dir = sys.argv[-2]#make sure to including trailing / !!!
+param_file = sys.argv[-3]
 
-if not os.path.isdir(path_dir+'data_products/'):
-    os.system('sudo mkdir '+path_dir+'data_products')
-if not os.path.isdir(path_dir+'data/'):
-    os.system('sudo mkdir '+path_dir+'data')
+if not os.path.isdir(os.path.join(path_dir, 'data_products/')):
+    os.mkdir(os.path.join(path_dir, "data_products"))
+if not os.path.isdir(os.path.join(path_dir, 'data/')):
+    os.mkdir(os.path.join(path_dir, "data"))
     raise Exception(path_dir+'data/ created. Please move your MS into that directory.')
 
 #get input parameters from file
@@ -75,9 +79,9 @@ data_params = load_json(param_file)
 
 #for test simulated data set CASA put a bunch of garbadge lines in listobs
 #for test data set-->
-#linelo=69
+linelo=69
 #for real data sets-->
-linelo=7
+# linelo=7
 
 ##################################
 #Reading in Parameters
@@ -100,11 +104,11 @@ frac,whole=m.modf(float(intervalSizeS))
 intervalSizemicro = int(frac*(1e6))
 intervalSizeSec = int(whole)
 # Name of visibliity
-visibility = path_dir+'data/'+ data_params["visibility"]
+visibility = os.path.join(path_dir, 'data/' + data_params["visibility"])
 #make copy for uv fitting
-visibility_uv=visibility.strip('.ms')+'_uv.ms'
+visibility_uv= visibility.rstrip('.ms') + '_uv.ms'
 if not os.path.isdir(visibility_uv):
-    os.system('sudo cp -r '+visibility+' '+visibility_uv)
+    os.system('cp -r '+visibility+' '+visibility_uv)
 
 ''' VARIABILITY ANALYSIS'''
 #Do you want a basic variability analysis?
@@ -123,8 +127,8 @@ labelP = \
 
 '''DIRECTORY AND FILE NAME PARAMETERS'''
 # Set path to directory where all output from this script is saved.
-outputPath = path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+\
-str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/'
+outputPath = os.path.join(path_dir, 'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+\
+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec/')
 
 # dataPath contains the path and filename in which data file will be saved.
 # This script can be run on several epochs of data from the same observation without changing this path.
@@ -140,12 +144,12 @@ if not os.path.isdir(os.path.join(path_dir,
                                   refFrequency+'_'+str(intervalSizeH) +
                                   'hours'+str(intervalSizeM)+'min' +
                                   str(intervalSizeS)+'sec')):
-	mkdir_string='sudo mkdir '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-	mkdir_perm1='sudo chown ubuntu '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
-	mkdir_perm2='sudo chmod -R u+rwx '+path_dir+'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec'
+	mkdir_string='mkdir '+ os.path.join(path_dir, 'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec')
+	mkdir_perm1='sudo chown ubuntu '+ os.path.join(path_dir, 'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec')
+	mkdir_perm2='sudo chmod -R u+rwx '+ os.path.join(path_dir, 'data_products/images_'+target+ '_' + obsDate +'_'+refFrequency+'_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min'+str(intervalSizeS)+'sec')
 	os.system(mkdir_string)
-	os.system(mkdir_perm1)
-	os.system(mkdir_perm2)
+	# os.system(mkdir_perm1)
+	# os.system(mkdir_perm2)
 
 '''FLAGS'''
 # flag to run object detection
@@ -221,13 +225,13 @@ if runObj == 'T':
 	flood=int(data_params["flood"])
 	fits_file=outputPath+label+'whole_dataset.fits'
 	initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre)
-	src_l,ra_l,dec_l,maj_l,min_l,pos_l=objdet(tele,lat,out_file0,fits_file,seed,flood,tables,catalog_input_name,cellSize[0])	
+	src_l,ra_l,dec_l,maj_l,min_l,pos_l=objdet(tele,lat,out_file0,fits_file,seed,flood,tables,catalog_input_name,cellSize[0])
 	if len(src_l)==0:
 		raise Exception('No sources detected.')
 	elif len(src_l)==1:
 		ind=1
 	else:
-		ind=raw_input('Please enter target source ID--> ')	
+		ind=raw_input('Please enter target source ID--> ')
 	# target position-->Take bounding ellipse from Aegean and convert to minimum bounding box in pixels for
 	#use with rest of script
 	mask_file_OD=open(outputPath+'aegean_mask.txt','w')
@@ -253,11 +257,11 @@ else:
 #mask for clean based on target box or mask file for complicated fields
 if mask_option == 'box':
 	maskPath = 'box [['+targetBox.split(',')[0]+'pix,'+targetBox.split(',')[1]+'pix],['+targetBox.split(',')[2]+\
-    'pix,'+targetBox.split(',')[3]+'pix]]'#path_dir+'data/v404_jun22B_K21_clean_psc1.mask'
+    'pix,'+targetBox.split(',')[3]+'pix]]'
 elif mask_option == 'file':
-	maskPath = path_dir+'data/'+data_params["mask_file"]
+	maskPath = os.path.join(path_dir, 'data/'+data_params["mask_file"])
 elif mask_option == 'aegean':
-	maskPath=outputPath+'aegean_mask.txt'
+	maskPath=os.path.join(outputPath, 'aegean_mask.txt')
 else:
 	raise ValueError("mask_option must be 'box' or 'file'. Value given is ", mask_option)
 
@@ -304,7 +308,7 @@ else:
 	lab='_bestfit_'
 # number of MC simulations if MC position sampling chosen
 nsim=100
-#if fixing parameters, what parameters do you want to fix in fits? f= peak flux, x=peak x pos, y=peak y pos, 
+#if fixing parameters, what parameters do you want to fix in fits? f= peak flux, x=peak x pos, y=peak y pos,
 #a=major axis (arcsec), b=minor axis (arcsec), p=position angle (deg)
 #a, b, p "convolved with beam" values not "deconvolved" values!!!
 #format is [value,error] from fit of full data set
@@ -394,6 +398,8 @@ listobs(vis=visibility, listfile=outputPath + label + 'listobs.text')
 
 listobsLine7 = linecache.getline(outputPath + label + 'listobs.text', linelo)
 
+print(listobsLine7)
+
 startTimeH = int(listobsLine7[31:33])
 startTimeM = int(listobsLine7[34:36])
 startTimeS = int(listobsLine7[37:39])
@@ -464,7 +470,7 @@ intervalSize = time(intervalSizeH, intervalSizeM, intervalSizeSec,intervalSizemi
 intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeSec,\
     microseconds=intervalSizemicro)
 #
-# Calculate number of intervals. This is done by converting the duration and interval size, 
+# Calculate number of intervals. This is done by converting the duration and interval size,
 #which are both datetime.time objects, into an integer number of minutes. Integer division is then used.
 durationSeconds = (observationDuration.hour)*3600 + (observationDuration.minute)*60+(observationDuration.second)
 intervalSeconds = (intervalSize.hour)*3600 + (intervalSize.minute)*60 + (intervalSize.second)+\
@@ -589,7 +595,10 @@ if runClean == "T":
 		else:
 			intervalString=interval.replace(':', '.').replace('/','_')
 			clean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=T,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F,outlierfile=outlierFile)
-			imSuffix = '_0.image'
+			if taylorTerms == 1:
+				imSuffix = '.image'
+			else:
+				imSuffix = '.image.tt0'
 		#imstat_conv_check = imstat(imagename=outputPath+label+intervalString+imSuffix,mask=outputPath+label+intervalString+'.mask')
 		# For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
 		# An if statement is used to pass over these intervals, avoiding runtime errors.
@@ -680,7 +689,10 @@ elif runClean == "F":
 			else:
 				imSuffix = '.image.tt0'
 		else:
-			imSuffix = '_0.image'
+			if taylorTerms == 1:
+				imSuffix = '.image'
+			else:
+				imSuffix = '.image.tt0'
 		#newmaskname=outputPath+label+intervalString+'.mask'
 		#newmaskname1=newmaskname.replace('.', '_').replace('~','_')
 		#newmaskname2=newmaskname1.replace('_mask','.mask')
@@ -912,7 +924,7 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 						else:
 							fluxD2=fluxD2*1.0
 							fluxE2=fluxE2*1.0
-						
+
 						FD_list.append(fluxD1)
 						FDE_list.append(fluxE1)
 						FD2_list.append(fluxD2)
@@ -1162,9 +1174,9 @@ else:
 		if uv_fit == 'T':
 		    fluxDensity3[k] = fluxDensity3[k]*lc_scale_factor
 		    fluxError3[k] = fluxError3[k]*lc_scale_factor
-##################################    
-    
-    
+##################################
+
+
 ##################################
 #Write results to data file
 ##################################
@@ -1236,8 +1248,9 @@ if runClean != 'U':
     	pp.ylabel(y_label_name)
     	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
     	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    	savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.eps'
+    	savestring = os.path.join(path_dir,
+                                  'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+
+                                  str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.eps')
     	pp.savefig(savestring)
     	print savestring, ' is saved'
     	fig2=pp.figure()
@@ -1247,8 +1260,7 @@ if runClean != 'U':
     	pp.ylabel(y_label_name2)
     	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
     	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    	savestring2 = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.eps'
+    	savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.eps')
     	pp.savefig(savestring2)
     	print savestring2, ' is saved'
     	if uv_fit=='T':
@@ -1259,8 +1271,7 @@ if runClean != 'U':
     		pp.ylabel(y_label_name)
     		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
     		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-            str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps'
+    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps')
     		pp.savefig(savestring)
     		print savestring, ' is saved'
 
@@ -1271,8 +1282,7 @@ if runClean != 'U':
     	pp.ylabel(y_label_name)
     	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
     	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    	savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.eps'
+    	savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.eps')
     	pp.savefig(savestring)
     	print savestring, ' is saved'
     	if uv_fit=='T':
@@ -1283,8 +1293,7 @@ if runClean != 'U':
     		pp.ylabel(y_label_name)
     		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
     		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    		savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-            str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps'
+    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps')
     		pp.savefig(savestring)
     		print savestring, ' is saved'
 else:
@@ -1295,8 +1304,8 @@ else:
     pp.ylabel(y_label_name)
     pp.title('Flux Density vs Time. '+target+' '+refFrequency)
     pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    savestring = path_dir+'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-    str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps'
+    savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps')
     pp.savefig(savestring)
     print savestring, ' is saved'
 ##################################

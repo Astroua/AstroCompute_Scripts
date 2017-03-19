@@ -25,6 +25,7 @@ A collection of python scripts to create high time resolution light curves from 
    * **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.
       * All parameters need to be carefully considered and changed for each new data set.
       * If you have a complicated field with other sources it is recommended that you use your own mask file (with clean boxes     around bright sources; mask_option='file') for cleaning, or run object detection, which will create a mask file with a       boxed region around each detected source (mask_option='aegean').
+      * If you are using an outlier field file, please follow the example template in example_outlier_file.txt.
       * Included in casa_timing_script.py is the option to run basic variability analysis:
          * Calculate weighted mean and do a chi^2 with a constant flux model,
          * Calculate excess variance (Vaughn et al. 2003; Bell et al., 2015),
@@ -38,7 +39,6 @@ A collection of python scripts to create high time resolution light curves from 
    * **download_data_AWS.py**: downloads data from an AWS bucket.
    * **upload_data_AWS.py**: uploads data to an AWS bucket.
    * **remove_bucket_AWS.py**: removes a bucket from AWS.
-   * **sim.py**: creates a simulated CASA MS of time-variable source for testing using CASA's simulation toolbox.
 
 ## User Parameters
 * All input parameters for casa_timing_script.py are set in the parameter file (param.txt)

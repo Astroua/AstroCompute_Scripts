@@ -1,0 +1,4 @@
+imagename = 'image_name_field1'  
+imsize = [128,128]  
+phasecenter = 'J2000 20h25m10.842097 +33d43m00.21455'
+mask = 'outlier_field.mask'

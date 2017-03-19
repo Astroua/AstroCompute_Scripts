@@ -1,7 +1,8 @@
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
-from forms import InputForm, LoginForm
+from forms import InputForm
 from flask_bootstrap import Bootstrap
+from flask_login import LoginManager
 
 
 
@@ -18,3 +19,4 @@ key = app.config['AWS_KEY']
 secret = app.config['AWS_SECRET']
 
 from app import models
+from results_class import ResultInfo

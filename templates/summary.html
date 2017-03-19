@@ -1,0 +1,21 @@
+
+{% extends "bootstrap/base.html" %}
+
+{% import 'macros.html' as macros %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+
+{% block content %}
+
+  <h1>Download timing results.</h1>
+  <output action="" method="post" name="summary">
+      {{ output.hidden_tag() }}
+      <p>
+          Results for the job {{ output.job_name }}<br>
+          <a href="output.download_url"> {{ output.download_url }}</a><br>
+          If you encounter issues, please contact us via {{ output.project_email }}.<br>
+      </p>
+      <p><input type="submit" value="Sign In"></p>
+  </output>
+
+{% endblock %}

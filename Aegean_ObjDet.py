@@ -15,15 +15,8 @@ Written by: A. Tetarenko
 Last Updated: February 2 2017'''
 
 # Import modules
-# Make sure aegean tree of directories in path so you can import it
-import sys
-path_ag='/home/ubuntu/Aegean'
-if os.path.isdir(path_ag):
-  sys.path.append(path_ag)
-else: 
-  raise Exception('Please set the path to the Aegean directory correctly.')
-import aegean
 from AegeanTools.catalogs import save_catalog
+from AegeanTools.source_finder import scope2lat, SourceFinder
 import numpy as np
 from multiprocessing import cpu_count
 import re
@@ -47,33 +40,35 @@ def objdet(tele,lat,out_file0,fits_file,seed,flood,tab_file,catalog_input_name,c
   sources = []
 
   # get latitude for telescope
-  
+
   # adding SMA and NOEMA to list
   if tele == 'SMA':
     lat = 19.8243
   elif tele == 'NOEMA':
     lat = 44.6339
   else:
-    lat = aegean.scope2lat(tele)
-  
+    lat = scope2lat(tele)
+
 
   out_file = open(out_file0, 'w')
 
+  sf = SourceFinder()
+
   print 'Running Aegean Object Detection -->'
-  detections = aegean.find_sources_in_image(fits_file,
-                                          outfile=out_file,
-                                          hdu_index=0,
-                                          rms=None,
-                                          max_summits=None,
-                                          innerclip=seed,
-                                          outerclip=flood,
-                                          cores=cpu_count(),
-                                          rmsin=None,
-                                          bkgin=None, beam=None,
-                                          doislandflux=False,
-                                          nonegative=not False,
-                                          nopositive=False,
-                                          mask=None, lat=lat, imgpsf=None)
+  detections = sf.find_sources_in_image(fits_file,
+                                        outfile=out_file,
+                                        hdu_index=0,
+                                        rms=None,
+                                        max_summits=None,
+                                        innerclip=seed,
+                                        outerclip=flood,
+                                        cores=cpu_count(),
+                                        rmsin=None,
+                                        bkgin=None, beam=None,
+                                        doislandflux=False,
+                                        nonegative=not False,
+                                        nopositive=False,
+                                        mask=None, lat=lat, imgpsf=None)
   out_file.flush()
   out_file.close()
   if len(detections) == 0:
@@ -186,7 +181,7 @@ if __name__ == "__main__":
   ##################################
 
   ##################################
-  #Plotting and Region Files 
+  #Plotting and Region Files
   #of Detected Sources
   ##################################
   if len(src_l)>0:

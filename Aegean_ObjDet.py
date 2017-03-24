@@ -9,7 +9,7 @@ OUTPUT: (1) Data file of the parameters of objects found in image--> [tab_file]
         (4) Image of detected sources--> [path_dir]_detected_sources.pdf
 NOTE: - Needs to be run with lmfit 0.7.4, otherwise it won't work.
         (casa-pip install git+git://github.com/lmfit/lmfit-py.git@0.7.4)
-      - Set path to aegean directory at line 20.
+      - Make sure aegean code is in your python path.
 
 Written by: A. Tetarenko
 Last Updated: February 2 2017'''

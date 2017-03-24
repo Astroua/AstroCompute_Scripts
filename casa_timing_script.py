@@ -77,9 +77,10 @@ data_params = load_json(param_file)
 ##to convert txt param file to dictionary do this:
 #data_params = convert_param_format(param_file, to="dict")
 
+#NOT NEEDED ANYMORE, NOW SEARCHES FOR STRING DIRECTLY!!
 #for test simulated data set CASA put a bunch of garbadge lines in listobs
 #for test data set-->
-linelo=69
+#linelo=69
 #for real data sets-->
 # linelo=7
 
@@ -105,10 +106,13 @@ intervalSizemicro = int(frac*(1e6))
 intervalSizeSec = int(whole)
 # Name of visibliity
 visibility = os.path.join(path_dir, 'data/' + data_params["visibility"])
+# do you want to do uv fitting (T or F) as well?
+uv_fit = data_params["uv_fit"]
 #make copy for uv fitting
 visibility_uv= visibility.rstrip('.ms') + '_uv.ms'
-if not os.path.isdir(visibility_uv):
-    os.system('cp -r '+visibility+' '+visibility_uv)
+if uv_fit=='T':
+	if not os.path.isdir(visibility_uv):
+    	os.system('cp -r '+visibility+' '+visibility_uv)
 
 ''' VARIABILITY ANALYSIS'''
 #Do you want a basic variability analysis?
@@ -166,8 +170,6 @@ fix_pos = data_params["fix_pos"]
 do_monte = data_params["do_monte"]
 # do you want peak (mJy/beam; F) or integrated (mJy; T) flux, or both(B) in lightcurve file?
 integ_fit = data_params["integ_fit"]
-# do you want to do uv fitting (T or F) as well?
-uv_fit = data_params["uv_fit"]
 # fix position in UV
 uv_fix = data_params["uv_fix"]
 # If runClean=F set fit_cutout='T' to make sure all coordinates correct
@@ -392,11 +394,14 @@ print 'Calculating time-bins...\n'
 listobs(vis=visibility, listfile=outputPath + label + 'listobs.text')
 
 # Get time range of observation from listobs and generate timeIntervals vector.
-# Extract start and end times and start date from listobs. The first few lines of listobs output
-# are identical between listobs executions. Therefore we can be confident that the time info will
-# always be located at the same position.
-
-listobsLine7 = linecache.getline(outputPath + label + 'listobs.text', linelo)
+# Extract start and end times and start date from listobs.
+file_listobs=open(outputPath + label + 'listobs.text','r')
+readit=file_listobs.read()
+matched_lines = [line for line in readit.splitlines() if "Observed from" in line]
+listobsLine7=matched_lines[0]
+file_listobs.close()
+#listobsLine7 = linecache.getline(outputPath + label + 'listobs.text', linelo)-->not always
+#same line if you concatenated data sets, so use modifie dcode above
 
 print(listobsLine7)
 

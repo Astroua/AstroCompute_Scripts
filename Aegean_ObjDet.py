@@ -167,6 +167,11 @@ if __name__ == "__main__":
   tele = 'VLA'
   lat=''
   cellSize_string = '0.2arcsec'
+  imsize=1024
+  # image display params
+  imunit='m'#intensity unit in image
+  gam=0.3#powerlaw scaling in image
+  vmax=15.#max intensity in image
   ##################################
 
   ##################################
@@ -191,14 +196,25 @@ if __name__ == "__main__":
     data1=hdulist1.data
     wmap1=wcs.WCS(hdulist1.header)
     #write region files of detected sources
+    os.system('rm -rf '+path_dir+'casa_region.txt')
+    os.system('rm -rf '+path_dir+'ds9_region.reg')
     casa_reg_file(src_l,ra_l,dec_l,maj_l,min_l,pos_l,path_dir+'casa_region.txt',wmap1)
     ds9_reg_file(src_l,ra_l,dec_l,maj_l,min_l,pos_l,path_dir+'ds9_region.reg',3)
+    #set units
+    if imunit=='m':
+      scaler=1e3
+    elif imunit=='u':
+      scaler=1e6
+    elif imunit=='n':
+      scaler=1e9
+    elif imunit=='':
+      scaler=1.
     #plot map with all detected sources labelled
     fig=plt.figure()
     plt.rc('xtick.major', size=4)
     plt.rc('xtick', color='w', labelsize='large')
     ax1 = fig.add_subplot(111, projection=wmap1.celestial)
-    im=plt.imshow(np.nan_to_num(data1[0,0,:,:])*1e6,origin="lower",cmap=cm.get_cmap('jet', 500),norm=colors.PowerNorm(gamma=0.5),vmin=0.0,vmax=300.)
+    im=plt.imshow(np.nan_to_num(data1[0,0,:,:])*scaler,origin="lower",cmap=cm.get_cmap('jet', 500),norm=colors.PowerNorm(gamma=gam),vmin=0.0,vmax=vmax)
     cbar=plt.colorbar(im, orientation='vertical',fraction=0.04,pad=0)
     cbar.set_label('uJy/beam')
     for i in range(0,len(src_l)):
@@ -217,8 +233,8 @@ if __name__ == "__main__":
     ax1.coords['ra'].set_axislabel('Right Ascension')
     ax1.coords['dec'].set_axislabel('Declination',minpad=-0.1)
     ax1.coords['ra'].set_major_formatter('hh:mm:ss.s')
-    ax1.set_ylim(0,2048)
-    ax1.set_xlim(0,2048)
+    ax1.set_ylim(0,imsize)
+    ax1.set_xlim(0,imsize)
     plt.savefig(path_dir+'detected_sources.pdf',bbox_inches='tight')
     plt.show()
   else:

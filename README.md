@@ -28,9 +28,9 @@ A collection of python scripts to create high time resolution light curves from 
       * If you are using an outlier field file, please follow the example template in example_outlier_file.txt.
       * Included in casa_timing_script.py is the option to run basic variability analysis:
          * Calculate weighted mean and do a chi^2 with a constant flux model,
-         * Calculate excess variance (Vaughn et al. 2003; Bell et al., 2015),
-         * Calculate fractional RMS (Vaughn et al. 2003; Bell et al., 2015), and
-         * Make power spectrum using generalized lomb-periodogram (Zechmeister and Kurster, 2009)
+         * Calculate excess variance,
+         * Calculate fractional RMS ([Vaughan et al. 2003] (http://adsabs.harvard.edu/abs/2003MNRAS.345.1271V); [Bell et al., 2015] (http://adsabs.harvard.edu/abs/2015MNRAS.450.4221B)), and
+         * Make power spectrum using generalized lomb-periodogram ([Zechmeister and Kurster, 2009] (http://adsabs.harvard.edu/abs/2009A%26A...496..577Z))
 2. Other scripts:
    * **Aegean_ObjDet.py**: object detection algorithm.
       * Integrated into casa_timing_script.py.

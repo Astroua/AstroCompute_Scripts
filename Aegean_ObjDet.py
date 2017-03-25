@@ -12,7 +12,12 @@ NOTE: - Needs to be run with lmfit 0.7.4, otherwise it won't work.
       - Make sure aegean code is in your python path.
 
 Written by: A. Tetarenko
-Last Updated: February 2 2017'''
+Last Updated: February 2 2017
+
+TO RUN SCRIPT independently, go to line 155, set variables in User Input Section and Setup &
+Reading in Params sections, then run either,
+python Aegean_ObjDet.py or casa -c  Aegean_ObjDet.py
+'''
 
 # Import modules
 from AegeanTools.catalogs import save_catalog
@@ -158,20 +163,20 @@ if __name__ == "__main__":
   ##################################
   #Reading in Parameters
   ##################################
-  # Label for casa output directories and files.
+  ## Label for casa output directories and files.
   fits_file = path_dir+'target_source_image.fits'
   out_file0 = path_dir+'Source_XXGHz_Date_whole_dataset_aegean.txt'
-  # aegean parameters
+  ## aegean parameters
   seed = 10
   flood = 4
   tele = 'VLA'
-  lat=''
+  lat=''#only need if you get error that telescope not in predefined list; in degrees
   cellSize_string = '0.2arcsec'
+  ## params for displayed image of detetced sources
   imsize=1024
-  # image display params
-  imunit='m'#intensity unit in image
-  gam=0.3#powerlaw scaling in image
-  vmax=15.#max intensity in image
+  imunit='m'#intensity unit in image; 'm'=mJy, 'u'=uJy, 'n'=nJy, ''=Jy
+  gam=0.3#powerlaw scaling in image intensity; 1=linear scaling
+  vmax=15.#max intensity in image in imunit units
   ##################################
 
   ##################################
@@ -183,6 +188,7 @@ if __name__ == "__main__":
   #run aegean
   src_l, ra_l, dec_l, maj_l, min_l, pos_l=objdet(tele,lat,out_file0,fits_file,seed,\
     flood,tab_file,catalog_input_name,cellSize_string)
+  print 'The number of sources detected is: ', len(src_l)
   ##################################
 
   ##################################
@@ -190,6 +196,7 @@ if __name__ == "__main__":
   #of Detected Sources
   ##################################
   if len(src_l)>0:
+    print 'Writing rgeion files and plotting labelled map of detected sources...'
     #read in fits image file for plotting and get wcs header
     fits_file1=fits_file
     hdulist1 = fits.open(fits_file1)[0]
@@ -239,4 +246,12 @@ if __name__ == "__main__":
     plt.show()
   else:
     print 'No sources detected, so no region files or plot written.'
+  ##################################
+
+  #remove temp files and .last/.log files created by CASA/ipython
+  os.system('rm -rf *.last')
+  os.system('rm -rf *.log')
+  print '*********************************************************'
+  print 'Script finished. Please inspect resulting data products'
+  print '*********************************************************'
   ##################################

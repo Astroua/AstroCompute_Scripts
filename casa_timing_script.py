@@ -94,7 +94,7 @@ label = target + '_' + refFrequency + '_' + obsDate + '_'
 # Length of time bins (H,M,S); see below if you want manual input (line 288)
 intervalSizeH = int(data_params["intervalSizeH"])
 intervalSizeM = int(data_params["intervalSizeM"])
-intervalSizeS = int(data_params["intervalSizeS"])
+intervalSizeS = float(data_params["intervalSizeS"])
 frac,whole=m.modf(float(intervalSizeS))
 intervalSizemicro = int(frac*(1e6))
 intervalSizeSec = int(whole)

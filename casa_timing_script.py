@@ -7,21 +7,27 @@ OUTPUT: (1) Lightcurve plot--> [path_dir]/data_products/[target]+[lab]_[interval
         (2) Lightcurve data file-->[path_dir]/data_products/[target]_[obsDate]_[refFrequency]_[intervalSizeH]hours_[intervalSizeM]min_[intervalSizeS]sec.txt
 NOTES: - This script is theoretically compatible with any data that can be imported into a CASA MS,
          but has only been tested with VLA, SMA, and NOEMA data.
-       - Set the path to the AstroCompute_Scripts directory in your files system at line 27.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
 Last Updated: February 1 2017
+
+TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_repo] [path_dir] [path_to_param_file]
+
+NOTE: path_dir is path to input/output directory
+-MS's need to be in path_dir/data,
+-all output goes to path_dir/data_products (this directory is created by script)
+-Make sure to including trailing / in [path_to_repo_dir] & [path_dir]!!!
 '''
 
-'''MODULES USED:
-To ensure all modules used in this script are callable:
-1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
-with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,jdcal,lmfit)
-2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
-(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
-3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
-4. (optional) Aegean object detection pkg (https://github.com/PaulHancock/Aegean); this also needs lmfit 0.7.4,
-Remember to put location in python path (defined in Aegean_ObjDet.py).'''
+#MODULES USED:
+#To ensure all modules used in this script are callable:
+#1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
+#with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,jdcal,lmfit)
+#2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
+#(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
+#3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
+#4. (optional) Aegean object detection pkg (https://github.com/PaulHancock/Aegean); this also needs lmfit 0.7.4,
+#Remember to put location in python path.
 
 import tempfile
 import os
@@ -44,7 +50,6 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import sys
-# path_ac='/home/ubuntu/AstroCompute_Scripts/'
 path_ac = sys.argv[-1]
 if os.path.isdir(path_ac):
     sys.path.append(path_ac)
@@ -56,13 +61,9 @@ from utils import (convert_param_format,initial_clean,run_aegean,
 from Aegean_ObjDet import objdet
 
 ##################################
-#User Input Section and Setup
+#Setup
 ##################################
-
-#set initial path to where input/output is to be stored
-#NOTE: MS's need to be in path_dir/data, all output goes to path_dir/data_products,
-
-path_dir = sys.argv[-2]#make sure to including trailing / !!!
+path_dir = sys.argv[-2]
 param_file = sys.argv[-3]
 
 if not os.path.isdir(os.path.join(path_dir, 'data_products/')):
@@ -74,15 +75,8 @@ if not os.path.isdir(os.path.join(path_dir, 'data/')):
 #get input parameters from file
 from utils import load_json
 data_params = load_json(param_file)
-##to convert txt param file to dictionary do this:
+##to convert txt param file directly to dictionary do this instead:
 #data_params = convert_param_format(param_file, to="dict")
-
-#NOT NEEDED ANYMORE, NOW SEARCHES FOR STRING DIRECTLY!!
-#for test simulated data set CASA put a bunch of garbadge lines in listobs
-#for test data set-->
-#linelo=69
-#for real data sets-->
-# linelo=7
 
 ##################################
 #Reading in Parameters
@@ -400,8 +394,6 @@ readit=file_listobs.read()
 matched_lines = [line for line in readit.splitlines() if "Observed from" in line]
 listobsLine7=matched_lines[0]
 file_listobs.close()
-#listobsLine7 = linecache.getline(outputPath + label + 'listobs.text', linelo)-->not always
-#same line if you concatenated data sets, so use modifie dcode above
 
 print(listobsLine7)
 
@@ -732,9 +724,9 @@ elif runClean == "F":
 					for i in range(0,len(samp_px)):
 						peak_x1=(samp_px[i]*peak_x[1])+peak_x[0]
 						peak_y1=(samp_py[i]*peak_y[1])+peak_y[0]
-						b_maj1=b_maj[0]#(samp_bmaj[i]*b_maj[1])+b_maj[0]
-						b_min1=b_min[0]#(samp_bmin[i]*b_min[1])+b_min[0]
-						pos_ang1=pos_ang[0]#(samp_pos[i]*pos_ang[1])+pos_ang[0]
+						b_maj1=b_maj[0]
+						b_min1=b_min[0]
+						pos_ang1=pos_ang[0]
 						tempFile2 = open('tempfile2.txt','w')
 						mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
 						tempFile2.write(mystring2)
@@ -1188,7 +1180,7 @@ else:
 print 'Writing light curve data file...\n'
 data = open(dataPath, 'w')
 if runClean != 'U':
-    data.write('{0} {1}\n'.format('The number of timebins where CLEAN failed/did not converge was',counter_fail))
+    #data.write('{0} {1}\n'.format('#The number of timebins where CLEAN failed/did not converge was',counter_fail))
     if integ_fit == 'B':
     	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
     elif integ_fit == 'B' and uv_fit == 'T':

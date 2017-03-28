@@ -408,16 +408,16 @@ endDate = listobsLine7[49:60]
 
 # The data will be plotted against MJD time, so we need startDate in this format also.
 # Convert month to integer.
-year = startDate[7:11]
+year = int(startDate[7:11])
 month = startDate[3:6]
-day = startDate[0:2]
+day = int(startDate[0:2])
 months = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
           'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}
 monthInt = months[month]
 startDateMJD = gcal2jd(year, monthInt, day)
-yeare = endDate[7:11]
+yeare = int(endDate[7:11])
 monthe = endDate[3:6]
-daye = endDate[0:2]
+daye = int(endDate[0:2])
 monthInte = months[monthe]
 endDateMJD = gcal2jd(yeare, monthInte, daye)
 
@@ -425,51 +425,44 @@ endDateMJD = gcal2jd(yeare, monthInte, daye)
 # Optional: Define start and end times manually (i.e., if only want subset of observation )
 #
 if def_times=='T':
-	startTimeH = int(data_params["startTimeH"])#input('Enter start time hour >| ')
-	startTimeM = int(data_params["startTimeM"])#input('Enter start time minute >| ')
-	startTimeS = int(data_params["startTimeS"])#input('Enter start time seconds >| ')
-	endTimeH = int(data_params["endTimeH"])#input('Enter finish time hour >| ')
-	endTimeM = int(data_params["endTimeM"])#input('Enter finish time minute >| ')
-	endTimeS = int(data_params["endTimeS"])#input('Enter start time seconds >| ')
+	day = int(data_params["startD"])
+	monthInt = int(data_params["startM"])
+	year = int(data_params["startY"])
+	startTimeH = int(data_params["startTimeH"])
+	startTimeM = int(data_params["startTimeM"])
+	startTimeS = int(data_params["startTimeS"])
+	daye = int(data_params["endD"])
+	monthInte = int(data_params["endM"])
+	yeare = int(data_params["endY"])
+	endTimeH = int(data_params["endTimeH"])
+	endTimeM = int(data_params["endTimeM"])
+	endTimeS = int(data_params["endTimeS"])
+	sstartDateMJD = gcal2jd(year, monthInt, day)
+	endDateMJD = gcal2jd(yeare, monthInte, daye)
 ####################################################################################################
 
 # We require a list of time interval strings to pass to the clean function.
 # In order to generate this list we need to perform some basic arithmetic on time values.
 # The datetime module achieves this using timedelta objects.
 
-# First the start and end times are converted to datetime.time objects.
-startTime = time(startTimeH,startTimeM,startTimeS)
-endTime = time(endTimeH,endTimeM,endTimeS)
-#the following is used to enable input of multi-day observations, essentially both dates and
-#times are recorded
-testTime = time(23,59,59)
-test2Time = time(00,00,01)
-#
-# Next we convert these to datetime.timedelta objects.
-startTimeDelta = timedelta(hours=startTime.hour, minutes=startTime.minute,seconds=startTime.second)
-endTimeDelta = timedelta(hours=endTime.hour, minutes=endTime.minute,seconds=endTime.second)
-temp = timedelta(hours=testTime.hour, minutes=testTime.minute,seconds=testTime.second)
-temp2 = timedelta(hours=test2Time.hour, minutes=test2Time.minute,seconds=test2Time.second)
+# First the start and end times are converted to datetime.datetime objects.
+startTime = datetime(year,monthInt,day,startTimeH,startTimeM,startTimeS)
+endTime = datetime(yeare,monthInte,daye,endTimeH,endTimeM,endTimeS)
+endTimeHMS = time(endTimeH,endTimeM,endTimeS)
 #
 # Use timedelta to calculate duration.
-if float(startDateMJD[1]) == float(endDateMJD[1]):
-	observationDurationDelta = endTimeDelta-startTimeDelta
-else:
-	observationDurationDelta = endTimeDelta+(temp-startTimeDelta+temp2)
-# The result is converted back to a datetime.time object.
-observationDuration = (datetime.min+observationDurationDelta).time()
+observationDurationDelta = endTime-startTime
 #
 # Duration is printed in iso format as a string for the user.
-print '\nTotal observation time is ' + str(time.isoformat(observationDuration))
+print '\nTotal observation time is ' + str(observationDurationDelta)
 #
 # The interval length is converted to a datetime.timedelta object
 intervalSize = time(intervalSizeH, intervalSizeM, intervalSizeSec,intervalSizemicro)
 intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeSec,\
     microseconds=intervalSizemicro)
 #
-# Calculate number of intervals. This is done by converting the duration and interval size,
-#which are both datetime.time objects, into an integer number of minutes. Integer division is then used.
-durationSeconds = (observationDuration.hour)*3600 + (observationDuration.minute)*60+(observationDuration.second)
+# Calculate number of intervals. This is done by converting the duration and interval size into seconds
+durationSeconds = (observationDurationDelta.days)*(3600.*24.) + (observationDurationDelta.seconds)
 intervalSeconds = (intervalSize.hour)*3600 + (intervalSize.minute)*60 + (intervalSize.second)+\
 (intervalSize.microsecond*1e-6)
 if intervalSeconds > durationSeconds:
@@ -514,11 +507,11 @@ for element in range(numIntervals):
          9: '09', 10: '10', 11: '11', 12: '12'}[date_conv[1]]
 
     else:
-    	mjdTimes[element] = endDateMJD[1] + long((datetime.min+endTimeDelta).time().hour)/24.0 + \
+    	mjdTimes[element] = (startDateMJD[1]+endTimeDelta.days) + long((datetime.min+endTimeDelta).time().hour)/24.0 + \
         long((datetime.min+endTimeDelta).time().minute)/60.0/24.0 + \
         long((datetime.min+endTimeDelta).time().second)/60.0/60.0/24.0+ \
         long((datetime.min+endTimeDelta).time().microsecond)/60.0/60.0/24.0/(1.0e6)
-    	date_conv2=jd2gcal(endDateMJD[0],endDateMJD[1])
+    	date_conv2=jd2gcal((startDateMJD[0]),(startDateMJD[1]+endTimeDelta.days))
     	month_2={1: '01', 2: '02', 3: '03', 4: '04', 5: '05', 6: '06', 7: '07',\
          8: '08', 9: '09', 10: '10', 11: '11', 12: '12'}[date_conv2[1]]
 
@@ -547,13 +540,13 @@ if remainder >= rem_int:
     if float(startDateMJD[1]) != float(endDateMJD[1]):
     	timeIntervals = timeIntervals + [str(date_conv2[0])+'/'+str(month_2)+'/'+str(str(date_conv2[2]).zfill(2)) +\
         '/'+str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv2[0])+'/'+str(month_2)+'/'\
-        +str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat(endTime))]
+        +str(str(date_conv2[2]).zfill(2)) +'/'+str(time.isoformat(endTimeHMS))]
     	mjdTimes = mjdTimes + [endDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ \
         long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
     else:
     	timeIntervals = timeIntervals + [str(date_conv[0]) +'/'+ str(month_0) +'/'+str(str(date_conv[2]).zfill(2)) +\
         '/' +str(time.isoformat((datetime.min+endTimeDelta).time()))+'~'+str(date_conv[0]) +'/'+ str(month_0) +\
-        '/'+str(str(date_conv[2]).zfill(2)) +'/' +str(time.isoformat(endTime))]
+        '/'+str(str(date_conv[2]).zfill(2)) +'/' +str(time.isoformat(endTimeHMS))]
     	mjdTimes = mjdTimes + [startDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ \
         long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
 

@@ -39,6 +39,12 @@ class InputForm(Form):
     endTimeH = StringField("UTC Hour End Time (specify if def_times=T)", default='')
     endTimeM = StringField("UTC Minute End Time (specify if def_times=T)", default='')
     endTimeS = StringField("UTC Second End Time (specify if def_times=T)", default='')
+    startD = StringField("Day of Start Time (specify if def_times=T)", default='')
+    startM = StringField("Month of Start Time (specify if def_times=T)", default='')
+    startY = StringField("Year of Start Time (specify if def_times=T)", default='')
+    endD = StringField("Day of End Time (specify if def_times=T)", default='')
+    endM = StringField("Month of End Time (specify if def_times=T)", default='')
+    endY = StringField("Year of End Time (specify if def_times=T)", default='')
 ##CLEAN PARAMETERS
     imageSize = IntegerField("Image Size", default=256)
     numberIters = IntegerField("# of CLEAN iterations", default=5000)

@@ -64,9 +64,13 @@ uv_fix: toggle to fix position in uv fitting from position of whole data set; st
 def_times: toggle to manually define start and end times (next 6 params), default is start and end of observation; string,
 options are 'T' or 'F'
 
-startTimeX: manual start time in format from listobs; string, only set if def_times='T'
+startTimeX: manual start time in format integer hour, minute, second; string, only set if def_times='T'
 
-endTimeX: manual end time in format from listobs; string, only set if def_times='T'
+endTimeX: manual end time in format integer hour, minute, second; string, only set if def_times='T'
+
+startX: manual start date in format integer day, month, year; string, only set if def_times='T'
+
+endX: manual end date in format integer day, month, year; string, only set if def_times='T'
 
 lc_scale_unit: unit for lightcurve flux density; string, options are '' (Jy), 'm' (mJy), 'u' (microJy), default is 'm'
 

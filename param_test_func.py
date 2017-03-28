@@ -2,6 +2,7 @@
 import os 
 from utils import is_power2
 from astropy import units as u
+from datetime import date
 
 def test_target(form,field):
 	if not isinstance(field.data,str):
@@ -170,6 +171,36 @@ def test_endTimeS(form,field):
 		raise ValueError("Value entered is not a string. Please change input to a string format.")
 	if int(field.data) < 0. or int(field.data) >= 60.:
 		raise ValueError("Value entered is invalid. Please change input to a number between 0.0 and 59.9")
+def test_startD(form,field):
+	if not isinstance(field.data,str):
+		raise ValueError("Value entered is not a string. Please change input to a string format.")
+	if int(field.data) not in xrange(0,32):
+		raise ValueError("Value entered is invalid. Please change input to a number between 0 and 31.")
+def test_startM(form,field):
+	if not isinstance(field.data,str):
+		raise ValueError("Value entered is not a string. Please change input to a string format.")
+	if int(field.data) not in xrange(0,13):
+		raise ValueError("Value entered is invalid. Please change input to a number between 0 and 12.")
+def test_startY(form,field):
+	if not isinstance(field.data,str):
+		raise ValueError("Value entered is not a string. Please change input to a string format.")
+	if int(field.data) < 0 or int(field.data) > date.today().year:
+		raise ValueError("Value entered is invalid. Please change input to a valid 4 digit date")
+def test_endD(form,field):
+	if not isinstance(field.data,str):
+		raise ValueError("Value entered is not a string. Please change input to a string format.")
+	if int(field.data) not in xrange(0,32):
+		raise ValueError("Value entered is invalid. Please change input to a number between 0 and 31.")
+def test_endM(form,field):
+	if not isinstance(field.data,str):
+		raise ValueError("Value entered is not a string. Please change input to a string format.")
+	if int(field.data) not in xrange(0,13):
+		raise ValueError("Value entered is invalid. Please change input to a number between 0 and 12.")
+def test_endY(form,field):
+	if not isinstance(field.data,str):
+		raise ValueError("Value entered is not a string. Please change input to a string format.")
+	if int(field.data) < 0 or int(field.data) > date.today().year:
+		raise ValueError("Value entered is invalid. Please change input to a valid 4 digit date")
 def test_lc_scale_unit(form,field):
 	allowed=['','m','u']
 	if not isinstance(field.data,str):

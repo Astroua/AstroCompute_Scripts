@@ -1329,7 +1329,7 @@ if var_anal=='T':
 	chi_tot,dof,null,wm,wmerr,ex_var,ex_var_error,frac_rms,frac_rms_error=var_analysis(fluxvar,fluxerrvar)
 	if power_spec=='T':
 		print 'Creating Power Spectrum'
-		sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeS),labelP)
+		sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.seconds),labelP)
 		print labelP+' is saved.'
 	var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
 	var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))

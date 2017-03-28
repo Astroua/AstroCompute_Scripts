@@ -27,8 +27,8 @@
     {{ wtf.form_field(form.reffreq) }}
     {{ wtf.form_field(form.spw_choice) }}
     {{ wtf.form_field(form.def_times) }}
-    start = hour: {{ form.startTimeH(size=3) }}, minute: {{ form.startTimeM(size=3) }}, second: {{form.startTimeS(size=3) }}<br>
-    end = hour: {{ form.endTimeH(size=3) }}, minute: {{ form.endTimeM(size=3) }}, second: {{form.endTimeS(size=3) }}
+    start = year: {{ form.startY(size=3) }}, month: {{ form.startM(size=3) }}, day: {{ form.startD(size=3) }}, hour: {{ form.startTimeH(size=3) }}, minute: {{ form.startTimeM(size=3) }}, second: {{form.startTimeS(size=3) }}<br>
+    end = year: {{ form.endY(size=3) }}, month: {{ form.endM(size=3) }}, day: {{ form.endD(size=3) }}, hour: {{ form.endTimeH(size=3) }}, minute: {{ form.endTimeM(size=3) }}, second: {{form.endTimeS(size=3) }}
     <hr style='background-color:#000000;border-width:0;color:#000000;height:2px;line-height:0;'/>
     <font size="+3"><u>Light Curve Time Bins</u></font><br><br>
     {{ wtf.form_field(form.intervalSizeH) }}

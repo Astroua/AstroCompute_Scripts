@@ -440,7 +440,7 @@ if def_times=='T':
 	endTimeH = int(data_params["endTimeH"])
 	endTimeM = int(data_params["endTimeM"])
 	endTimeS = float(data_params["endTimeS"])
-	sstartDateMJD = gcal2jd(year, monthInt, day)
+	startDateMJD = gcal2jd(year, monthInt, day)
 	endDateMJD = gcal2jd(yeare, monthInte, daye)
 ####################################################################################################
 

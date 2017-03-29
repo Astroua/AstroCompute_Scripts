@@ -385,7 +385,10 @@ if uv_fit=='T':
 ##################################
 print 'Calculating time-bins...\n'
 # Run listobs and store as a text file.
-listobs(vis=visibility, listfile=outputPath + label + 'listobs.text')
+if os.path.isfile(outputPath + label + 'listobs.text'):
+	print 'listobs already exits.'
+else:
+	listobs(vis=visibility, listfile=outputPath + label + 'listobs.text')
 
 # Get time range of observation from listobs and generate timeIntervals vector.
 # Extract start and end times and start date from listobs.
@@ -399,10 +402,10 @@ print(listobsLine7)
 
 startTimeH = int(listobsLine7[31:33])
 startTimeM = int(listobsLine7[34:36])
-startTimeS = int(listobsLine7[37:39])
+startTimeS = float(listobsLine7[37:39])
 endTimeH = int(listobsLine7[61:63])
 endTimeM = int(listobsLine7[64:66])
-endTimeS = int(listobsLine7[67:69])
+endTimeS = float(listobsLine7[67:69])
 startDate = listobsLine7[19:30]
 endDate = listobsLine7[49:60]
 
@@ -430,13 +433,13 @@ if def_times=='T':
 	year = int(data_params["startY"])
 	startTimeH = int(data_params["startTimeH"])
 	startTimeM = int(data_params["startTimeM"])
-	startTimeS = int(data_params["startTimeS"])
+	startTimeS = float(data_params["startTimeS"])
 	daye = int(data_params["endD"])
 	monthInte = int(data_params["endM"])
 	yeare = int(data_params["endY"])
 	endTimeH = int(data_params["endTimeH"])
 	endTimeM = int(data_params["endTimeM"])
-	endTimeS = int(data_params["endTimeS"])
+	endTimeS = float(data_params["endTimeS"])
 	sstartDateMJD = gcal2jd(year, monthInt, day)
 	endDateMJD = gcal2jd(yeare, monthInte, daye)
 ####################################################################################################
@@ -445,10 +448,17 @@ if def_times=='T':
 # In order to generate this list we need to perform some basic arithmetic on time values.
 # The datetime module achieves this using timedelta objects.
 
+frac1,whole1=m.modf(float(startTimeS))
+startTimeMicro = int(frac1*(1e6))
+startTimeSec = int(whole1)
+frac2,whole2=m.modf(float(endTimeS))
+endTimeMicro = int(frac2*(1e6))
+endTimeSec = int(whole2)
+
 # First the start and end times are converted to datetime.datetime objects.
-startTime = datetime(year,monthInt,day,startTimeH,startTimeM,startTimeS)
-endTime = datetime(yeare,monthInte,daye,endTimeH,endTimeM,endTimeS)
-endTimeHMS = time(endTimeH,endTimeM,endTimeS)
+startTime = datetime(year,monthInt,day,startTimeH,startTimeM,startTimeSec,startTimeMicro)
+endTime = datetime(yeare,monthInte,daye,endTimeH,endTimeM,endTimeSec,endTimeMicro)
+endTimeHMS = time(endTimeH,endTimeM,endTimeSec,endTimeMicro)
 #
 # Use timedelta to calculate duration.
 observationDurationDelta = endTime-startTime

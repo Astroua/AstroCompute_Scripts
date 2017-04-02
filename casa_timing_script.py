@@ -1,5 +1,5 @@
 ##################################
-#CASA Timing script
+#CASA Timing Script
 ##################################
 ''' CASA script to produce high time res light curves from calibrated continuum MS
 INPUT: Calibrated and Split MS, parameter file (param_file below)
@@ -9,7 +9,7 @@ NOTES: - This script is theoretically compatible with any data that can be impor
          but has only been tested with VLA, SMA, and NOEMA data.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
-Last Updated: February 1 2017
+Last Updated: April 2 2017
 
 TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_repo] [path_dir] [path_to_param_file]
 
@@ -17,18 +17,10 @@ NOTE: path_dir is path to input/output directory
 -MS's need to be in path_dir/data,
 -all output goes to path_dir/data_products (this directory is created by script)
 -Make sure to including trailing / in [path_to_repo_dir] & [path_dir]!!!
+-Remember to put Aegean directory location in python path if using object detection.
 '''
 
 #MODULES USED:
-#To ensure all modules used in this script are callable:
-#1. download the casa-python executable wrapper package and then you can install any python package to use in CASA
-#with the prompt casa-pip --> https://github.com/radio-astro-tools/casa-python (astropy,jdcal,lmfit)
-#2. Need uvmultifit -->http://nordic-alma.se/support/software-tools, which needs g++/gcc and gsl libraries
-#(http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal)
-#3. Need analysis utilities--> https://casaguides.nrao.edu/index.php?title=Analysis_Utilities
-#4. (optional) Aegean object detection pkg (https://github.com/PaulHancock/Aegean); this also needs lmfit 0.7.4,
-#Remember to put location in python path.
-
 import tempfile
 import os
 import linecache
@@ -263,7 +255,7 @@ else:
 
 '''IMAGE PRODUCT PARAMETERS: CUTOUT AND RMS/ERROR IN IMAGE PLANE HANDLING'''
 #define rms boxes for realistic error calculation:
-#pix_shift_cutout is how many pixels past target bx you want in cutout images rms calculation
+#pix_shift_cutout is how many pixels past target box you want in cutout images rms calculation
 #annulus_rad_inner/outer is inner and outer radius in pixels from source
 pix_shift_cutout=30
 annulus_rad_inner=20
@@ -344,7 +336,7 @@ if fix_pos == 'T':
 	full_fit['results']['component0']['shape']['positionangleerror']['value']]#[67.41,0.42]
 
 '''REFITTTING WITHOUT CLEANING PARAMETERS'''
-#make sure rms boxes are set to local.
+#make sure rms boxes are set to local region.
 if fit_cutout == 'T':
 	targetBox = str(float(targetBox.split(',')[0])-float(cut_reg.split(',')[0]))+','+\
     str(float(targetBox.split(',')[1])-float(cut_reg.split(',')[1]))+','+\
@@ -444,10 +436,8 @@ if def_times=='T':
 	endDateMJD = gcal2jd(yeare, monthInte, daye)
 ####################################################################################################
 
-# We require a list of time interval strings to pass to the clean function.
-# In order to generate this list we need to perform some basic arithmetic on time values.
-# The datetime module achieves this using timedelta objects.
-
+#This script is capable of microsecond resolution. Input is time interval in float seconds,
+#so converted to microseconds here for datetime and timedelta objects below.
 frac1,whole1=m.modf(float(startTimeS))
 startTimeMicro = int(frac1*(1e6))
 startTimeSec = int(whole1)
@@ -455,7 +445,11 @@ frac2,whole2=m.modf(float(endTimeS))
 endTimeMicro = int(frac2*(1e6))
 endTimeSec = int(whole2)
 
-# First the start and end times are converted to datetime.datetime objects.
+# We require a list of time interval strings to pass to the clean function.
+# In order to generate this list we need to perform some basic arithmetic on time values.
+# The datetime module achieves this using datetime and timedelta objects.
+
+# First the start and end times are converted to datetime objects.
 startTime = datetime(year,monthInt,day,startTimeH,startTimeM,startTimeSec,startTimeMicro)
 endTime = datetime(yeare,monthInte,daye,endTimeH,endTimeM,endTimeSec,endTimeMicro)
 endTimeHMS = time(endTimeH,endTimeM,endTimeSec,endTimeMicro)
@@ -466,7 +460,7 @@ observationDurationDelta = endTime-startTime
 # Duration is printed in iso format as a string for the user.
 print '\nTotal observation time is ' + str(observationDurationDelta)
 #
-# The interval length is converted to a datetime.timedelta object
+# The interval length is converted to a timedelta object
 intervalSize = time(intervalSizeH, intervalSizeM, intervalSizeSec,intervalSizemicro)
 intervalSizeDelta = timedelta(hours=intervalSizeH, minutes=intervalSizeM, seconds=intervalSizeSec,\
     microseconds=intervalSizemicro)
@@ -597,7 +591,6 @@ if runClean == "T":
 				imSuffix = '.image'
 			else:
 				imSuffix = '.image.tt0'
-		#imstat_conv_check = imstat(imagename=outputPath+label+intervalString+imSuffix,mask=outputPath+label+intervalString+'.mask')
 		# For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
 		# An if statement is used to pass over these intervals, avoiding runtime errors.
 		if os.path.exists(outputPath+label+intervalString+imSuffix):# and imstat_conv_check['max'][0] <= thre_num:
@@ -691,11 +684,6 @@ elif runClean == "F":
 				imSuffix = '.image'
 			else:
 				imSuffix = '.image.tt0'
-		#newmaskname=outputPath+label+intervalString+'.mask'
-		#newmaskname1=newmaskname.replace('.', '_').replace('~','_')
-		#newmaskname2=newmaskname1.replace('_mask','.mask')
-		#os.system('sudo cp -r '+outputPath+label+intervalString+'.mask '+newmaskname2)
-		#imstat_conv_check = imstat(imagename=outputPath+label+intervalString+imSuffix,mask=newmaskname2)
 		if os.path.exists(outputPath+label+intervalString+imSuffix):# and imstat_conv_check['max'][0] <= thre_num:
 			beamMajor = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beammajor')
 			beamMajor = str(beamMajor['value'])+'arcsec'
@@ -849,7 +837,7 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 						startPos = imfitText.find(startWord)
 						endPos = imfitText.find(endWord)
 						fluxString = imfitText[startPos:endPos]
-						plot_label_unit='/beam)'
+						plot_label_unit='/beam'
 						plusMinusPos = fluxString.find('+/-')
 						unitsPos = fluxString.find('Jy/b')
 						fluxD=float(fluxString[10:plusMinusPos])
@@ -888,7 +876,7 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 						unitsPos = fluxString.find('Jy')
 						unitsPos2 = fluxString2.find('Jy/b')
 						plot_label_unit=''
-						plot_label_unit2='/beam)'
+						plot_label_unit2='/beam'
 						fluxD1=float(fluxString[16:plusMinusPos])
 						fluxE1=float(fluxString[plusMinusPos+3:unitsPos-1])
 						fluxD2=float(fluxString2[10:plusMinusPos2])
@@ -978,7 +966,7 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 					startPos = imfitText.find(startWord)
 					endPos = imfitText.find(endWord)
 					fluxString = imfitText[startPos:endPos]
-					plot_label_unit='/beam)'
+					plot_label_unit='/beam'
 					plusMinusPos = fluxString.find('+/-')
 					unitsPos = fluxString.find('Jy/b')
 					fluxDensity = fluxDensity + [float(fluxString[10:plusMinusPos])]
@@ -1001,7 +989,7 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 					startPos2 = imfitText.find(startWord2)
 					endPos2 = imfitText.find(endWord2)
 					fluxString2 = imfitText[startPos2:endPos2]
-					plot_label_unit2='/beam)'
+					plot_label_unit2='/beam'
 					plusMinusPos2 = fluxString2.find('+/-')
 					unitsPos2 = fluxString2.find('Jy/b')
 					fluxDensity2=fluxDensity2+[float(fluxString2[10:plusMinusPos2])]

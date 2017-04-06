@@ -606,51 +606,57 @@ if runClean == "T":
 			peakPosValue = imstatOut['maxpos']
 			peakPosX = str(peakPosValue[0])
 			peakPosY = str(peakPosValue[1])
-		# Save parameters in a temp file which will be passed to imfit. The correct layout is:
-		# peak intensity, peak x-pixel value, peak y-pixel value, major axis, minor axis, position angle, fixed
-		# the fixed parameter can contain any of the following:
-		#'f' (peak intensity), 'x' (peak x position), 'y' (peak y position), 'a' (major axis), 'b' (minor axis), 'p' (position angle)
-		#tempFile = tempfile.NamedTemporaryFile()
-			tempFile = open('tempfile.txt','w')
-			mystring = str(peak+', '+peakPosX+', '+peakPosY+', '+beamMajor+', '+beamMinor+', '+beamPA+',abp')
-			tempFile.write(mystring)
-			tempFile.close()
-		# Run imfit using the above beam parameters.
-			if fix_pos== 'F':
-				imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=F, overwrite = T)
-			elif fix_pos == 'T':
-				if do_monte == 'T':
-					samp_px=np.random.normal(0,1,nsim)
-					samp_py=np.random.normal(0,1,nsim)
-					#samp_bmaj=np.random.normal(0,1,nsim)
-					#samp_bmin=np.random.normal(0,1,nsim)
-					#samp_pos=np.random.normal(0,1,nsim)
-					for i in range(0,len(samp_px)):
-						peak_x1=(samp_px[i]*peak_x[1])+peak_x[0]
-						peak_y1=(samp_py[i]*peak_y[1])+peak_y[0]
-						b_maj1=b_maj[0]#(samp_bmaj[i]*b_maj[1])+b_maj[0]
-						b_min1=b_min[0]#(samp_bmin[i]*b_min[1])+b_min[0]
-						pos_ang1=pos_ang[0]#(samp_pos[i]*pos_ang[1])+pos_ang[0]
+			if np.isinf([float(peak),float(peakPosX),float(peakPosY),float(beamMajor.strip('arcsec')),float(beamMinor.strip('arcsec')),float(beamPA.strip('deg'))]).any()==True:
+				print '\n Fitting Failed. No fitting done.'
+				counter_fail=counter_fail+1
+				timeIntervals.remove(interval)
+				mjdTimes.remove(time)
+			else:
+				# Save parameters in a temp file which will be passed to imfit. The correct layout is:
+				# peak intensity, peak x-pixel value, peak y-pixel value, major axis, minor axis, position angle, fixed
+				# the fixed parameter can contain any of the following:
+				#'f' (peak intensity), 'x' (peak x position), 'y' (peak y position), 'a' (major axis), 'b' (minor axis), 'p' (position angle)
+				#tempFile = tempfile.NamedTemporaryFile()
+				tempFile = open('tempfile.txt','w')
+				mystring = str(peak+', '+peakPosX+', '+peakPosY+', '+beamMajor+', '+beamMinor+', '+beamPA+',abp')
+				tempFile.write(mystring)
+				tempFile.close()
+			# Run imfit using the above beam parameters.
+				if fix_pos== 'F':
+					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=F, overwrite = T)
+				elif fix_pos == 'T':
+					if do_monte == 'T':
+						samp_px=np.random.normal(0,1,nsim)
+						samp_py=np.random.normal(0,1,nsim)
+						#samp_bmaj=np.random.normal(0,1,nsim)
+						#samp_bmin=np.random.normal(0,1,nsim)
+						#samp_pos=np.random.normal(0,1,nsim)
+						for i in range(0,len(samp_px)):
+							peak_x1=(samp_px[i]*peak_x[1])+peak_x[0]
+							peak_y1=(samp_py[i]*peak_y[1])+peak_y[0]
+							b_maj1=b_maj[0]#(samp_bmaj[i]*b_maj[1])+b_maj[0]
+							b_min1=b_min[0]#(samp_bmin[i]*b_min[1])+b_min[0]
+							pos_ang1=pos_ang[0]#(samp_pos[i]*pos_ang[1])+pos_ang[0]
+							tempFile2 = open('tempfile2.txt','w')
+							mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
+							tempFile2.write(mystring2)
+							tempFile2.close()
+							imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+					elif do_monte =='F':
 						tempFile2 = open('tempfile2.txt','w')
-						mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
+						mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
 						tempFile2.write(mystring2)
 						tempFile2.close()
-						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=F, overwrite = T)
-				elif do_monte =='F':
-					tempFile2 = open('tempfile2.txt','w')
-					mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
-					tempFile2.write(mystring2)
-					tempFile2.close()
-					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=F, overwrite = T)
-				else:
-					raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
-			result_box1 = imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
-			fluxError_real.append(result_box1['rms'][0])
-			if cutout== 'T':
-				immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
-				immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
-				os.system('rm -rf '+outputPath+label+intervalString+'.*')
-				os.system('mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix)
+						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+					else:
+						raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
+				result_box1 = imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
+				fluxError_real.append(result_box1['rms'][0])
+				if cutout== 'T':
+					immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
+					immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
+					os.system('rm -rf '+outputPath+label+intervalString+'.*')
+					os.system('mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix)
 		else:
 			print '\nCLEAN failed on interval ' + interval + '.'
 			counter_fail=counter_fail+1
@@ -697,40 +703,46 @@ elif runClean == "F":
 			peakPosValue = imstatOut['maxpos']
 			peakPosX = str(peakPosValue[0])
 			peakPosY = str(peakPosValue[1])
-			tempFile = open('tempfile.txt','w')
-			mystring = str(peak+', '+peakPosX+', '+peakPosY+', '+beamMajor+', '+beamMinor+', '+beamPA+',abp')
-			tempFile.write(mystring)
-			tempFile.close()
-			if fix_pos=='F':
-				imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=F, overwrite = T)
+			if np.isinf([float(peak),float(peakPosX),float(peakPosY),float(beamMajor.strip('arcsec')),float(beamMinor.strip('arcsec')),float(beamPA.strip('deg'))]).any()==True:
+				print '\n Fitting Failed. No fitting done.'
+				counter_fail=counter_fail+1
+				timeIntervals.remove(interval)
+				mjdTimes.remove(time)
 			else:
-				if do_monte == 'T':
-					samp_px=np.random.normal(0,1,nsim)
-					samp_py=np.random.normal(0,1,nsim)
-					#samp_bmaj=np.random.normal(0,1,nsim)
-					#samp_bmin=np.random.normal(0,1,nsim)
-					#samp_pos=np.random.normal(0,1,nsim)
-					for i in range(0,len(samp_px)):
-						peak_x1=(samp_px[i]*peak_x[1])+peak_x[0]
-						peak_y1=(samp_py[i]*peak_y[1])+peak_y[0]
-						b_maj1=b_maj[0]
-						b_min1=b_min[0]
-						pos_ang1=pos_ang[0]
+				tempFile = open('tempfile.txt','w')
+				mystring = str(peak+', '+peakPosX+', '+peakPosY+', '+beamMajor+', '+beamMinor+', '+beamPA+',abp')
+				tempFile.write(mystring)
+				tempFile.close()
+				if fix_pos=='F':
+					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=F, overwrite = T)
+				else:
+					if do_monte == 'T':
+						samp_px=np.random.normal(0,1,nsim)
+						samp_py=np.random.normal(0,1,nsim)
+						#samp_bmaj=np.random.normal(0,1,nsim)
+						#samp_bmin=np.random.normal(0,1,nsim)
+						#samp_pos=np.random.normal(0,1,nsim)
+						for i in range(0,len(samp_px)):
+							peak_x1=(samp_px[i]*peak_x[1])+peak_x[0]
+							peak_y1=(samp_py[i]*peak_y[1])+peak_y[0]
+							b_maj1=b_maj[0]
+							b_min1=b_min[0]
+							pos_ang1=pos_ang[0]
+							tempFile2 = open('tempfile2.txt','w')
+							mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
+							tempFile2.write(mystring2)
+							tempFile2.close()
+							imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+					elif do_monte =='F':
 						tempFile2 = open('tempfile2.txt','w')
-						mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
+						mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
 						tempFile2.write(mystring2)
 						tempFile2.close()
-						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=F, overwrite = T)
-				elif do_monte =='F':
-					tempFile2 = open('tempfile2.txt','w')
-					mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
-					tempFile2.write(mystring2)
-					tempFile2.close()
-					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=F, overwrite = T)
-				else:
-					raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
-			result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
-			fluxError_real.append(result_box1['rms'][0])
+						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+					else:
+						raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
+				result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
+				fluxError_real.append(result_box1['rms'][0])
 		else:
 			print '\nCLEAN failed on interval ' + interval + '. No fitting done'
 			# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.

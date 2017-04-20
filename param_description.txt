@@ -24,6 +24,10 @@ thre: cleaning threshold; string, default is '1mJy'
 
 spw_choice: spectral window selection, string
 
+robust: Briggs robust parameter; integer, set when weighting='briggs', range from -2[uniform] to 2[natural], default is 0.0
+
+weighting: Image weighting, string; options are 'natural', 'uniform', or 'briggs'
+
 mask_option: specify choice of clean mask; string, options are 'box' (just targetBox around source), 'file' (provide own
 mask file specified in mask_file parameter), or 'aegean' (box around all detected sources from Aegean script if run)
 

@@ -32,7 +32,7 @@ class InputForm(Form):
 ##TIMEBINS
     intervalSizeH = IntegerField("Hour Interval Size (allowed values -> 0 to 23)", default=0)
     intervalSizeM = IntegerField("Minute Interval Size (allowed values -> 0 to 59)", default=1)
-    intervalSizeS = IntegerField("Second Interval Size (allowed values -> 1e-6 to 59)", default=0)
+    intervalSizeS = FloatField("Second Interval Size (allowed values -> 1e-6 to 59)", default=0)
     startTimeH = StringField("UTC Hour Start Time (specify if def_times=T)", default='')
     startTimeM = StringField("UTC Minute Start Time (specify if def_times=T)", default='')
     startTimeS = StringField("UTC Second Start Time (specify if def_times=T)", default='')
@@ -53,6 +53,8 @@ class InputForm(Form):
     myStokes = StringField("Stokes Axis", default='I')
     thre = StringField("CLEAN Threshold (with units)", default='1mJy')
     outlierFile = FileField("Outlier file for CLEAN")
+    robust= FloatField("Briggs robust parameter", default=0.0)
+    weighting= StringField("Image weighting", default='natural')
 ##OBJECT DETECTION AND SELECTION PARAMETERS-->only need to specify if runObj = 'T'
     seed = IntegerField("Aegean Seed level", default=5)
     flood = IntegerField("Aegean flood level", default=4)

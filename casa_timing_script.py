@@ -184,6 +184,8 @@ cellSize = [data_params["cellSize"]] * 2
 taylorTerms = int(data_params["taylorTerms"])
 myStokes = data_params["myStokes"]
 thre = data_params["thre"]
+robust = data_params["robust"]
+weighting= float(data_params["weighting"])
 #put threshold in Jy for image convergence test below
 thre_unit=re.findall("[a-zA-Z]+", thre)
 if thre_unit == 'uJy':
@@ -212,7 +214,7 @@ if runObj == 'T':
 	seed=int(data_params["seed"])
 	flood=int(data_params["flood"])
 	fits_file=outputPath+label+'whole_dataset.fits'
-	initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre)
+	initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,robust,weighting)
 	src_l,ra_l,dec_l,maj_l,min_l,pos_l=objdet(tele,lat,out_file0,fits_file,seed,flood,tables,catalog_input_name,cellSize[0])
 	if len(src_l)==0:
 		raise Exception('No sources detected.')
@@ -305,7 +307,7 @@ if fix_pos == 'T':
 	if runObj == 'F':
 		print 'Cleaning Full Data Set-->'
 		os.system('rm -rf '+outputPath+label+'whole_dataset.*')
-		initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre)
+		initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,robust,weighting)
 	print 'Fitting full data set in Image Plane-->'
 	os.system('rm -rf '+outputPath+label+'whole_dataset.txt')
 	full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_datasetfit.txt')
@@ -579,14 +581,14 @@ if runClean == "T":
 		print 'CLEANing interval: ', interval
 		if outlierFile == '':
 			intervalString=interval.replace(':', '.').replace('/','_')
-			clean(vis=visibility, imagename=outputPath+label+intervalString, mask=maskPath, selectdata=T,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F)
+			clean(vis=visibility, imagename=outputPath+label+intervalString, mask=maskPath, selectdata=T,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F)
 			if taylorTerms == 1:
 				imSuffix = '.image'
 			else:
 				imSuffix = '.image.tt0'
 		else:
 			intervalString=interval.replace(':', '.').replace('/','_')
-			clean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=T,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting='natural',usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F,outlierfile=outlierFile)
+			clean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=T,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F,outlierfile=outlierFile)
 			if taylorTerms == 1:
 				imSuffix = '.image'
 			else:

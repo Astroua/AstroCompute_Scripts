@@ -119,7 +119,7 @@ def run_aegean(tables,cellSize_string):
     	pos_list.append(float(lin_split[18]))#deg
     return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
 
-def initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre):
+def initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,robust,weighting):
     '''CLEAN full data set and makes FITS image
     
     visibility: MS name
@@ -131,13 +131,15 @@ def initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,tayl
     taylorTerms: number of taylor terms; e.g. 2
     numerIters: number of iterations for CLEAN; e.g. 5000
     thre: threashold for clean; e.g. '4mJy'
+    robust: Briggs robust param (range -2[uniform] to 2 [natural]) for weighting='briggs'
+    weighting: natural,uniform, or briggs
 
     return: CLEANed image in CASA image format and FITS format'''
     clean(vis=visibility,
           imagename=os.path.join(outputPath, label+'whole_dataset'),
           field='', mode='mfs', imsize=imageSize, cell=cellSize,
-          weighting='natural', spw=spw_choice, nterms=taylorTerms,
-          niter=numberIters, gain=0.1,
+          weighting=weighting, spw=spw_choice, nterms=taylorTerms,
+          niter=numberIters, gain=0.1,robust=robust,
           threshold=thre, interactive=False)
     exportfits(imagename=os.path.join(outputPath, label+'whole_dataset.image'),
                fitsimage=os.path.join(outputPath, label+'whole_dataset.fits'),

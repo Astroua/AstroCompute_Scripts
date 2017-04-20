@@ -69,6 +69,14 @@ def test_spw_choice(form,field):
 	str_split=string.split(':')
 	if '~' not in str_split[0] or '~' not in str_split[1]:
 		raise ValueError("Value entered is not in the correct format. Please change input to X~X:X~X format.")
+def test_weighting(form,field):
+	if field.data not in ['briggs','natural','uniform']:
+		raise ValueError("Invalid Value entered. Allowed values are briggs,uniform or natural.")
+def test_robust(form,field):
+	if not isinstance(field.data,float):
+		raise ValueError("Value entered is not a float. Please change input to an float.")
+	if field.data < -2. or field.data > 2.:
+		raise ValueError("Invalid Value entered. Allowed values are between -2 and 2.")
 def test_mask_option(form,field):
 	if not isinstance(field.data,str):
 		raise ValueError("Value entered is not a string. Please change input to a string format.")

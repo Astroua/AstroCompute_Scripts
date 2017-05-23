@@ -2,14 +2,14 @@
 #Object Detection Script
 ##################################
 '''Uses AEGEAN algorithm (https://github.com/PaulHancock/Aegean) for object detection in a radio image.
-INPUT: Cleaned FITS image of whole data set--> [fits_file]
-OUTPUT: (1) Data file of the parameters of objects found in image--> [tab_file]
-        (2) CASA region file of detected sources--> [path_dir]_casa_region.txt
-        (3) DS9 region file of detected sources--> [path_dir]_ds9_region.reg
-        (4) Image of detected sources--> [path_dir]_detected_sources.pdf
+INPUT: Cleaned FITS image of whole data set--> [fits_file line 167]
+OUTPUT: (1) Data file of the parameters of objects found in image--> [out_file0 line 168]
+        (2) CASA region file of detected sources--> casa_region.txt
+        (3) DS9 region file of detected sources--> ds9_region.reg
+        (4) Image of detected sources--> detected_sources.pdf
 NOTE: - Needs to be run with lmfit 0.7.4, otherwise it won't work.
         (casa-pip install git+git://github.com/lmfit/lmfit-py.git@0.7.4)
-      - Make sure aegean code is in your python path.
+      - Make sure aegean code is in your python path [sys.path.append(path_to_aegean)]
 
 Written by: A. Tetarenko
 Last Updated: February 2 2017
@@ -163,8 +163,9 @@ if __name__ == "__main__":
   ##################################
   #Reading in Parameters
   ##################################
-  ## Label for casa output directories and files.
+  #input fits file name
   fits_file = path_dir+'target_source_image.fits'
+  #output detected sources file name
   out_file0 = path_dir+'Source_XXGHz_Date_whole_dataset_aegean.txt'
   ## aegean parameters
   seed = 10
@@ -183,8 +184,8 @@ if __name__ == "__main__":
   #Object Detection
   ##################################
   #defines file paths for aegean
-  tab_file = out_file0.strip('_aegean.txt')+'_objdet_comp.tab'
-  catalog_input_name = out_file0.strip('_aegean.txt')+'_objdet.tab'
+  tab_file = out_file0.strip('.txt')+'_objdet_comp.tab'
+  catalog_input_name = out_file0.strip('.txt')+'_objdet.tab'
   #run aegean
   src_l, ra_l, dec_l, maj_l, min_l, pos_l=objdet(tele,lat,out_file0,fits_file,seed,\
     flood,tab_file,catalog_input_name,cellSize_string)

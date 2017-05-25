@@ -98,7 +98,7 @@ uv_fit = data_params["uv_fit"]
 visibility_uv= visibility.rstrip('.ms') + '_uv.ms'
 if uv_fit=='T':
 	if not os.path.isdir(visibility_uv):
-    	os.system('cp -r '+visibility+' '+visibility_uv)
+		os.system('cp -r '+visibility+' '+visibility_uv)
 
 ''' VARIABILITY ANALYSIS'''
 #Do you want a basic variability analysis?
@@ -184,8 +184,8 @@ cellSize = [data_params["cellSize"]] * 2
 taylorTerms = int(data_params["taylorTerms"])
 myStokes = data_params["myStokes"]
 thre = data_params["thre"]
-robust = data_params["robust"]
-weighting= float(data_params["weighting"])
+robust = float(data_params["robust"])
+weighting= data_params["weighting"]
 #put threshold in Jy for image convergence test below
 thre_unit=re.findall("[a-zA-Z]+", thre)
 if thre_unit == 'uJy':
@@ -392,7 +392,7 @@ matched_lines = [line for line in readit.splitlines() if "Observed from" in line
 listobsLine7=matched_lines[0]
 file_listobs.close()
 
-print(listobsLine7)
+print 'Target Source',listobsLine7
 
 startTimeH = int(listobsLine7[31:33])
 startTimeM = int(listobsLine7[34:36])
@@ -555,10 +555,10 @@ if remainder >= rem_int:
         long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
 
 # The results are printed for the user.
-print '\nThe observation will be divided into the following intervals: '
-print timeIntervals
-print '\nmjdTimes'
-print mjdTimes
+#print '\nThe observation will be divided into the following intervals: '
+#print timeIntervals
+#print '\nmjdTimes'
+#print mjdTimes
 ##################################
 
 ##################################

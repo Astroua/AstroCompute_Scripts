@@ -17,12 +17,11 @@ Call as: casa -c sim.py OUTPUT_PATH PATH_TO_CASA
 
 '''
 
-# p
+####################
 # User input
 ####################
-# path_dir = '/mnt/bigdata/tetarenk/timing_test'
 path_dir = sys.argv[-2]
-casa_path = sys.argv[-1]
+casa_path = sys.argv[-1]#/usr/local/bin/CASA-4.6/casa-release-4.6.0-el6/
 
 # flux model vs time
 integ = 10.

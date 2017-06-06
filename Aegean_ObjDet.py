@@ -12,7 +12,7 @@ NOTE: - Needs to be run with lmfit 0.7.4, otherwise it won't work.
       - Make sure aegean code is in your python path [sys.path.append(path_to_aegean)]
 
 Written by: A. Tetarenko
-Last Updated: February 2 2017
+Last Updated: June 6 2017
 
 TO RUN SCRIPT independently, go to line 155, set variables in User Input Section and Setup &
 Reading in Params sections, then run either,

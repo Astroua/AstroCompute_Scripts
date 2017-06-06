@@ -9,9 +9,9 @@ NOTES: - This script is theoretically compatible with any data that can be impor
          but has only been tested with VLA, SMA, and NOEMA data.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
-Last Updated: April 2 2017
+Last Updated: June 6 2017
 
-TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_repo] [path_dir] [path_to_param_file]
+TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
 
 NOTE: path_dir is path to input/output directory
 -MS's need to be in path_dir/data,
@@ -97,8 +97,8 @@ uv_fit = data_params["uv_fit"]
 #make copy for uv fitting
 visibility_uv= visibility.rstrip('.ms') + '_uv.ms'
 if uv_fit=='T':
-	if not os.path.isdir(visibility_uv):
-		os.system('cp -r '+visibility+' '+visibility_uv)
+    if not os.path.isdir(visibility_uv):
+    	os.system('cp -r '+visibility+' '+visibility_uv)
 
 ''' VARIABILITY ANALYSIS'''
 #Do you want a basic variability analysis?
@@ -392,7 +392,7 @@ matched_lines = [line for line in readit.splitlines() if "Observed from" in line
 listobsLine7=matched_lines[0]
 file_listobs.close()
 
-print 'Target Source',listobsLine7
+print 'Target Source', listobsLine7
 
 startTimeH = int(listobsLine7[31:33])
 startTimeM = int(listobsLine7[34:36])
@@ -554,11 +554,11 @@ if remainder >= rem_int:
     	mjdTimes = mjdTimes + [startDateMJD[1] + long(endTime.hour)/24.0 + long(endTime.minute)/24.0/60.0+ \
         long(endTime.second)/24.0/60.0/60.0+long(endTime.microsecond)/24.0/60.0/60.0/(1.0e6)]
 
-# The results are printed for the user.
-#print '\nThe observation will be divided into the following intervals: '
-#print timeIntervals
-#print '\nmjdTimes'
-#print mjdTimes
+# The results are printed for the user- uncomment if you like
+'''print '\nThe observation will be divided into the following intervals: '
+print timeIntervals
+print '\nmjdTimes'
+print mjdTimes'''
 ##################################
 
 ##################################
@@ -579,20 +579,15 @@ if runClean == "T":
 	print 'CLEAN is starting-->'
 	for interval, time, interval_uv, time_uv in zip(timeIntervals, mjdTimes,timeIntervals_uv, mjdTimes_uv):
 		print 'CLEANing interval: ', interval
+		intervalString=interval.replace(':', '.').replace('/','_')
 		if outlierFile == '':
-			intervalString=interval.replace(':', '.').replace('/','_')
-			clean(vis=visibility, imagename=outputPath+label+intervalString, mask=maskPath, selectdata=T,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F)
-			if taylorTerms == 1:
-				imSuffix = '.image'
-			else:
-				imSuffix = '.image.tt0'
+			tclean(vis=visibility, imagename=outputPath+label+intervalString, timerange=interval,mask=maskPath, selectdata=T, field='', specmode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F)
 		else:
-			intervalString=interval.replace(':', '.').replace('/','_')
-			clean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=T,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,usescratch=T,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F,outlierfile=outlierFile)
-			if taylorTerms == 1:
-				imSuffix = '.image'
-			else:
-				imSuffix = '.image.tt0'
+			tclean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=T,timerange=interval, field='', specmode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F,outlierfile=outlierFile)
+		if taylorTerms == 1:
+			imSuffix = '.image'
+		else:
+			imSuffix = '.image.tt0'
 		# For some intervals the CLEAN may have failed, in which case the image file for that interval will not exist.
 		# An if statement is used to pass over these intervals, avoiding runtime errors.
 		if os.path.exists(outputPath+label+intervalString+imSuffix):# and imstat_conv_check['max'][0] <= thre_num:
@@ -613,6 +608,7 @@ if runClean == "T":
 				counter_fail=counter_fail+1
 				timeIntervals.remove(interval)
 				mjdTimes.remove(time)
+				os.system('sudo rm -rf '+outputPath+label+intervalString+'.*')
 			else:
 				# Save parameters in a temp file which will be passed to imfit. The correct layout is:
 				# peak intensity, peak x-pixel value, peak y-pixel value, major axis, minor axis, position angle, fixed
@@ -657,14 +653,15 @@ if runClean == "T":
 				if cutout== 'T':
 					immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',box=cut_reg,outfile=outputPath+label+intervalString+'_temp'+imSuffix)
 					immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
-					os.system('rm -rf '+outputPath+label+intervalString+'.*')
-					os.system('mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix)
+					os.system('sudo rm -rf '+outputPath+label+intervalString+'.*')
+					os.system('sudo mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix)
 		else:
 			print '\nCLEAN failed on interval ' + interval + '.'
 			counter_fail=counter_fail+1
 			# The corresponding time intervals must be removed from timeIntervals to avoid runtime errors further on.
 			timeIntervals.remove(interval)
 			mjdTimes.remove(time)
+			os.system('sudo rm -rf '+outputPath+label+intervalString+'.*')
 		#uvfitting if requested
 		if uv_fit =='T':
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
@@ -811,124 +808,125 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 			fluxerr_uv=[]
 			for i in range(0,len(samp_px)):
 				intervalString=interval.replace(':', '.').replace('/','_')
-				imfitFile = open(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text', 'r')
-				imfitText = imfitFile.read()
-				imfitFile.close()
-				end = imfitText[-19:-1]
-				if end != '*** FIT FAILED ***':
-					if integ_fit == 'T':
-						startWord = '--- Integrated:'
-						endWord = '--- Peak:'
-						startPos = imfitText.find(startWord)
-						endPos = imfitText.find(endWord)
-						fluxString = imfitText[startPos:endPos]
-						plusMinusPos = fluxString.find('+/-')
-						unitsPos = fluxString.find('Jy')
-						plot_label_unit=''
-						fluxD=float(fluxString[16:plusMinusPos])
-						fluxE=float(fluxString[plusMinusPos+3:unitsPos-1])
-						suff = str(fluxString[unitsPos-1])
-						if suff == 'u':
-							fluxD=fluxD*[1.0e-6]
-							fluxE=fluxE*[1.0e-6]
-						elif suff == 'm':
-							fluxD=fluxD*[1.0e-3]
-							fluxE=fluxE*[1.0e-3]
-						elif suff == ' ':
-							fluxD=fluxD*[1.0]
-							fluxE=fluxE*[1.0]
-						elif suff == 'n':
-							fluxD=fluxD*[1.0e-9]
-							fluxE=fluxE*[1.0e-9]
-						else:
-							fluxD=fluxD*[1.0]
-							fluxE=fluxE*[1.0]
-						FD_list.append(fluxD)
-						FDE_list.append(fluxE)
-					elif integ_fit == 'F':
-						startWord = '--- Peak:'
-						endWord = '--- Polarization:'
-						startPos = imfitText.find(startWord)
-						endPos = imfitText.find(endWord)
-						fluxString = imfitText[startPos:endPos]
-						plot_label_unit='/beam'
-						plusMinusPos = fluxString.find('+/-')
-						unitsPos = fluxString.find('Jy/b')
-						fluxD=float(fluxString[10:plusMinusPos])
-						fluxE=float(fluxString[plusMinusPos+3:unitsPos-1])
-						suff = str(fluxString[unitsPos-1])
-						if suff == 'u':
-							fluxD=fluxD*1.0e-6
-							fluxE=fluxE*1.0e-6
-						elif suff == 'm':
-							fluxD=fluxD*1.0e-3
-							fluxE=fluxE*1.0e-3
-						elif suff == ' ':
-							fluxD=fluxD*1.0
-							fluxE=fluxE*1.0
-						elif suff == 'n':
-							fluxD=fluxD*1.0e-9
-							fluxE=fluxE*1.0e-9
-						else:
-							fluxD=fluxD*1.0
-							fluxE=fluxE*1.0
-						FD_list.append(fluxD)
-						FDE_list.append(fluxE)
-					elif integ_fit == 'B':
-						startWord = '--- Integrated:'
-						startWord2 = '--- Peak:'
-						endWord = '--- Peak:'
-						endWord2 = '--- Polarization:'
-						startPos = imfitText.find(startWord)
-						startPos2 = imfitText.find(startWord2)
-						endPos = imfitText.find(endWord)
-						endPos2 = imfitText.find(endWord2)
-						fluxString = imfitText[startPos:endPos]
-						fluxString2 = imfitText[startPos2:endPos2]
-						plusMinusPos = fluxString.find('+/-')
-						plusMinusPos2 = fluxString2.find('+/-')
-						unitsPos = fluxString.find('Jy')
-						unitsPos2 = fluxString2.find('Jy/b')
-						plot_label_unit=''
-						plot_label_unit2='/beam'
-						fluxD1=float(fluxString[16:plusMinusPos])
-						fluxE1=float(fluxString[plusMinusPos+3:unitsPos-1])
-						fluxD2=float(fluxString2[10:plusMinusPos2])
-						fluxE2=float(fluxString2[plusMinusPos2+3:unitsPos2-1])
-						suff = str(fluxString[unitsPos-1])
-						suff2 = str(fluxString2[unitsPos2-1])
-						if suff == 'u':
-							fluxD1=fluxD1*1.0e-6
-							fluxE1=fluxE1*1.0e-6
-						elif suff == 'm':
-							fluxD1=fluxD1*1.0e-3
-							fluxE1=fluxE1*1.0e-3
-						elif suff == ' ':
-							fluxD1=fluxD1*1.0
-							fluxE1=fluxE1*1.0
-						elif suff == 'n':
-							fluxD1=fluxD1*1.0e-9
-							fluxE1=fluxE1*1.0e-9
-						else:
-							fluxD1=fluxD1*1.0
-							fluxE1=fluxE1*1.0
-						if suff2 == 'u':
-							fluxD2=fluxD2*1.0e-6
-							fluxE2=fluxE2*1.0e-6
-						elif suff2 == 'm':
-							fluxD2=fluxD2*1.0e-3
-							fluxE2=fluxE2*1.0e-3
-						elif suff2 == 'n':
-							fluxD2=fluxD2*1.0e-9
-							fluxE2=fluxE2*1.0e-9
-						else:
-							fluxD2=fluxD2*1.0
-							fluxE2=fluxE2*1.0
+				if os.path.exists(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text'):
+					imfitFile = open(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text', 'r')
+					imfitText = imfitFile.read()
+					imfitFile.close()
+					end = imfitText[-19:-1]
+					if end != '*** FIT FAILED ***':
+						if integ_fit == 'T':
+							startWord = '--- Integrated:'
+							endWord = '--- Peak:'
+							startPos = imfitText.find(startWord)
+							endPos = imfitText.find(endWord)
+							fluxString = imfitText[startPos:endPos]
+							plusMinusPos = fluxString.find('+/-')
+							unitsPos = fluxString.find('Jy')
+							plot_label_unit=''
+							fluxD=float(fluxString[16:plusMinusPos])
+							fluxE=float(fluxString[plusMinusPos+3:unitsPos-1])
+							suff = str(fluxString[unitsPos-1])
+							if suff == 'u':
+								fluxD=fluxD*[1.0e-6]
+								fluxE=fluxE*[1.0e-6]
+							elif suff == 'm':
+								fluxD=fluxD*[1.0e-3]
+								fluxE=fluxE*[1.0e-3]
+							elif suff == ' ':
+								fluxD=fluxD*[1.0]
+								fluxE=fluxE*[1.0]
+							elif suff == 'n':
+								fluxD=fluxD*[1.0e-9]
+								fluxE=fluxE*[1.0e-9]
+							else:
+								fluxD=fluxD*[1.0]
+								fluxE=fluxE*[1.0]
+							FD_list.append(fluxD)
+							FDE_list.append(fluxE)
+						elif integ_fit == 'F':
+							startWord = '--- Peak:'
+							endWord = '--- Polarization:'
+							startPos = imfitText.find(startWord)
+							endPos = imfitText.find(endWord)
+							fluxString = imfitText[startPos:endPos]
+							plot_label_unit='/beam'
+							plusMinusPos = fluxString.find('+/-')
+							unitsPos = fluxString.find('Jy/b')
+							fluxD=float(fluxString[10:plusMinusPos])
+							fluxE=float(fluxString[plusMinusPos+3:unitsPos-1])
+							suff = str(fluxString[unitsPos-1])
+							if suff == 'u':
+								fluxD=fluxD*1.0e-6
+								fluxE=fluxE*1.0e-6
+							elif suff == 'm':
+								fluxD=fluxD*1.0e-3
+								fluxE=fluxE*1.0e-3
+							elif suff == ' ':
+								fluxD=fluxD*1.0
+								fluxE=fluxE*1.0
+							elif suff == 'n':
+								fluxD=fluxD*1.0e-9
+								fluxE=fluxE*1.0e-9
+							else:
+								fluxD=fluxD*1.0
+								fluxE=fluxE*1.0
+							FD_list.append(fluxD)
+							FDE_list.append(fluxE)
+						elif integ_fit == 'B':
+							startWord = '--- Integrated:'
+							startWord2 = '--- Peak:'
+							endWord = '--- Peak:'
+							endWord2 = '--- Polarization:'
+							startPos = imfitText.find(startWord)
+							startPos2 = imfitText.find(startWord2)
+							endPos = imfitText.find(endWord)
+							endPos2 = imfitText.find(endWord2)
+							fluxString = imfitText[startPos:endPos]
+							fluxString2 = imfitText[startPos2:endPos2]
+							plusMinusPos = fluxString.find('+/-')
+							plusMinusPos2 = fluxString2.find('+/-')
+							unitsPos = fluxString.find('Jy')
+							unitsPos2 = fluxString2.find('Jy/b')
+							plot_label_unit=''
+							plot_label_unit2='/beam'
+							fluxD1=float(fluxString[16:plusMinusPos])
+							fluxE1=float(fluxString[plusMinusPos+3:unitsPos-1])
+							fluxD2=float(fluxString2[10:plusMinusPos2])
+							fluxE2=float(fluxString2[plusMinusPos2+3:unitsPos2-1])
+							suff = str(fluxString[unitsPos-1])
+							suff2 = str(fluxString2[unitsPos2-1])
+							if suff == 'u':
+								fluxD1=fluxD1*1.0e-6
+								fluxE1=fluxE1*1.0e-6
+							elif suff == 'm':
+								fluxD1=fluxD1*1.0e-3
+								fluxE1=fluxE1*1.0e-3
+							elif suff == ' ':
+								fluxD1=fluxD1*1.0
+								fluxE1=fluxE1*1.0
+							elif suff == 'n':
+								fluxD1=fluxD1*1.0e-9
+								fluxE1=fluxE1*1.0e-9
+							else:
+								fluxD1=fluxD1*1.0
+								fluxE1=fluxE1*1.0
+							if suff2 == 'u':
+								fluxD2=fluxD2*1.0e-6
+								fluxE2=fluxE2*1.0e-6
+							elif suff2 == 'm':
+								fluxD2=fluxD2*1.0e-3
+								fluxE2=fluxE2*1.0e-3
+							elif suff2 == 'n':
+								fluxD2=fluxD2*1.0e-9
+								fluxE2=fluxE2*1.0e-9
+							else:
+								fluxD2=fluxD2*1.0
+								fluxE2=fluxE2*1.0
 
-						FD_list.append(fluxD1)
-						FDE_list.append(fluxE1)
-						FD2_list.append(fluxD2)
-						FDE2_list.append(fluxE2)
+							FD_list.append(fluxD1)
+							FDE_list.append(fluxE1)
+							FD2_list.append(fluxD2)
+							FDE2_list.append(fluxE2)
 			if len(FD_list) < nsim/2.:
 				print '\nImage Fit failed on interval ' + interval
 				# The corresponding time intervals need to be removed from the
@@ -957,65 +955,69 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 			suffix = suffix + ['m']
 		elif do_monte == 'F':
 			intervalString=interval.replace(':', '.').replace('/','_')
-			imfitFile = open(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text', 'r')
-			imfitText = imfitFile.read()
-			imfitFile.close()
-			end = imfitText[-19:-1]
-			if end != '*** FIT FAILED ***':
-				if integ_fit == 'T':
-					startWord = '--- Integrated:'
-					endWord = '--- Peak:'
-					startPos = imfitText.find(startWord)
-					endPos = imfitText.find(endWord)
-					fluxString = imfitText[startPos:endPos]
-					plusMinusPos = fluxString.find('+/-')
-					unitsPos = fluxString.find('Jy')
-					plot_label_unit=''
-					fluxDensity = fluxDensity + [float(fluxString[16:plusMinusPos])]
-					fluxError = fluxError + [float(fluxString[plusMinusPos+3:unitsPos-1])]
-					suffix = suffix + [str(fluxString[unitsPos-1])]
-				elif integ_fit == 'F':
-					startWord = '--- Peak:'
-					endWord = '--- Polarization:'
-					startPos = imfitText.find(startWord)
-					endPos = imfitText.find(endWord)
-					fluxString = imfitText[startPos:endPos]
-					plot_label_unit='/beam'
-					plusMinusPos = fluxString.find('+/-')
-					unitsPos = fluxString.find('Jy/b')
-					fluxDensity = fluxDensity + [float(fluxString[10:plusMinusPos])]
-					fluxError = fluxError + [float(fluxString[plusMinusPos+3:unitsPos-1])]
-					suffix = suffix + [str(fluxString[unitsPos-1])]
-				elif integ_fit == 'B':
-					startWord = '--- Integrated:'
-					endWord = '--- Peak:'
-					startPos = imfitText.find(startWord)
-					endPos = imfitText.find(endWord)
-					fluxString = imfitText[startPos:endPos]
-					plusMinusPos = fluxString.find('+/-')
-					unitsPos = fluxString.find('Jy')
-					plot_label_unit=''
-					fluxDensity= fluxDensity +[float(fluxString[16:plusMinusPos])]
-					fluxError=fluxError +[float(fluxString[plusMinusPos+3:unitsPos-1])]
-					suffix = suffix + [str(fluxString[unitsPos-1])]
-					startWord2 = '--- Peak:'
-					endWord2 = '--- Polarization:'
-					startPos2 = imfitText.find(startWord2)
-					endPos2 = imfitText.find(endWord2)
-					fluxString2 = imfitText[startPos2:endPos2]
-					plot_label_unit2='/beam'
-					plusMinusPos2 = fluxString2.find('+/-')
-					unitsPos2 = fluxString2.find('Jy/b')
-					fluxDensity2=fluxDensity2+[float(fluxString2[10:plusMinusPos2])]
-					fluxError2=fluxError2+[float(fluxString2[plusMinusPos2+3:unitsPos2-1])]
-					suffix2 = suffix2 + [str(fluxString2[unitsPos2-1])]
-				timerange = timerange + [interval]
+			if os.path.exists(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text'):
+				imfitFile = open(outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text', 'r')
+				imfitText = imfitFile.read()
+				imfitFile.close()
+				end = imfitText[-19:-1]
+				if end != '*** FIT FAILED ***':
+					if integ_fit == 'T':
+						startWord = '--- Integrated:'
+						endWord = '--- Peak:'
+						startPos = imfitText.find(startWord)
+						endPos = imfitText.find(endWord)
+						fluxString = imfitText[startPos:endPos]
+						plusMinusPos = fluxString.find('+/-')
+						unitsPos = fluxString.find('Jy')
+						plot_label_unit=''
+						fluxDensity = fluxDensity + [float(fluxString[16:plusMinusPos])]
+						fluxError = fluxError + [float(fluxString[plusMinusPos+3:unitsPos-1])]
+						suffix = suffix + [str(fluxString[unitsPos-1])]
+					elif integ_fit == 'F':
+						startWord = '--- Peak:'
+						endWord = '--- Polarization:'
+						startPos = imfitText.find(startWord)
+						endPos = imfitText.find(endWord)
+						fluxString = imfitText[startPos:endPos]
+						plot_label_unit='/beam'
+						plusMinusPos = fluxString.find('+/-')
+						unitsPos = fluxString.find('Jy/b')
+						fluxDensity = fluxDensity + [float(fluxString[10:plusMinusPos])]
+						fluxError = fluxError + [float(fluxString[plusMinusPos+3:unitsPos-1])]
+						suffix = suffix + [str(fluxString[unitsPos-1])]
+					elif integ_fit == 'B':
+						startWord = '--- Integrated:'
+						endWord = '--- Peak:'
+						startPos = imfitText.find(startWord)
+						endPos = imfitText.find(endWord)
+						fluxString = imfitText[startPos:endPos]
+						plusMinusPos = fluxString.find('+/-')
+						unitsPos = fluxString.find('Jy')
+						plot_label_unit=''
+						fluxDensity= fluxDensity +[float(fluxString[16:plusMinusPos])]
+						fluxError=fluxError +[float(fluxString[plusMinusPos+3:unitsPos-1])]
+						suffix = suffix + [str(fluxString[unitsPos-1])]
+						startWord2 = '--- Peak:'
+						endWord2 = '--- Polarization:'
+						startPos2 = imfitText.find(startWord2)
+						endPos2 = imfitText.find(endWord2)
+						fluxString2 = imfitText[startPos2:endPos2]
+						plot_label_unit2='/beam'
+						plusMinusPos2 = fluxString2.find('+/-')
+						unitsPos2 = fluxString2.find('Jy/b')
+						fluxDensity2=fluxDensity2+[float(fluxString2[10:plusMinusPos2])]
+						fluxError2=fluxError2+[float(fluxString2[plusMinusPos2+3:unitsPos2-1])]
+						suffix2 = suffix2 + [str(fluxString2[unitsPos2-1])]
+					timerange = timerange + [interval]
+				else:
+					print '\nFit failed on interval ' + interval
+					fluxError_real.remove(fluxError_real[timeIntervals.index(interval)])
+					timeIntervals.remove(interval)
+					mjdTimes.remove(time)
 			else:
-				print '\nFit failed on interval ' + interval
 				fluxError_real.remove(fluxError_real[timeIntervals.index(interval)])
 				timeIntervals.remove(interval)
 				mjdTimes.remove(time)
-
 		else:
 			raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
 		if uv_fit == 'T':
@@ -1035,9 +1037,9 @@ for interval, time,interval_uv,time_uv in zip(timeIntervals, mjdTimes,timeInterv
 
 
 ##################################
-#Print raw results to terminal
+#Print raw results to terminal- uncomment if you like
 ##################################
-print 'Printing raw results for user...\n'
+'''print 'Printing raw results for user...\n'
 if runClean != 'U':
 	if integ_fit == 'B':
 		if len(fluxDensity)==0 or fluxDensity2==0:
@@ -1085,7 +1087,7 @@ else:
 	print '\nFlux errors extracted from uvmodelfit:'
 	print fluxError3
 	print '\nUnits extracted from uvmodelfit:'
-	print suffix3
+	print suffix3'''
 ##################################
 
 
@@ -1198,25 +1200,25 @@ if runClean != 'U':
     	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
     for i in range(0,len(fluxDensity)):
         if integ_fit == 'B':
-            data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
+            data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
                 fluxError2[i],fluxError_real[i]))
             if uv_fit == 'T':
-                data.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
+                data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f} {6:.3f} {7:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
                     fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
         elif integ_fit =='T':
-            data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
+            data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
             if uv_fit=='T':
-                data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
+                data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
                     fluxError3[i],fluxError_real[i]))
         elif integ_fit =='F':
-            data.write('{0} {1} {2} {3}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
+            data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
             if uv_fit=='T':
-                data.write('{0} {1} {2} {3} {4} {5}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
+                data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
                     fluxError3[i],fluxError_real[i]))
 else:
     data.write('{0}\n'.format('#MJD|uv flux|uverr'))
     for i in range(0,len(fluxDensity3)):
-        data.write('{0} {1} {2}\n'.format(mjdTimes[i],fluxDensity3[i],fluxError3[i]))
+        data.write('{0:.12f} {1:.3f} {2:.3f}\n'.format(mjdTimes[i],fluxDensity3[i],fluxError3[i]))
 data.close()
 print dataPath+' is saved.'
 ##################################
@@ -1352,9 +1354,9 @@ if var_anal=='T':
 ##################################
 print 'Cleaning up...\n'
 #remove temp files and .last/.log files created by CASA/ipython
-os.system('rm -rf *.last')
-os.system('rm -rf *.log')
-os.system('rm -rf tempfile.txt tempfile2.txt')
+os.system('sudo rm -rf *.last')
+os.system('sudo rm -rf *.log')
+os.system('sudo rm -rf tempfile.txt tempfile2.txt')
 print '*********************************************************'
 print 'Script finished. Please inspect resulting data products'
 print '*********************************************************'

@@ -1178,176 +1178,184 @@ else:
 		    fluxError3[k] = fluxError3[k]*lc_scale_factor
 ##################################
 
+if runClean=='U':
+	if len(fluxDensity3)==0:
+		print 'Fitting failed in all timebins. Please check input.'
+	else:
+		failed='n'
+else:
+	if len(fluxDensity)==0:
+		print 'Fitting failed in all timebins. Please check input.'
+	else:
+		failed='n'
 
 ##################################
 #Write results to data file
 ##################################
-print 'Writing light curve data file...\n'
-data = open(dataPath, 'w')
-if runClean != 'U':
-    #data.write('{0} {1}\n'.format('#The number of timebins where CLEAN failed/did not converge was',counter_fail))
-    if integ_fit == 'B':
-    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
-    elif integ_fit == 'B' and uv_fit == 'T':
-    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
-    elif integ_fit=='T':
-    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
-    elif integ_fit=='T' and uv_fit=='T':
-    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
-    elif integ_fit=='F':
-    	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
-    elif integ_fit=='F' and uv_fit=='T':
-    	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
-    for i in range(0,len(fluxDensity)):
-        if integ_fit == 'B':
-            data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
-                fluxError2[i],fluxError_real[i]))
-            if uv_fit == 'T':
-                data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f} {6:.3f} {7:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
-                    fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
-        elif integ_fit =='T':
-            data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
-            if uv_fit=='T':
-                data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
-                    fluxError3[i],fluxError_real[i]))
-        elif integ_fit =='F':
-            data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
-            if uv_fit=='T':
-                data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
-                    fluxError3[i],fluxError_real[i]))
-else:
-    data.write('{0}\n'.format('#MJD|uv flux|uverr'))
-    for i in range(0,len(fluxDensity3)):
-        data.write('{0:.12f} {1:.3f} {2:.3f}\n'.format(mjdTimes[i],fluxDensity3[i],fluxError3[i]))
-data.close()
-print dataPath+' is saved.'
-##################################
-
-##################################
-#Plot Lightcurves
-##################################
-print 'Plotting Light curves...\n'
-minutesElapsed=[]
-secondsElapsed=[]
-hoursElapsed=[]
-for i in range(len(mjdTimes)):
-    hoursElapsed.append((mjdTimes[i]-mjdTimes[0])*24+intervalSizeS/(60.0*60.0*2.0))
-    minutesElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60+intervalSizeS/(60.0*2.0))
-    secondsElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60*60+intervalSizeS/2.0)
-
-if lc_scale_time=='M':
-	Elapsed=minutesElapsed
-elif lc_scale_time=='S':
-	Elapsed=secondsElapsed
-elif lc_scale_time=='H':
-	Elapsed=hoursElapsed
-if runClean != 'U':
-    if integ_fit == 'B':
-    	fig1=pp.figure()
-    	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-    	pp.xlabel('Time since start of observation (mins)')
-    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
-    	pp.ylabel(y_label_name)
-    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    	savestring = os.path.join(path_dir,
-                                  'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+
-                                  str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.eps')
-    	pp.savefig(savestring)
-    	print savestring, ' is saved'
-    	fig2=pp.figure()
-    	pp.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
-    	pp.xlabel('Time since start of observation (mins)')
-    	y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
-    	pp.ylabel(y_label_name2)
-    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    	savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.eps')
-    	pp.savefig(savestring2)
-    	print savestring2, ' is saved'
-    	if uv_fit=='T':
-    		fig3=pp.figure()
-    		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-    		pp.xlabel('Time since start of observation (mins)')
-    		y_label_name='Flux Density (mJy/beam)'
-    		pp.ylabel(y_label_name)
-    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps')
-    		pp.savefig(savestring)
-    		print savestring, ' is saved'
-
-    else:
-    	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-    	pp.xlabel('Time since start of observation (mins)')
-    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
-    	pp.ylabel(y_label_name)
-    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    	savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.eps')
-    	pp.savefig(savestring)
-    	print savestring, ' is saved'
-    	if uv_fit=='T':
-    		fig3=pp.figure()
-    		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-    		pp.xlabel('Time since start of observation (mins)')
-    		y_label_name='Flux Density (mJy/beam)'
-    		pp.ylabel(y_label_name)
-    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps')
-    		pp.savefig(savestring)
-    		print savestring, ' is saved'
-else:
-    fig4=pp.figure()
-    pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-    pp.xlabel('Time since start of observation (mins)')
-    y_label_name='Flux Density (mJy/beam)'
-    pp.ylabel(y_label_name)
-    pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-    pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-    savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps')
-    pp.savefig(savestring)
-    print savestring, ' is saved'
-##################################
-
-
-##################################
-#Basic Variability Tests
-##################################
-if var_anal=='T':
-	print 'Performing Variability Analysis...\n'
-	if runClean =='U':
-		fluxvar=np.array(fluxDensity3)
-		fluxerrvar=np.array(fluxError3)
+if failed=='n':
+	print 'Writing light curve data file...\n'
+	data = open(dataPath, 'w')
+	if runClean != 'U':
+	    #data.write('{0} {1}\n'.format('#The number of timebins where CLEAN failed/did not converge was',counter_fail))
+	    if integ_fit == 'B':
+	    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|rms error'))
+	    elif integ_fit == 'B' and uv_fit == 'T':
+	    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|peak flux|peak imfit err|uv flux|uverr|rms error'))
+	    elif integ_fit=='T':
+	    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|rms error'))
+	    elif integ_fit=='T' and uv_fit=='T':
+	    	data.write('{0}\n'.format('#MJD|integ flux|integ imfit err|uv flux|uverr|rms error'))
+	    elif integ_fit=='F':
+	    	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|rms error'))
+	    elif integ_fit=='F' and uv_fit=='T':
+	    	data.write('{0}\n'.format('#MJD|peak flux|peak imfit err|uv flux|uverr|rms error'))
+	    for i in range(0,len(fluxDensity)):
+	        if integ_fit == 'B':
+	            data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
+	                fluxError2[i],fluxError_real[i]))
+	            if uv_fit == 'T':
+	                data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f} {6:.3f} {7:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity2[i],\
+	                    fluxError2[i],fluxDensity3[i],fluxError3[i],fluxError_real[i]))
+	        elif integ_fit =='T':
+	            data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
+	            if uv_fit=='T':
+	                data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
+	                    fluxError3[i],fluxError_real[i]))
+	        elif integ_fit =='F':
+	            data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxError_real[i]))
+	            if uv_fit=='T':
+	                data.write('{0:.12f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f}\n'.format(mjdTimes[i],fluxDensity[i],fluxError[i],fluxDensity3[i],\
+	                    fluxError3[i],fluxError_real[i]))
 	else:
-		fluxerrvar=np.array(fluxError_real)
-		if integ_fit=='T':
-			fluxvar=np.array(fluxDensity)
-		elif integ_fit=='F':
-			fluxvar=np.array(fluxDensity2)
+	    data.write('{0}\n'.format('#MJD|uv flux|uverr'))
+	    for i in range(0,len(fluxDensity3)):
+	        data.write('{0:.12f} {1:.3f} {2:.3f}\n'.format(mjdTimes[i],fluxDensity3[i],fluxError3[i]))
+	data.close()
+	print dataPath+' is saved.'
+	##################################
+	##################################
+	#Plot Lightcurves
+	##################################
+	print 'Plotting Light curves...\n'
+	minutesElapsed=[]
+	secondsElapsed=[]
+	hoursElapsed=[]
+	for i in range(len(mjdTimes)):
+	    hoursElapsed.append((mjdTimes[i]-mjdTimes[0])*24+intervalSizeS/(60.0*60.0*2.0))
+	    minutesElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60+intervalSizeS/(60.0*2.0))
+	    secondsElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60*60+intervalSizeS/2.0)
+
+	if lc_scale_time=='M':
+		Elapsed=minutesElapsed
+	elif lc_scale_time=='S':
+		Elapsed=secondsElapsed
+	elif lc_scale_time=='H':
+		Elapsed=hoursElapsed
+	if runClean != 'U':
+	    if integ_fit == 'B':
+	    	fig1=pp.figure()
+	    	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+	    	pp.xlabel('Time since start of observation (mins)')
+	    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
+	    	pp.ylabel(y_label_name)
+	    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+	    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    	savestring = os.path.join(path_dir,
+	                                  'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+
+	                                  str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.eps')
+	    	pp.savefig(savestring)
+	    	print savestring, ' is saved'
+	    	fig2=pp.figure()
+	    	pp.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
+	    	pp.xlabel('Time since start of observation (mins)')
+	    	y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
+	    	pp.ylabel(y_label_name2)
+	    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+	    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    	savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.eps')
+	    	pp.savefig(savestring2)
+	    	print savestring2, ' is saved'
+	    	if uv_fit=='T':
+	    		fig3=pp.figure()
+	    		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+	    		pp.xlabel('Time since start of observation (mins)')
+	    		y_label_name='Flux Density (mJy/beam)'
+	    		pp.ylabel(y_label_name)
+	    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+	    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps')
+	    		pp.savefig(savestring)
+	    		print savestring, ' is saved'
+
+	    else:
+	    	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+	    	pp.xlabel('Time since start of observation (mins)')
+	    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
+	    	pp.ylabel(y_label_name)
+	    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+	    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    	savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.eps')
+	    	pp.savefig(savestring)
+	    	print savestring, ' is saved'
+	    	if uv_fit=='T':
+	    		fig3=pp.figure()
+	    		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+	    		pp.xlabel('Time since start of observation (mins)')
+	    		y_label_name='Flux Density (mJy/beam)'
+	    		pp.ylabel(y_label_name)
+	    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+	    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps')
+	    		pp.savefig(savestring)
+	    		print savestring, ' is saved'
+	else:
+	    fig4=pp.figure()
+	    pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+	    pp.xlabel('Time since start of observation (mins)')
+	    y_label_name='Flux Density (mJy/beam)'
+	    pp.ylabel(y_label_name)
+	    pp.title('Flux Density vs Time. '+target+' '+refFrequency)
+	    pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+	        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps')
+	    pp.savefig(savestring)
+	    print savestring, ' is saved'
+	##################################
+	##################################
+	#Basic Variability Tests
+	##################################
+	if var_anal=='T':
+		print 'Performing Variability Analysis...\n'
+		if runClean =='U':
+			fluxvar=np.array(fluxDensity3)
+			fluxerrvar=np.array(fluxError3)
 		else:
-			fluxvar=np.array(fluxDensity2)
-	var_file=open(dataPathVar,'w')
-	print 'Performing Variiability Tests'
-	chi_tot,dof,null,wm,wmerr,ex_var,ex_var_error,frac_rms,frac_rms_error=var_analysis(fluxvar,fluxerrvar)
-	if power_spec=='T':
-		print 'Creating Power Spectrum'
-		if float(intervalSizeDelta.seconds)==0.0:
-			sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.microseconds)/1e6,labelP)
-		else:
-			sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.seconds),labelP)
-		print labelP+' is saved.'
-	var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
-	var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))
-	var_file.write('{0} {1} {2}\n'.format('Excess Variance/Error',ex_var,ex_var_error))
-	var_file.write('{0} {1} {2}\n'.format('Fractional RMS/Error',frac_rms,frac_rms_error))
-	if power_spec=='T':
-		var_file.write('{0} {1} {2}\n'.format('95% and 99% Significance Levels for Periodogram',sig95,sig99))
-	var_file.close()
-	print dataPathVar+ 'is saved.'
-##################################
+			fluxerrvar=np.array(fluxError_real)
+			if integ_fit=='T':
+				fluxvar=np.array(fluxDensity)
+			elif integ_fit=='F':
+				fluxvar=np.array(fluxDensity2)
+			else:
+				fluxvar=np.array(fluxDensity2)
+		var_file=open(dataPathVar,'w')
+		print 'Performing Variiability Tests'
+		chi_tot,dof,null,wm,wmerr,ex_var,ex_var_error,frac_rms,frac_rms_error=var_analysis(fluxvar,fluxerrvar)
+		if power_spec=='T':
+			print 'Creating Power Spectrum'
+			if float(intervalSizeDelta.seconds)==0.0:
+				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.microseconds)/1e6,labelP)
+			else:
+				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.seconds),labelP)
+			print labelP+' is saved.'
+		var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
+		var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))
+		var_file.write('{0} {1} {2}\n'.format('Excess Variance/Error',ex_var,ex_var_error))
+		var_file.write('{0} {1} {2}\n'.format('Fractional RMS/Error',frac_rms,frac_rms_error))
+		if power_spec=='T':
+			var_file.write('{0} {1} {2}\n'.format('95% and 99% Significance Levels for Periodogram',sig95,sig99))
+		var_file.close()
+		print dataPathVar+ 'is saved.'
+	##################################
 
 ##################################
 #cleaning up

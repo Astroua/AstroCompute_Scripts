@@ -1181,11 +1181,13 @@ else:
 if runClean=='U':
 	if len(fluxDensity3)==0:
 		print 'Fitting failed in all timebins. Please check input.'
+		failed='y'
 	else:
 		failed='n'
 else:
 	if len(fluxDensity)==0:
 		print 'Fitting failed in all timebins. Please check input.'
+		failed='y'
 	else:
 		failed='n'
 

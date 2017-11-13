@@ -581,9 +581,9 @@ if runClean == "T":
 		print 'CLEANing interval: ', interval
 		intervalString=interval.replace(':', '.').replace('/','_')
 		if outlierFile == '':
-			tclean(vis=visibility, imagename=outputPath+label+intervalString, timerange=interval,mask=maskPath, selectdata=T, field='', specmode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F)
+			clean(vis=visibility, imagename=outputPath+label+intervalString, timerange=interval,mask=maskPath, selectdata=True, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=False)
 		else:
-			tclean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=T,timerange=interval, field='', specmode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=F,outlierfile=outlierFile)
+			clean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=True,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=False,outlierfile=outlierFile)
 		if taylorTerms == 1:
 			imSuffix = '.image'
 		else:
@@ -621,7 +621,7 @@ if runClean == "T":
 				tempFile.close()
 			# Run imfit using the above beam parameters.
 				if fix_pos== 'F':
-					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=F, overwrite = T)
+					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=False, overwrite = True)
 				elif fix_pos == 'T':
 					if do_monte == 'T':
 						samp_px=np.random.normal(0,1,nsim)
@@ -639,13 +639,13 @@ if runClean == "T":
 							mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
 							tempFile2.write(mystring2)
 							tempFile2.close()
-							imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+							imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=False, overwrite = True)
 					elif do_monte =='F':
 						tempFile2 = open('tempfile2.txt','w')
 						mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
 						tempFile2.write(mystring2)
 						tempFile2.close()
-						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=False, overwrite = True)
 					else:
 						raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
 				result_box1 = imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')
@@ -713,7 +713,7 @@ elif runClean == "F":
 				tempFile.write(mystring)
 				tempFile.close()
 				if fix_pos=='F':
-					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=F, overwrite = T)
+					imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile.name, append=False, overwrite = True)
 				else:
 					if do_monte == 'T':
 						samp_px=np.random.normal(0,1,nsim)
@@ -731,13 +731,13 @@ elif runClean == "F":
 							mystring2 = str(peak+', '+str(peak_x1)+', '+str(peak_y1)+', '+str(b_maj1)+'arcsec, '+str(b_min1)+'arcsec, '+str(pos_ang1)+'deg, '+par_fix)
 							tempFile2.write(mystring2)
 							tempFile2.close()
-							imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+							imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+str(i)+'.text',estimates=tempFile2.name,append=False, overwrite = True)
 					elif do_monte =='F':
 						tempFile2 = open('tempfile2.txt','w')
 						mystring2 = str(peak+', '+str(peak_x[0])+', '+str(peak_y[0])+', '+str(b_maj[0])+'arcsec, '+str(b_min[0])+'arcsec, '+str(pos_ang[0])+'deg,'+par_fix)
 						tempFile2.write(mystring2)
 						tempFile2.close()
-						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=F, overwrite = T)
+						imfit(imagename=outputPath+label+intervalString+imSuffix, box=targetBox,logfile=outputPath+'imfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.text',estimates=tempFile2.name,append=False, overwrite = True)
 					else:
 						raise Exception('Please specify whether you wish to perform a Monte Carlo fit (T) or not(F)')
 				result_box1=imstat(imagename=outputPath+label+intervalString+imSuffix,region='annulus['+cen_annulus+','+cen_radius+']')

@@ -7,12 +7,11 @@ OUTPUT: (1) Data file of the parameters of objects found in image--> [out_file0 
         (2) CASA region file of detected sources--> casa_region.txt
         (3) DS9 region file of detected sources--> ds9_region.reg
         (4) Image of detected sources--> detected_sources.pdf
-NOTE: - Needs to be run with lmfit 0.7.4, otherwise it won't work.
-        (casa-pip install git+git://github.com/lmfit/lmfit-py.git@0.7.4)
+NOTE: - Needs lmfit,scipy,astropy pkgs, can now pip install AegeanTools!!
       - Make sure aegean code is in your python path [sys.path.append(path_to_aegean)]
 
 Written by: A. Tetarenko
-Last Updated: June 6 2017
+Last Updated: November 13 2017
 
 TO RUN SCRIPT independently, go to line 155, set variables in User Input Section and Setup &
 Reading in Params sections, then run either,
@@ -20,13 +19,24 @@ python Aegean_ObjDet.py or casa -c  Aegean_ObjDet.py
 '''
 
 # Import modules
-from AegeanTools.catalogs import save_catalog
-from AegeanTools.source_finder import scope2lat, SourceFinder
+import scipy
+import lmfit
+import astropy
+import logging
+import logging.config
+import sys
 import numpy as np
-from multiprocessing import cpu_count
 import re
 import os
 import warnings
+import AegeanTools
+from AegeanTools.catalogs import save_catalog
+from AegeanTools.source_finder import SourceFinder,check_cores
+logging.basicConfig(format="%(module)s:%(levelname)s %(message)s")
+log = logging.getLogger("Aegean")
+# source finding object
+sf = SourceFinder(log=log)
+from multiprocessing import cpu_count
 warnings.filterwarnings('ignore')
 from astropy import units as u
 from astropy.io import fits
@@ -52,7 +62,7 @@ def objdet(tele,lat,out_file0,fits_file,seed,flood,tab_file,catalog_input_name,c
   elif tele == 'NOEMA':
     lat = 44.6339
   else:
-    lat = scope2lat(tele)
+    lat = aegean.scope2lat(tele)
 
 
   out_file = open(out_file0, 'w')
@@ -78,7 +88,7 @@ def objdet(tele,lat,out_file0,fits_file,seed,flood,tab_file,catalog_input_name,c
   out_file.close()
   if len(detections) == 0:
     raise Exception('No sources detected by Aegean. Please check your inputs.')
-  sources.extend(detections)
+  sources = sf.sources
   # write detected source info to file
   if len(sources) > 0:
     save_catalog(catalog_input_name, sources)
@@ -197,7 +207,7 @@ if __name__ == "__main__":
   #of Detected Sources
   ##################################
   if len(src_l)>0:
-    print 'Writing rgeion files and plotting labelled map of detected sources...'
+    print 'Writing region files and plotting labelled map of detected sources...'
     #read in fits image file for plotting and get wcs header
     fits_file1=fits_file
     hdulist1 = fits.open(fits_file1)[0]

@@ -261,7 +261,7 @@ if __name__ == "__main__":
 
   #remove temp files and .last/.log files created by CASA/ipython
   os.system('rm -rf *.last')
-  os.system('rm -rf *.log')
+  os.system('rm -rf casa*.log')
   print '*********************************************************'
   print 'Script finished. Please inspect resulting data products'
   print '*********************************************************'

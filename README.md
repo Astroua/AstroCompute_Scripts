@@ -12,13 +12,13 @@ A collection of python scripts to create high time resolution light curves from 
 If using below CASA v5,
    * Use casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python)) <br/>
    e.g., `casa-pip install jdcal` <br/>
+
 If using CASA v5 and above,
    * Use instructions [here](http://docs.astropy.org/en/stable/install.html) <br/>
    e.g., `casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"`<br/>
    `casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"`
-* (*optional*)
-   * For UV plane fitting, **uvmultifit** (get it [here](http://nordic-alma.se/support/software-tools))
-   * To use object detection,
+* (*optional*) For UV plane fitting, **uvmultifit** (get it [here](http://nordic-alma.se/support/software-tools))
+* (*optional*) To use object detection,
       * **analysisUtils** (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
       * **aegean** (see [here](https://github.com/PaulHancock/Aegean)) <br/>
       To install, 

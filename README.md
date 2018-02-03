@@ -21,7 +21,10 @@ If using CASA v5 and above,
       * **analysisUtils** (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
       * **aegean** (see [here](https://github.com/PaulHancock/Aegean)) <br/>
       To install, ```python casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"```
-      
+```python
+p=2
+print p
+```
 ## Description of scripts
 1. Primary script:
    * **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.

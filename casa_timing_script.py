@@ -262,9 +262,9 @@ else:
 #define rms boxes for realistic error calculation:
 #pix_shift_cutout is how many pixels past target box you want in cutout images rms calculation
 #annulus_rad_inner/outer is inner and outer radius in pixels from source
-pix_shift_cutout=30
-annulus_rad_inner=20
-annulus_rad_outer=30
+pix_shift_cutout=80
+annulus_rad_inner=70
+annulus_rad_outer=80
 cut_reg=str(float(targetBox.split(',')[0])-float(pix_shift_cutout))+','+str(float(targetBox.split(',')[1])-float(pix_shift_cutout))+\
 ','+str(float(targetBox.split(',')[2])+float(pix_shift_cutout))+','+str(float(targetBox.split(',')[3])+float(pix_shift_cutout))#'2962,2917,3017,2967'
 x_sizel=float(targetBox.split(',')[0])

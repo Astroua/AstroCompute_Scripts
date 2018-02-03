@@ -179,7 +179,7 @@ def chi2_calc(flux,fluxerr):
    null_hyp_fix=chi2.sf(chi_tot_fix,(np.array(flux).shape[0])-1)
    return(chi_tot_fix,dof_fix,wm_fix,un_fix,null_hyp_fix)
 	
-def lomb_scargle(time,flux,fluxerr,interval,label):
+def lomb_scargle(time,flux,fluxerr,interval,label,scale):
    '''Generalized LS periodogram (Note: Power is normalized between 0 and 1)
    
    time: MJD array
@@ -187,6 +187,7 @@ def lomb_scargle(time,flux,fluxerr,interval,label):
    fluxerr: flux error array
    interval: time bin size in seconds
    label: name for savefig
+   scale: log or lin
    
    return: plot is saved to a file
    '''
@@ -203,8 +204,9 @@ def lomb_scargle(time,flux,fluxerr,interval,label):
    pp.axhline(y=sig[0],linewidth=4,ls='--',color='m')
    pp.axhline(y=sig[1],linewidth=4,ls='--',color='c')
    pp.xlim(min(omega)/(2.*np.pi),max(omega)/(2.*np.pi))
-   #pp.xscale("log")
-   #pp.yscale("log")
+   '''if scale=='log':
+                pp.xscale("log")
+                pp.yscale("log")'''
    pp.xlabel('Frequency, $\\nu$ (Hz)',size=16)
    pp.ylabel('Lomb-Scargle Power',size=16)
    pp.savefig(label)

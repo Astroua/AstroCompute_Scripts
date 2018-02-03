@@ -3,17 +3,20 @@
 ##################################
 ''' CASA script to produce high time res light curves from calibrated continuum MS
 INPUT: Calibrated and Split MS, parameter file (param_file below)
-OUTPUT: (1) Lightcurve plot--> [path_dir]/data_products/[target]+[lab]_[intervalSizeH]hour_[intervalSizeM]min_[intervalSizeS]sec_[refFrequency]_[obsDate]_[type].eps
-        (2) Lightcurve data file-->[path_dir]/data_products/[target]_[obsDate]_[refFrequency]_[intervalSizeH]hours_[intervalSizeM]min_[intervalSizeS]sec.txt
+OUTPUT: (1) Lightcurve plot--> pdf saved in [path_dir]/data_products
+        (2) Lightcurve data file--> saved in [path_dir]/data_products
+        (3) (optional) Lomb-Scarge periodogram plot and basic variability properties file --> saved in [path_dir]/data_products
 NOTES: - This script is theoretically compatible with any data that can be imported into a CASA MS,
          but has only been tested with VLA, SMA, and NOEMA data.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
-Last Updated: June 6 2017
+Last Updated: Feb 2018
 
 TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
+Uncomment at line 557 if you dont want time-bins printed to screen
+Uncomment at line 1039 if you sont want results printed to screen.
 
-NOTE: path_dir is path to input/output directory
+NOTE: path_dir is path to input/output directory of your choice
 -MS's need to be in path_dir/data,
 -all output goes to path_dir/data_products (this directory is created by script)
 -Make sure to including trailing / in [path_to_repo_dir] & [path_dir]!!!
@@ -113,7 +116,7 @@ dataPathVar = \
 labelP = \
     os.path.join(path_dir,'data_products/periodogram_'+target+ '_' + obsDate +'_'+refFrequency +
                  '_'+str(intervalSizeH)+'hours'+str(intervalSizeM)+'min' +
-                 str(intervalSizeS)+'sec.eps')
+                 str(intervalSizeS)+'sec.pdf')
 
 '''DIRECTORY AND FILE NAME PARAMETERS'''
 # Set path to directory where all output from this script is saved.
@@ -1190,7 +1193,6 @@ else:
 		failed='y'
 	else:
 		failed='n'
-
 ##################################
 #Write results to data file
 ##################################
@@ -1264,7 +1266,7 @@ if failed=='n':
 	    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	    	savestring = os.path.join(path_dir,
 	                                  'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+
-	                                  str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.eps')
+	                                  str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.pdf')
 	    	pp.savefig(savestring)
 	    	print savestring, ' is saved'
 	    	fig2=pp.figure()
@@ -1274,7 +1276,7 @@ if failed=='n':
 	    	pp.ylabel(y_label_name2)
 	    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    	savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.eps')
+	    	savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.pdf')
 	    	pp.savefig(savestring2)
 	    	print savestring2, ' is saved'
 	    	if uv_fit=='T':
@@ -1285,7 +1287,7 @@ if failed=='n':
 	    		pp.ylabel(y_label_name)
 	    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.eps')
+	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.pdf')
 	    		pp.savefig(savestring)
 	    		print savestring, ' is saved'
 
@@ -1296,7 +1298,7 @@ if failed=='n':
 	    	pp.ylabel(y_label_name)
 	    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    	savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.eps')
+	    	savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.pdf')
 	    	pp.savefig(savestring)
 	    	print savestring, ' is saved'
 	    	if uv_fit=='T':
@@ -1307,7 +1309,7 @@ if failed=='n':
 	    		pp.ylabel(y_label_name)
 	    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps')
+	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
 	    		pp.savefig(savestring)
 	    		print savestring, ' is saved'
 	else:
@@ -1319,7 +1321,7 @@ if failed=='n':
 	    pp.title('Flux Density vs Time. '+target+' '+refFrequency)
 	    pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	    savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-	        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.eps')
+	        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
 	    pp.savefig(savestring)
 	    print savestring, ' is saved'
 	##################################
@@ -1345,9 +1347,9 @@ if failed=='n':
 		if power_spec=='T':
 			print 'Creating Power Spectrum'
 			if float(intervalSizeDelta.seconds)==0.0:
-				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.microseconds)/1e6,labelP)
+				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.microseconds)/1e6,labelP,'lin')
 			else:
-				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.seconds),labelP)
+				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.seconds),labelP,'lin')
 			print labelP+' is saved.'
 		var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
 		var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))
@@ -1365,7 +1367,7 @@ if failed=='n':
 print 'Cleaning up...\n'
 #remove temp files and .last/.log files created by CASA/ipython
 os.system('sudo rm -rf *.last')
-os.system('sudo rm -rf *.log')
+os.system('sudo rm -rf casa*.log')
 os.system('sudo rm -rf tempfile.txt tempfile2.txt')
 print '*********************************************************'
 print 'Script finished. Please inspect resulting data products'

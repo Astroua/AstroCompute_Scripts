@@ -9,19 +9,24 @@ A collection of python scripts to create high time resolution light curves from 
 ## Requires
 * CASA (get it [here](https://svn.cv.nrao.edu/casa/linux_distro/release/el6), scripts tested with version 5.1.2)
 * The following python packages need to be installed within CASA; jdcal, astropy, astroML
+<p>
 If using below CASA v5,
    * Use casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python))
    e.g., `casa-pip install jdcal`
+<p>
 If using CASA v5 and above,
    * Use instructions [here](http://docs.astropy.org/en/stable/install.html)
+   <p>
    e.g., `casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"`
+   <p>
    `casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"`
-* (*optional*),
+* (*optional*)
    * For UV plane fitting, uvmultifit (get it [here](http://nordic-alma.se/support/software-tools))
    * To use object detection,
       * analysisUtils (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
       * aegean (see [here](https://github.com/PaulHancock/Aegean))
-      To install, 'casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"`
+      <p>
+      To install, `casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"`
 
 ## Description of scripts
 1. Primary script:

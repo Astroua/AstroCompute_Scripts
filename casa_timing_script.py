@@ -68,10 +68,10 @@ if not os.path.isdir(os.path.join(path_dir, 'data/')):
     raise Exception(path_dir+'data/ created. Please move your MS into that directory.')
 
 #get input parameters from file
-from utils import load_json
-data_params = load_json(param_file)
+#from utils import load_json
+#data_params = load_json(param_file)
 ##to convert txt param file directly to dictionary do this instead:
-#data_params = convert_param_format(param_file, to="dict")
+data_params = convert_param_format(param_file, to="dict")
 
 ##################################
 #Reading in Parameters

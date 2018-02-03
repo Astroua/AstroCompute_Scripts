@@ -7,18 +7,21 @@ A collection of python scripts to create high time resolution light curves from 
 * NOEMA: Must be calibrated beforehand. Follow instructions [here](http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf) to convert to a CASA MS data set for use by these scripts.
 
 ## Requires
-* CASA (get it [here](https://svn.cv.nrao.edu/casa/linux_distro/release/el6), scripts tested with version 4.6.0)
-* casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python))
-   * use this to install these python packages within CASA python
-      * jdcal (`casa-pip install jdcal`)
-      * astropy (`casa-pip install astropy`)
-      * astroML (`casa-pip install astroML`)
-* uvmultifit (get it [here](http://nordic-alma.se/support/software-tools))
-   * this package also needs gsl libraries to build (get them [here](http://askubuntu.com/questions/490465/install-gnu-scientific-library-gsl-on-ubuntu-14-04-via-terminal))
-* analysisUtils (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
-* (*optional*) aegean (get it [here](https://github.com/PaulHancock/Aegean))
-   * this package also needs lmfit-0.7.4 (get it [here](http://github.com/lmfit/lmfit-py.git@0.7.4), install with `casa-pip install git+git://github.com/lmfit/lmfit-py.git@0.7.4`)
-
+* CASA (get it [here](https://svn.cv.nrao.edu/casa/linux_distro/release/el6), scripts tested with version 5.1.2)
+* The following python packages need to be installed within CASA; jdcal, astropy, astroML
+If using below CASA v5,
+   * Use casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python))
+   e.g., `casa-pip install jdcal`
+If using CASA v5 and above,
+   * Use instructions [here](http://docs.astropy.org/en/stable/install.html)
+   e.g., `casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"`
+   `casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"`
+* (*optional*),
+   * For UV plane fitting, uvmultifit (get it [here](http://nordic-alma.se/support/software-tools))
+   * To use object detection,
+      * analysisUtils (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
+      * aegean (see [here](https://github.com/PaulHancock/Aegean))
+      To install, 'casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"`
 
 ## Description of scripts
 1. Primary script:

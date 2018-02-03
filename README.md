@@ -11,7 +11,7 @@ A collection of python scripts to create high time resolution light curves from 
 * The following **python packages** need to be installed within CASA; jdcal, astropy, astroML <br/>
 If using below CASA v5,
    * Use casa-python executable wrapper (get it [here](https://github.com/radio-astro-tools/casa-python)) <br/>
-   e.g., `casa-pip install jdcal`
+   e.g., `casa-pip install jdcal` <br/>
 If using CASA v5 and above,
    * Use instructions [here](http://docs.astropy.org/en/stable/install.html) <br/>
    e.g., `casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"`<br/>
@@ -24,9 +24,8 @@ If using CASA v5 and above,
       To install, 
       `casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"`
 
-## Description of scripts
-1. Primary script:
-   * **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.
+## If you want to use these scripts on your own machine, you only need,
+1. **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.
       * All parameters need to be carefully considered and changed for each new data set.
       * If you have a complicated field with other sources it is recommended that you use your own mask file (with clean boxes     around bright sources; mask_option='file') for cleaning, or run object detection, which will create a mask file with a       boxed region around each detected source (mask_option='aegean').
       * If you are using an outlier field file, please follow the example template in example_outlier_file.txt.
@@ -35,18 +34,11 @@ If using CASA v5 and above,
          * Calculate excess variance,
          * Calculate fractional RMS ([Vaughan et al. 2003](http://adsabs.harvard.edu/abs/2003MNRAS.345.1271V); [Bell et al., 2015](http://adsabs.harvard.edu/abs/2015MNRAS.450.4221B)), and
          * Make power spectrum using generalized lomb-periodogram ([Zechmeister and Kurster, 2009](http://adsabs.harvard.edu/abs/2009A%26A...496..577Z))
-2. Other scripts:
-   * **Aegean_ObjDet.py**: object detection algorithm.
-      * Integrated into casa_timing_script.py.
-      * Script can also be run on its own, with a fits image as input. Output is a labelled image and region files (DS9 and CASA format) of detected sources.
-   * **utils.py**: module of tools used in casa_timing_script.py.
-   * **download_data_AWS.py**: downloads data from an AWS bucket.
-   * **upload_data_AWS.py**: uploads data to an AWS bucket.
-   * **remove_bucket_AWS.py**: removes a bucket from AWS.
-
-## User Parameters
-* All input parameters for casa_timing_script.py are set in the parameter file (param.txt)
-* A complete description of each parameter is provided in param_description.txt.
+2. **param.txt**: All input parameters for casa_timing_script.py are set in this parameter file. A complete description of each parameter is provided in param_description.txt.
+2. **utils.py**: module of tools used in casa_timing_script.py.
+3. (*optional*), **Aegean_ObjDet.py**: object detection algorithm.
+   * Integrated into casa_timing_script.py.
+   * Script can also be run on its own, with a fits image as input. Output is a labelled image and region files (DS9 and CASA format) of detected sources.
 
 ####
 Support from the SKA/AWS AstroCompute in the Cloud Program

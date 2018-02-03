@@ -14,17 +14,20 @@ If using below CASA v5,
    e.g., `casa-pip install jdcal`
 If using CASA v5 and above,
    * Use instructions [here](http://docs.astropy.org/en/stable/install.html) <br/>
-   ```python casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"\ casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"```
+```python 
+casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"
+casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"
+```
 * (*optional*)
    * For UV plane fitting, **uvmultifit** (get it [here](http://nordic-alma.se/support/software-tools))
    * To use object detection,
       * **analysisUtils** (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
       * **aegean** (see [here](https://github.com/PaulHancock/Aegean)) <br/>
-      To install, ```python casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"```
-```python
-p=2
-print p
+      To install, 
+```python 
+casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"
 ```
+
 ## Description of scripts
 1. Primary script:
    * **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.

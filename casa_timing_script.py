@@ -362,8 +362,10 @@ if fit_cutout == 'T':
 if runClean=='U':
     uv_fit='T'
 #only point sources right now
-uv_num=int(data_params["uv_num"])
 uv_initp=data_params["uv_initp"]
+file_uv0=open(uv_initp)
+uv_num=sum(1 for line in file_uv0)-1
+file_uv0.close()
 phcen_rad=vishead(vis=visibility,mode='get',hdkey='ptcs')
 print 'Phase center set to:'
 phcen=au.rad2radec(phcen_rad[0]['r1'][0][0][0],phcen_rad[0]['r1'][1][0][0],hmsdms=True).replace(',','')

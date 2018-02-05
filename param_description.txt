@@ -66,8 +66,6 @@ uv_fit: toggle to do uv plane fitting; string, options are 'T' or 'F'
 
 uv_fix: toggle to fix position in uv fitting from position of whole data set; string, options are 'T' or 'F'
 
-uv_num: if doing uv fitting, the number of point sources for fitting; integer
-
 uv_initp: if doing uv fitting, provide the path to the intial guess file for uv fitting; string
 Format of this file is a row for each point source, with ra offset from phase center (arcsec),
 dec offset from phase center (arcsec), and flux (Jy) on each row. Target MUST be first source in file

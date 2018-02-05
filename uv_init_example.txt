@@ -1,4 +1,4 @@
-#example uv initial parameters file, first line is target!
+#uv initial parameters file, first line is target! (please only edit the rows below this one).
 0 0 700e-3
 1 1 500e-3
 2 2 400e-3

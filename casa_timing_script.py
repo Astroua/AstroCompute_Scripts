@@ -7,20 +7,20 @@ OUTPUT: (1) Lightcurve plot--> pdf saved in [path_dir]/data_products
         (2) Lightcurve data file--> saved in [path_dir]/data_products
         (3) (optional) Lomb-Scarge periodogram plot and basic variability properties file --> saved in [path_dir]/data_products
 NOTES: - This script is theoretically compatible with any data that can be imported into a CASA MS,
-         but has only been tested with VLA, SMA, and NOEMA data.
+         but has only been tested with VLA, ATCA, ALMA, SMA, and NOEMA data.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
 Last Updated: Feb 2018
+Tested on: CASA version 5.1.2
 
 TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
-Uncomment at line 557 if you dont want time-bins printed to screen
-Uncomment at line 1039 if you dont want results printed to screen.
+Uncomment at line 590 if you want time-bins printed to screen.
+Uncomment at line 1077 if you want light curve results printed to screen.
 
 NOTE: path_dir is path to input/output directory of your choice
 -MS's need to be in path_dir/data,
 -all output goes to path_dir/data_products (this directory is created by script)
 -Make sure to including trailing / in [path_to_repo_dir] & [path_dir]!!!
--Remember to put Aegean directory location in python path if using object detection.
 '''
 
 #MODULES USED:
@@ -42,6 +42,7 @@ import re
 import astroML.time_series
 import imp
 import warnings
+import analysisUtils as au
 warnings.filterwarnings('ignore')
 
 import sys
@@ -53,7 +54,6 @@ else:
 
 from utils import (convert_param_format,initial_clean,run_aegean,
                    var_analysis,lomb_scargle,chi2_calc,errf)
-from Aegean_ObjDet import objdet
 
 ##################################
 #Setup
@@ -209,6 +209,10 @@ outlierFile = data_params["outlierFile"]
 '''OBJECT DETECTION AND SELECTION PARAMETERS'''
 mask_option=data_params["mask_option"]
 if runObj == 'T':
+	try:
+		from Aegean_ObjDet import objdet
+	except ImportError:
+		raise ImportError('Please install Aegean, if you intend to use object detection.')
 	tables = outputPath+label+'whole_dataset_objdet_comp.tab'
 	out_file0=outputPath+label+'whole_dataset_aegean.txt'
 	catalog_input_name=outputPath+label+'whole_dataset_objdet.tab'
@@ -358,15 +362,19 @@ if fit_cutout == 'T':
 if runClean=='U':
     uv_fit='T'
 #only point sources right now
-uv_num=data_params["uv_num"]
+uv_num=int(data_params["uv_num"])
 uv_initp=data_params["uv_initp"]
 phcen_rad=vishead(vis=visibility,mode='get',hdkey='ptcs')
+print 'Phase center set to:'
 phcen=au.rad2radec(phcen_rad[0]['r1'][0][0][0],phcen_rad[0]['r1'][1][0][0],hmsdms=True).replace(',','')
 if uv_initp != '':
 	initp_array=np.loadtxt(uv_initp)
 	init_uv=[]
-	for jj in range(0,uv_num):
-		init_uv.extend([initp_array[i,0],initp_array[i,1],initp_array[i,2]])
+	if uv_num==1:
+		init_uv.extend([initp_array[0],initp_array[1],initp_array[2]])
+	else:
+		for jj in range(0,uv_num):
+			init_uv.extend([initp_array[jj,0],initp_array[jj,1],initp_array[jj,2]])
 else:
 	init_uv=[]
 comp_uv=[]
@@ -691,10 +699,11 @@ if runClean == "T":
 			os.system('sudo rm -rf '+outputPath+label+intervalString+'.*')
 		#uvfitting if requested
 		if uv_fit =='T':
+			print 'UV fitting interval: ', interval
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=[comp_uv],stokes = stokes_param,var=[uv_var], p_ini=[float(src_uv_init.split(',')[0]),float(src_uv_init.split(',')[1]),float(src_uv_init.split(',')[2])],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
 				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
 				fit.fit(redo_fixed=False,reinit_model=False)
@@ -776,6 +785,7 @@ elif runClean == "F":
 			timeIntervals.remove(interval)
 			mjdTimes.remove(time)
 		if uv_fit =='T':
+			print 'UV fitting interval: ', interval
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
@@ -1371,9 +1381,9 @@ if failed=='n':
 		if power_spec=='T':
 			print 'Creating Power Spectrum'
 			if float(intervalSizeDelta.seconds)==0.0:
-				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.microseconds)/1e6,labelP,'lin')
+				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.microseconds)/1e6,labelP)
 			else:
-				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.seconds),labelP,'lin')
+				sig95,sig99=lomb_scargle(mjdTimes,fluxvar,fluxerrvar,float(intervalSizeDelta.seconds),labelP)
 			print labelP+' is saved.'
 		var_file.write('{0} {1} {2}\n'.format('Weighted Mean/Error',wm,wmerr))
 		var_file.write('{0} {1} {2}\n'.format('Chi2 with weighted mean/dof',chi_tot,dof))

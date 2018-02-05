@@ -70,7 +70,8 @@ uv_num: if doing uv fitting, the number of point sources for fitting; integer
 
 uv_initp: if doing uv fitting, provide the path to the intial guess file for uv fitting; string
 Format of this file is a row for each point source, with ra offset from phase center (arcsec),
-dec offset from phase center (arcsec), and flux (Jy) on each row (see uv_init_example.txt for example).
+dec offset from phase center (arcsec), and flux (Jy) on each row. Target MUST be first source in file
+(see uv_init_example.txt for example).
 
 def_times: toggle to manually define start and end times (next 6 params), default is start and end of observation; string,
 options are 'T' or 'F'

@@ -50,6 +50,7 @@ runObj: toggle to run object detection; string, options are 'T' or 'F'; **hard c
 targetBox: target box in pixels, only set if not doing object detection or mask_option='box'; string ('X1,Y1,X2,Y2')
 
 outlierFile: provide path to outlier file for clean if needed; string
+(see example_outlier_file.txt for example).
 
 runClean: toggle to run clean, if off can refit a data set provided images were saved (if saved images a cutout 
 then fit_cutout must be 'T'); string, options are 'T' or 'F' or 'U' (only uv plane); **hard coded to 'T'
@@ -64,6 +65,12 @@ integ_fit: toggle to write both integrated and peak flux to data file; string, o
 uv_fit: toggle to do uv plane fitting; string, options are 'T' or 'F'
 
 uv_fix: toggle to fix position in uv fitting from position of whole data set; string, options are 'T' or 'F'
+
+uv_num: if doing uv fitting, the number of point sources for fitting; integer
+
+uv_initp: if doing uv fitting, provide the path to the intial guess file for uv fitting; string
+Format of this file is a row for each point source, with ra offset from phase center (arcsec),
+dec offset from phase center (arcsec), and flux (Jy) on each row (see uv_init_example.txt for example).
 
 def_times: toggle to manually define start and end times (next 6 params), default is start and end of observation; string,
 options are 'T' or 'F'

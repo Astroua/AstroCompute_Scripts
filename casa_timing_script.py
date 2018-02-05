@@ -358,22 +358,46 @@ if fit_cutout == 'T':
 if runClean=='U':
     uv_fit='T'
 #only point sources right now
-comp_uv='delta'
+uv_num=data_params["uv_num"]
+uv_initp=data_params["uv_initp"]
+phcen_rad=vishead(vis=visibility,mode='get',hdkey='ptcs')
+phcen=au.rad2radec(phcen_rad[0]['r1'][0][0][0],phcen_rad[0]['r1'][1][0][0],hmsdms=True).replace(',','')
+if uv_initp != '':
+	initp_array=np.loadtxt(uv_initp)
+	init_uv=[]
+	for jj in range(0,uv_num):
+		init_uv.extend([initp_array[i,0],initp_array[i,1],initp_array[i,2]])
+else:
+	init_uv=[]
+comp_uv=[]
+var_uv=[]
+for jj in range(0,uv_num):
+	comp_uv.append('delta')
+	var_uv.extend(['p['+str(3*jj)+'],p['+str(3*jj+1)+'],p['+str(3*jj+2)+']'])
+	
 #for VLA 'I,Q,U,V', for SMA 'LL' (from listobs)
 stokes_param=myStokes#data_params["stokes_param"]
 if uv_fit=='T':
-	print 'Fitting full data set in UV Plane-->'
-	combuv=visibility_uv.strip('.ms')
-	mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-	fitfulluv=uvm.uvmultifit(vis=combuv+'_mstransform.ms', spw=spw_choice, column = "data", uniform=False, model=[comp_uv],stokes = stokes_param, var=['p[0],p[1],p[2]'],outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False,finetune=False, method="levenberg")
 	if uv_fix=='F':
-		uv_var='p[0],p[1],p[2]'#'2.8194e-02,8.5502e-03,p[2]'
+		uv_var=var_uv#'2.8194e-02,8.5502e-03,p[2]'
 	elif uv_fix=='T':
-		uv_var=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+',p[2]'#'2.8194e-02,8.5502e-03,p[2]'
-	src_uv_init=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+','+\
-	str(fitfulluv.result['Parameters'][2])#[2.8194e-02,8.5502e-03 , 1.3508e-01]
-	src_uv_err=str(fitfulluv.result['Uncertainties'][0])+','+str(fitfulluv.result['Uncertainties'][1])+','+\
-	str(fitfulluv.result['Uncertainties'][2])#[4.7722e-05 , 3.7205e-05, 1.1192e-04]
+		print 'Fitting full data set in UV Plane-->'
+		combuv=visibility_uv.strip('.ms')
+		mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
+		fitfulluv=uvm.uvmultifit(vis=combuv+'_mstransform.ms', spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=var_uv,p_ini=init_uv, phase_center =phcen,outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False,finetune=False, method="levenberg")
+		uv_var=[]
+		src_uv_init=[]
+		src_uv_err=[]
+		init_uv=[]
+		for jj in range(0,uv_num):
+			uv_var.append(str(fitfulluv.result['Parameters'][3*jj])+','+str(fitfulluv.result['Parameters'][3*jj+1])+',p['+str(3*jj+2)+']')
+			src_uv_init.append(str(fitfulluv.result['Parameters'][3*jj])+','+str(fitfulluv.result['Parameters'][3*jj+1])+','+str(fitfulluv.result['Parameters'][3*jj+2]))
+			src_uv_err.append(str(fitfulluv.result['Uncertainties'][3*jj])+','+str(fitfulluv.result['Uncertainties'][3*jj+1])+','+str(fitfulluv.result['Uncertainties'][3*jj+2]))
+			init_uv.extend([fitfulluv.result['Parameters'][3*jj],fitfulluv.result['Parameters'][3*jj+1],fitfulluv.result['Parameters'][3*jj+2]])
+			#src_uv_init=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+','+\
+			#str(fitfulluv.result['Parameters'][2])#[2.8194e-02,8.5502e-03 , 1.3508e-01]
+			#src_uv_err=str(fitfulluv.result['Uncertainties'][0])+','+str(fitfulluv.result['Uncertainties'][1])+','+\
+			#str(fitfulluv.result['Uncertainties'][2])#[4.7722e-05 , 3.7205e-05, 1.1192e-04]
 ##################################
 
 
@@ -755,7 +779,7 @@ elif runClean == "F":
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=[comp_uv],stokes = stokes_param,var=[uv_var], p_ini=[float(src_uv_init.split(',')[0]),float(src_uv_init.split(',')[1]),float(src_uv_init.split(',')[2])],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
 				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
 				fit.fit(redo_fixed=False,reinit_model=False)
@@ -770,7 +794,7 @@ elif runClean == 'U':
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=[comp_uv],stokes = stokes_param,var=[uv_var], p_ini=[float(src_uv_init.split(',')[0]),float(src_uv_init.split(',')[1]),float(src_uv_init.split(',')[2])],outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
 				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
 				fit.fit(redo_fixed=False,reinit_model=False)

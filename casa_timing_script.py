@@ -359,17 +359,17 @@ if fit_cutout == 'T':
 	cen_radius='['+str(annulus_rad_inner)+'pix,'+str(annulus_rad_outer)+'pix]'
 
 '''UV FITTING PARAMETERS'''
+#only point sources right now!
 if runClean=='U':
     uv_fit='T'
-#only point sources right now
 uv_initp=data_params["uv_initp"]
-file_uv0=open(uv_initp)
-uv_num=sum(1 for line in file_uv0)-1
-file_uv0.close()
 phcen_rad=vishead(vis=visibility,mode='get',hdkey='ptcs')
 print 'Phase center set to:'
 phcen=au.rad2radec(phcen_rad[0]['r1'][0][0][0],phcen_rad[0]['r1'][1][0][0],hmsdms=True).replace(',','')
 if uv_initp != '':
+	file_uv0=open(uv_initp)
+	uv_num=sum(1 for line in file_uv0)-1
+	file_uv0.close()
 	initp_array=np.loadtxt(uv_initp)
 	init_uv=[]
 	if uv_num==1:
@@ -379,6 +379,7 @@ if uv_initp != '':
 			init_uv.extend([initp_array[jj,0],initp_array[jj,1],initp_array[jj,2]])
 else:
 	init_uv=[]
+	uv_num=1
 comp_uv=[]
 var_uv=[]
 for jj in range(0,uv_num):

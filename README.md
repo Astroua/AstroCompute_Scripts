@@ -14,18 +14,20 @@ A collection of python scripts to create high time resolution light curves from 
    * If using CASA v5 and above, use instructions [here](http://docs.astropy.org/en/stable/install.html) <br/>
    e.g., `casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"`<br/>
    `casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"`
+* **analysisUtils** (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
 * (*optional*) For UV plane fitting, **uvmultifit** (get it [here](http://nordic-alma.se/support/software-tools))
 * (*optional*) To use object detection,
-   * **analysisUtils** (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
    * **aegean** (see [here](https://github.com/PaulHancock/Aegean)) <br/>
    To install, 
    `casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"`
 
 ## If you want to use these scripts on your own machine, you only need,
 1. **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.
+      * Please create a split MS, with only the target present, for these scripts.
       * All parameters need to be carefully considered and changed for each new data set.
       * If you have a complicated field with other sources it is recommended that you use your own mask file (with clean boxes     around bright sources; mask_option='file') for cleaning, or run object detection, which will create a mask file with a       boxed region around each detected source (mask_option='aegean').
       * If you are using an outlier field file, please follow the example template in example_outlier_file.txt.
+      * If you are doing uv fitting, please follow the example inital paramters template in uv_init_example.txt.
       * Included in casa_timing_script.py is the option to run basic variability analysis:
          * Calculate weighted mean and do a chi^2 with a constant flux model,
          * Calculate excess variance,

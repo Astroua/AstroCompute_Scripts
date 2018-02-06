@@ -395,7 +395,10 @@ if uv_fit=='T':
 		print 'Fitting full data set in UV Plane-->'
 		combuv=visibility_uv.strip('.ms')
 		mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-		fitfulluv=uvm.uvmultifit(vis=combuv+'_mstransform.ms', spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=var_uv,p_ini=init_uv, phase_center =phcen,outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False,finetune=False, method="levenberg")
+		if uv_initp=='':
+			fitfulluv=uvm.uvmultifit(vis=combuv+'_mstransform.ms', spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=var_uv, phase_center =phcen,outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False,finetune=False, method="levenberg")
+		else:
+			fitfulluv=uvm.uvmultifit(vis=combuv+'_mstransform.ms', spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=var_uv,p_ini=init_uv, phase_center =phcen,outfile = outputPath+label+'whole_dataset_uv.txt', OneFitPerChannel=False ,cov_return=False,finetune=False, method="levenberg")
 		uv_var=[]
 		src_uv_init=[]
 		src_uv_err=[]
@@ -706,7 +709,10 @@ if runClean == "T":
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				if uv_initp=='':
+					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				else:
+					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
 				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
 				fit.fit(redo_fixed=False,reinit_model=False)
@@ -792,7 +798,10 @@ elif runClean == "F":
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				if uv_initp=='':
+					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				else:
+					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
 				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
 				fit.fit(redo_fixed=False,reinit_model=False)
@@ -807,7 +816,10 @@ elif runClean == 'U':
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-				fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				if uv_initp=='':
+					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				else:
+					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
 				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
 				fit.fit(redo_fixed=False,reinit_model=False)

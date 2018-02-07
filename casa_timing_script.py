@@ -14,8 +14,8 @@ Last Updated: Feb 2018
 Tested on: CASA version 5.1.2
 
 TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
-Uncomment at line 621 if you want time-bins printed to screen.
-Uncomment at line 1116 if you want light curve results printed to screen.
+Uncomment at line 620 if you want time-bins printed to screen.
+Uncomment at line 1115 if you want light curve results printed to screen.
 
 NOTE: path_dir is path to input/output directory of your choice
 -MS's need to be in path_dir/data,
@@ -119,6 +119,10 @@ visibility_uv= visibility.rstrip('.ms') + '_uv.ms'
 if uv_fit=='T':
     if not os.path.isdir(visibility_uv):
     	os.system('cp -r '+visibility+' '+visibility_uv)
+    try:
+		import uvmultifit as uvm
+	except ImportError:
+		raise ImportError('Please install uvmultifit, if you intend to do UV fitting.')
 
 ''' VARIABILITY ANALYSIS'''
 #Do you want a basic variability analysis?
@@ -403,11 +407,10 @@ for jj in range(0,uv_num):
 	comp_uv.append('delta')
 	var_uv.extend(['p['+str(3*jj)+'],p['+str(3*jj+1)+'],p['+str(3*jj+2)+']'])
 	
-#for VLA 'I,Q,U,V', for SMA 'LL' (from listobs)
-stokes_param=myStokes#data_params["stokes_param"]
+stokes_param=myStokes#for VLA 'I,Q,U,V', for SMA 'LL' (from listobs)
 if uv_fit=='T':
 	if uv_fix=='F':
-		uv_var=var_uv#'2.8194e-02,8.5502e-03,p[2]'
+		uv_var=var_uv
 	elif uv_fix=='T':
 		print 'Fitting full data set in UV Plane-->'
 		combuv=visibility_uv.strip('.ms')
@@ -425,10 +428,6 @@ if uv_fit=='T':
 			src_uv_init.append(str(fitfulluv.result['Parameters'][3*jj])+','+str(fitfulluv.result['Parameters'][3*jj+1])+','+str(fitfulluv.result['Parameters'][3*jj+2]))
 			src_uv_err.append(str(fitfulluv.result['Uncertainties'][3*jj])+','+str(fitfulluv.result['Uncertainties'][3*jj+1])+','+str(fitfulluv.result['Uncertainties'][3*jj+2]))
 			init_uv.extend([fitfulluv.result['Parameters'][3*jj],fitfulluv.result['Parameters'][3*jj+1],fitfulluv.result['Parameters'][3*jj+2]])
-			#src_uv_init=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+','+\
-			#str(fitfulluv.result['Parameters'][2])#[2.8194e-02,8.5502e-03 , 1.3508e-01]
-			#src_uv_err=str(fitfulluv.result['Uncertainties'][0])+','+str(fitfulluv.result['Uncertainties'][1])+','+\
-			#str(fitfulluv.result['Uncertainties'][2])#[4.7722e-05 , 3.7205e-05, 1.1192e-04]
 ##################################
 
 

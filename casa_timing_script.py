@@ -119,7 +119,7 @@ visibility_uv= visibility.rstrip('.ms') + '_uv.ms'
 if uv_fit=='T':
     if not os.path.isdir(visibility_uv):
     	os.system('cp -r '+visibility+' '+visibility_uv)
-    try:
+	try:
 		import uvmultifit as uvm
 	except ImportError:
 		raise ImportError('Please install uvmultifit, if you intend to do UV fitting.')

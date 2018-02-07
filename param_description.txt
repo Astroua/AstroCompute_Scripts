@@ -8,6 +8,8 @@ refFrequency: frequency band of observations; string
 
 intervalSizeX: time bin size, H is hours (integer), M is minutes (integer), S is seconds (integer or float)
 
+interval_set: instead of specifying an HMS for teh timebin, you can select 'int' (integration time) or 'scan' (scan timescale); string
+
 visibility: path to CASA MS; string
 
 imageSize: image size in pixels; integer

@@ -22,6 +22,9 @@ def test_intervalSizeM(form,field):
 def test_intervalSizeS(form,field):
 	if field.data < 0. or field.data >= 60.:
 		raise ValueError("Value must be between 0.0 and 59.9. Please change input.")
+def test_interval_set(form,field):
+	if field.data not in ['int','scan']:
+		raise ValueError("Value must be int or scan, please change input")
 def test_visibility(form,field):
 	if not isinstance(field.data,str):
 		raise ValueError("Value entered is not a string. Please change input to a string format.")
@@ -145,6 +148,9 @@ def test_uv_fix(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:
 		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
+def test_uv_initp(form,field):
+	if not isinstance(field.data,str):
+		raise ValueError("Value entered is not a string. Please change input to a string format.")
 def test_def_times(form,field):
 	allowed=['T','F']
 	if field.data not in allowed:

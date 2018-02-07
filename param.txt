@@ -4,6 +4,7 @@ refFrequency ='6GHz'
 intervalSizeH = 0
 intervalSizeM = 0
 intervalSizeS = 10
+interval_set = ''
 visibility = 'testconcat.ms'
 imageSize = 256
 numberIters = 5000

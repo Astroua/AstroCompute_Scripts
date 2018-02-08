@@ -1328,68 +1328,81 @@ if failed=='n':
 	if runClean != 'U':
 	    if integ_fit == 'B':
 	    	fig1=pp.figure()
-	    	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-	    	pp.xlabel('Time since start of observation (mins)')
+	    	ax=pp.gca()
+	    	ax.get_yaxis().get_major_formatter().set_useOffset(False)
+	    	ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+	    	ax.set_xlabel('Time since start of observation (mins)')
 	    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
-	    	pp.ylabel(y_label_name)
-	    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    	ax.set_ylabel(y_label_name)
+	    	ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+	    	ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	    	savestring = os.path.join(path_dir,
 	                                  'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+
 	                                  str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.pdf')
 	    	pp.savefig(savestring)
 	    	print savestring, ' is saved'
 	    	fig2=pp.figure()
-	    	pp.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
-	    	pp.xlabel('Time since start of observation (mins)')
+	    	ax=pp.gca()
+	    	ax.get_yaxis().get_major_formatter().set_useOffset(False)
+	    	ax.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
+	    	ax.set_xlabel('Time since start of observation (mins)')
 	    	y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
-	    	pp.ylabel(y_label_name2)
-	    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    	ax.set_ylabel(y_label_name2)
+	    	ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+	    	ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	    	savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.pdf')
 	    	pp.savefig(savestring2)
 	    	print savestring2, ' is saved'
 	    	if uv_fit=='T':
 	    		fig3=pp.figure()
-	    		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-	    		pp.xlabel('Time since start of observation (mins)')
+	    		ax=pp.gca()
+	    		ax.get_yaxis().get_major_formatter().set_useOffset(False)
+	    		ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+	    		ax.set_xlabel('Time since start of observation (mins)')
 	    		y_label_name='Flux Density (mJy/beam)'
-	    		pp.ylabel(y_label_name)
-	    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    		ax.set_ylabel(y_label_name)
+	    		ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+	    		ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.pdf')
 	    		pp.savefig(savestring)
 	    		print savestring, ' is saved'
 
 	    else:
-	    	pp.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-	    	pp.xlabel('Time since start of observation (mins)')
+	    	fig4=pp.figure()
+	    	ax=pp.gca()
+	    	ax.get_yaxis().get_major_formatter().set_useOffset(False)
+	    	ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+	    	ax.set_xlabel('Time since start of observation (mins)')
 	    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
-	    	pp.ylabel(y_label_name)
-	    	pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	    	pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    	ax.set_ylabel(y_label_name)
+	    	ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+	    	ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	    	savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.pdf')
 	    	pp.savefig(savestring)
 	    	print savestring, ' is saved'
 	    	if uv_fit=='T':
-	    		fig3=pp.figure()
-	    		pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-	    		pp.xlabel('Time since start of observation (mins)')
+	    		fig5=pp.figure()
+	    		ax=pp.gca()
+	    		ax.get_yaxis().get_major_formatter().set_useOffset(False)
+	    		ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+	    		ax.set_xlabel('Time since start of observation (mins)')
 	    		y_label_name='Flux Density (mJy/beam)'
-	    		pp.ylabel(y_label_name)
-	    		pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	    		pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    		ax.set_ylabel(y_label_name)
+	    		ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+	    		ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
 	    		pp.savefig(savestring)
 	    		print savestring, ' is saved'
 	else:
-	    fig4=pp.figure()
-	    pp.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-	    pp.xlabel('Time since start of observation (mins)')
+	    fig6=pp.figure()
+	    ax=pp.gca()
+	    ax.get_yaxis().get_major_formatter().set_useOffset(False)
+	    ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+	    ax.set_xlabel('Time since start of observation (mins)')
 	    y_label_name='Flux Density (mJy/beam)'
-	    pp.ylabel(y_label_name)
-	    pp.title('Flux Density vs Time. '+target+' '+refFrequency)
-	    pp.xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+	    ax.set_ylabel(y_label_name)
+	    ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+	    ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
 	    savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
 	        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
 	    pp.savefig(savestring)

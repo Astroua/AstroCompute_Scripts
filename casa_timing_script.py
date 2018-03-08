@@ -10,7 +10,7 @@ NOTES: - This script is theoretically compatible with any data that can be impor
          but has only been tested with VLA, ATCA, ALMA, SMA, and NOEMA data.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
-Last Updated: Feb 2018
+Last Updated: March 2018
 Tested on: CASA version 5.1.2
 
 TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
@@ -41,6 +41,9 @@ from scipy.stats import norm
 import re
 import astroML.time_series
 import imp
+import matplotlib.cm as cm
+import glob
+from astropy.io import fits
 import warnings
 import analysisUtils as au
 warnings.filterwarnings('ignore')
@@ -53,7 +56,7 @@ else:
     raise Exception('Please set the path to the AstroCompute_Scripts directory correctly.')
 
 from utils import (convert_param_format,initial_clean,run_aegean,
-                   var_analysis,lomb_scargle,chi2_calc,errf)
+                   var_analysis,lomb_scargle,chi2_calc,errf,image_iterate)
 
 ##################################
 #Setup
@@ -119,10 +122,6 @@ visibility_uv= visibility.rstrip('.ms') + '_uv.ms'
 if uv_fit=='T':
     if not os.path.isdir(visibility_uv):
     	os.system('cp -r '+visibility+' '+visibility_uv)
-	try:
-		import uvmultifit as uvm
-	except ImportError:
-		raise ImportError('Please install uvmultifit, if you intend to do UV fitting.')
 
 ''' VARIABILITY ANALYSIS'''
 #Do you want a basic variability analysis?
@@ -189,6 +188,10 @@ else:
 	fit_cutout = 'F'
 # define start and end time yourself
 def_times = data_params["def_times"]
+#at end of script, do you want o view images "rapid fire" mode?
+image_view=data_params["image_view"]
+#and what timescale between them?
+im_shift_time=int(data_params["im_shift_time"])
 
 '''CLEAN PARAMETERS'''
 # The clean command (line 530) should be inspected closely to ensure all arguments are appropriate before
@@ -233,7 +236,7 @@ if runObj == 'T':
 	try:
 		from Aegean_ObjDet import objdet
 	except ImportError:
-		raise ImportError('Please install Aegean, if you intend to use object detection.')
+		raise ImportError('Plese install Aegean, if you intend to use object detection.')
 	tables = outputPath+label+'whole_dataset_objdet_comp.tab'
 	out_file0=outputPath+label+'whole_dataset_aegean.txt'
 	catalog_input_name=outputPath+label+'whole_dataset_objdet.tab'
@@ -380,7 +383,7 @@ if fit_cutout == 'T':
 	cen_radius='['+str(annulus_rad_inner)+'pix,'+str(annulus_rad_outer)+'pix]'
 
 '''UV FITTING PARAMETERS'''
-#only point sources right now!
+#only point sources right now
 if runClean=='U':
     uv_fit='T'
 uv_initp=data_params["uv_initp"]
@@ -407,10 +410,11 @@ for jj in range(0,uv_num):
 	comp_uv.append('delta')
 	var_uv.extend(['p['+str(3*jj)+'],p['+str(3*jj+1)+'],p['+str(3*jj+2)+']'])
 	
-stokes_param=myStokes#for VLA 'I,Q,U,V', for SMA 'LL' (from listobs)
+#for VLA 'I,Q,U,V', for SMA 'LL' (from listobs)
+stokes_param=myStokes#data_params["stokes_param"]
 if uv_fit=='T':
 	if uv_fix=='F':
-		uv_var=var_uv
+		uv_var=var_uv#'2.8194e-02,8.5502e-03,p[2]'
 	elif uv_fix=='T':
 		print 'Fitting full data set in UV Plane-->'
 		combuv=visibility_uv.strip('.ms')
@@ -428,6 +432,10 @@ if uv_fit=='T':
 			src_uv_init.append(str(fitfulluv.result['Parameters'][3*jj])+','+str(fitfulluv.result['Parameters'][3*jj+1])+','+str(fitfulluv.result['Parameters'][3*jj+2]))
 			src_uv_err.append(str(fitfulluv.result['Uncertainties'][3*jj])+','+str(fitfulluv.result['Uncertainties'][3*jj+1])+','+str(fitfulluv.result['Uncertainties'][3*jj+2]))
 			init_uv.extend([fitfulluv.result['Parameters'][3*jj],fitfulluv.result['Parameters'][3*jj+1],fitfulluv.result['Parameters'][3*jj+2]])
+			#src_uv_init=str(fitfulluv.result['Parameters'][0])+','+str(fitfulluv.result['Parameters'][1])+','+\
+			#str(fitfulluv.result['Parameters'][2])#[2.8194e-02,8.5502e-03 , 1.3508e-01]
+			#src_uv_err=str(fitfulluv.result['Uncertainties'][0])+','+str(fitfulluv.result['Uncertainties'][1])+','+\
+			#str(fitfulluv.result['Uncertainties'][2])#[4.7722e-05 , 3.7205e-05, 1.1192e-04]
 ##################################
 
 
@@ -717,6 +725,12 @@ if runClean == "T":
 					immath(imagename=outputPath+label+intervalString+imSuffix,mode='evalexpr',expr='IM0',region='annulus['+cen_annulus+','+cen_radius+']',outfile=outputPath+label+intervalString+'_rms'+imSuffix)
 					os.system('sudo rm -rf '+outputPath+label+intervalString+'.*')
 					os.system('sudo mv '+outputPath+label+intervalString+'_temp'+imSuffix+' '+outputPath+label+intervalString+imSuffix)
+					if image_view=='T':
+						img_dir=os.path.join(outputPath,'fits_files/')
+						if not os.path.isdir(img_dir):
+							os.mkdir(img_dir)
+						exportfits(imagename=outputPath+label+intervalString+imSuffix,fitsimage=outputPath+label+intervalString+imSuffix+'.fits')
+						os.system('sudo mv '+outputPath+label+intervalString+imSuffix+'.fits'+' '+img_dir)
 		else:
 			print '\nCLEAN failed on interval ' + interval + '.'
 			counter_fail=counter_fail+1
@@ -730,10 +744,10 @@ if runClean == "T":
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-				if uv_initp=='':
-					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				if uv_initp == '':
+					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False,model=comp_uv,stokes = stokes_param, var=uv_var, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 				else:
-					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False,model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
 				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
 				fit.fit(redo_fixed=False,reinit_model=False)
@@ -819,8 +833,8 @@ elif runClean == "F":
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-				if uv_initp=='':
-					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
+				if uv_initp == '':
+					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 				else:
 					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms',MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
@@ -837,9 +851,10 @@ elif runClean == 'U':
 			if np.where(np.array(timeIntervals)==interval)[0][0]==0:
 				combuv=visibility_uv.strip('.ms')
 				mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
-				if uv_initp=='':
+				if uv_initp == '':
 					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 				else:
+				#mstransform(vis=visibility_uv,outputvis=combuv+'_mstransform.ms',combinespws=True,spw='',datacolumn='data')
 					fit=uvm.uvmultifit(vis=combuv+'_mstransform.ms', MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv],spw=spw_choice, column = "data", uniform=False, model=comp_uv,stokes = stokes_param, var=uv_var,p_ini=init_uv, phase_center =phcen,outfile = outputPath+'uvfit_'+target+'_'+refFrequency+'_'+obsDate+'_'+intervalString+'.txt',OneFitPerChannel=False ,cov_return=False, finetune=False, method="levenberg")
 			else:
 				fit.MJDrange=[time_uv-(intervalSizeH/24.+intervalSizeM/(24.*60.)+intervalSizeS/(24.*60.*60.)),time_uv]
@@ -1327,86 +1342,85 @@ if failed=='n':
 		Elapsed=hoursElapsed
 	if runClean != 'U':
 	    if integ_fit == 'B':
-	    	fig1=pp.figure()
-	    	ax=pp.gca()
-	    	ax.get_yaxis().get_major_formatter().set_useOffset(False)
-	    	ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-	    	ax.set_xlabel('Time since start of observation (mins)')
-	    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
-	    	ax.set_ylabel(y_label_name)
-	    	ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-	    	ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    	savestring = os.path.join(path_dir,
-	                                  'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+
-	                                  str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.pdf')
-	    	pp.savefig(savestring)
-	    	print savestring, ' is saved'
-	    	fig2=pp.figure()
-	    	ax=pp.gca()
-	    	ax.get_yaxis().get_major_formatter().set_useOffset(False)
-	    	ax.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
-	    	ax.set_xlabel('Time since start of observation (mins)')
-	    	y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
-	    	ax.set_ylabel(y_label_name2)
-	    	ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-	    	ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    	savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.pdf')
-	    	pp.savefig(savestring2)
-	    	print savestring2, ' is saved'
-	    	if uv_fit=='T':
-	    		fig3=pp.figure()
-	    		ax=pp.gca()
-	    		ax.get_yaxis().get_major_formatter().set_useOffset(False)
-	    		ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-	    		ax.set_xlabel('Time since start of observation (mins)')
-	    		y_label_name='Flux Density (mJy/beam)'
-	    		ax.set_ylabel(y_label_name)
-	    		ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-	    		ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.pdf')
-	    		pp.savefig(savestring)
-	    		print savestring, ' is saved'
-
+			fig1=pp.figure()
+			ax = pp.gca()
+			ax.get_yaxis().get_major_formatter().set_useOffset(False)
+			ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+			ax.set_xlabel('Time since start of observation (mins)')
+			y_label_name='Flux Density (mJy'+plot_label_unit+')'
+			ax.set_ylabel(y_label_name)
+			ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+			ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+			savestring = os.path.join(path_dir,
+						              'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+
+						              str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.pdf')
+			pp.savefig(savestring)
+			print savestring, ' is saved'
+			fig2=pp.figure()
+			ax = pp.gca()
+			ax.get_yaxis().get_major_formatter().set_useOffset(False)
+			ax.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
+			ax.set_xlabel('Time since start of observation (mins)')
+			y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
+			ax.set_ylabel(y_label_name2)
+			ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+			ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+			savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.pdf')
+			pp.savefig(savestring2)
+			print savestring2, ' is saved'
+			if uv_fit=='T':
+				fig3=pp.figure()
+				ax = pp.gca()
+				ax.get_yaxis().get_major_formatter().set_useOffset(False)
+				ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+				ax.set_xlabel('Time since start of observation (mins)')
+				y_label_name='Flux Density (mJy/beam)'
+				ax.set_ylabel(y_label_name)
+				ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+				ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+				savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.pdf')
+				pp.savefig(savestring)
+				print savestring, ' is saved'
 	    else:
-	    	fig4=pp.figure()
-	    	ax=pp.gca()
-	    	ax.get_yaxis().get_major_formatter().set_useOffset(False)
-	    	ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-	    	ax.set_xlabel('Time since start of observation (mins)')
-	    	y_label_name='Flux Density (mJy'+plot_label_unit+')'
-	    	ax.set_ylabel(y_label_name)
-	    	ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-	    	ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    	savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.pdf')
-	    	pp.savefig(savestring)
-	    	print savestring, ' is saved'
-	    	if uv_fit=='T':
-	    		fig5=pp.figure()
-	    		ax=pp.gca()
-	    		ax.get_yaxis().get_major_formatter().set_useOffset(False)
-	    		ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-	    		ax.set_xlabel('Time since start of observation (mins)')
-	    		y_label_name='Flux Density (mJy/beam)'
-	    		ax.set_ylabel(y_label_name)
-	    		ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-	    		ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
-	    		pp.savefig(savestring)
-	    		print savestring, ' is saved'
+			fig4=pp.figure()
+			ax = pp.gca()
+			ax.get_yaxis().get_major_formatter().set_useOffset(False)
+			ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+			ax.set_xlabel('Time since start of observation (mins)')
+			y_label_name='Flux Density (mJy'+plot_label_unit+')'
+			ac.set_ylabel(y_label_name)
+			ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+			ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+			savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.pdf')
+			pp.savefig(savestring)
+			print savestring, ' is saved'
+			if uv_fit=='T':
+				fig5=pp.figure()
+				ax = pp.gca()
+				ax.get_yaxis().get_major_formatter().set_useOffset(False)
+				ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+				ax.set_xlabel('Time since start of observation (mins)')
+				y_label_name='Flux Density (mJy/beam)'
+				ax.set_ylabel(y_label_name)
+				ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+				ax.setxlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+				savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
+				pp.savefig(savestring)
+				print savestring, ' is saved'
 	else:
-	    fig6=pp.figure()
-	    ax=pp.gca()
-	    ax.get_yaxis().get_major_formatter().set_useOffset(False)
-	    ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-	    ax.set_xlabel('Time since start of observation (mins)')
-	    y_label_name='Flux Density (mJy/beam)'
-	    ax.set_ylabel(y_label_name)
-	    ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-	    ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-	    savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-	        str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
-	    pp.savefig(savestring)
-	    print savestring, ' is saved'
+		fig6=pp.figure()
+		ax = pp.gca()
+		ax.get_yaxis().get_major_formatter().set_useOffset(False)
+		ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+		ax.set_xlabel('Time since start of observation (mins)')
+		y_label_name='Flux Density (mJy/beam)'
+		ax.set_ylabel(y_label_name)
+		ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+		ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+			str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
+		pp.savefig(savestring)
+		print savestring, ' is saved'
 	##################################
 	##################################
 	#Basic Variability Tests
@@ -1442,6 +1456,17 @@ if failed=='n':
 			var_file.write('{0} {1} {2}\n'.format('95% and 99% Significance Levels for Periodogram',sig95,sig99))
 		var_file.close()
 		print dataPathVar+ 'is saved.'
+	##################################
+
+	##################################
+	#Scan through all timebin images
+	##################################
+	if image_view=='T':
+		raw_input('Start scan through images...press enter when ready')
+		if os.path.isdir(os.path.join(outputPath,'fits_files/')):
+			img_files = glob.glob(os.path.join(img_dir, '*.fits'))
+			if len(img_files) >0.:
+				image_iterate(os.path.join(outputPath,'fits_files/'),im_shift_time,timeIntervals)
 	##################################
 
 ##################################

@@ -87,3 +87,7 @@ endX: manual end date in format integer day, month, year; string, only set if de
 lc_scale_unit: unit for lightcurve flux density; string, options are '' (Jy), 'm' (mJy), 'u' (microJy), default is 'm'
 
 lc_scale_time: unit for lightcurve time; string, options are 'H' (hours), 'M' (minutes), 'S' (seconds), default is 'M'
+
+image_view: Do you want to interactively scan through the time bin images at end of script; string, options are 'T' of 'F'
+
+im_shift_time: if imag_view set to 'T', this is the time interval in seconds between images in the viewer; integer

@@ -6,6 +6,10 @@ from scipy.stats import norm
 import matplotlib.pyplot as pp
 import numpy as np
 from scipy.stats import chi2
+import matplotlib.cm as cm
+import glob
+import os
+from astropy.io import fits
 #timing script needs these, but don't need if running object detection by itself!
 try:
   import casac
@@ -108,15 +112,15 @@ def run_aegean(tables,cellSize_string):
     cellSize_list=re.findall('\d+|\D+', cellSize_string)
     cellSize0=float(cellSize_list[0]+cellSize_list[1]+cellSize_list[2])
     with open(tables) as f:
-    	lines=f.readlines()
+      lines=f.readlines()
     for i in range(1,len(lines)):
-    	lin_split=lines[i].split('\t')
-    	src_list.append(lin_split[0])
-    	ra_list.append(lin_split[4])#string
-    	dec_list.append(lin_split[5])#string
-    	maj_list.append(float(lin_split[14])/cellSize0)#pix
-    	min_list.append(float(lin_split[16])/cellSize0)#pix
-    	pos_list.append(float(lin_split[18]))#deg
+      lin_split=lines[i].split('\t')
+      src_list.append(lin_split[0])
+      ra_list.append(lin_split[4])#string
+      dec_list.append(lin_split[5])#string
+      maj_list.append(float(lin_split[14])/cellSize0)#pix
+      min_list.append(float(lin_split[16])/cellSize0)#pix
+      pos_list.append(float(lin_split[18]))#deg
     return(src_list,ra_list,dec_list,maj_list,min_list,pos_list)
 
 def initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,robust,weighting):
@@ -178,7 +182,7 @@ def chi2_calc(flux,fluxerr):
    chi_tot_fix=((residual_fix**2).sum())
    null_hyp_fix=chi2.sf(chi_tot_fix,(np.array(flux).shape[0])-1)
    return(chi_tot_fix,dof_fix,wm_fix,un_fix,null_hyp_fix)
-	
+  
 def lomb_scargle(time,flux,fluxerr,interval,label):
    '''Generalized LS periodogram (Note: Power is normalized between 0 and 1)
    
@@ -238,3 +242,23 @@ def var_analysis(flux,fluxerr):
       ex_var_err=np.sqrt((np.sqrt(2/len(flux))*rms_mean/wm**2)**2+(np.sqrt(rms_mean/len(flux))*2.*frac_rms/wm)**2)
       frac_rms_err=(1./2.*frac_rms)*ex_var_err
    return(chi_tot,dof,null,wm,wmerr,ex_var,ex_var_err,frac_rms,frac_rms_err)
+
+def image_iterate(img_dir,shift_time,timeIntervals):
+  img_files = glob.glob(os.path.join(img_dir, '*.fits'))
+  if len(img_files) != len(timeIntervals):
+    raise Exception('Error: Different number of images compared to time bins.')
+  print 'Flipping through all time-bin images on a ',shift_time,'second timescale...'
+  fig=pp.figure()
+  for f in range(0,len(img_files)):
+    hdu=fits.open(img_files[f])[0]
+    data=hdu.data
+    ax1= fig.add_subplot(111)
+    im=pp.imshow(np.nan_to_num(data[0,0,:,:])*1e3,origin='lower',cmap=cm.get_cmap('jet',500),vmin=np.min(data[0,0,:,:])*1e3,vmax=np.max(data[0,0,:,:])*1e3)
+    if f==0:
+      cbar=pp.colorbar(im,orientation='vertical',fraction=0.04,pad=0)
+      cbar.set_label('mJy/bm')
+      ax1.set_xlabel('Right Ascension')
+      ax1.set_ylabel('Declination')
+    pp.title(timeIntervals[f],color='k')
+    pp.pause(shift_time)
+    pp.draw()

@@ -227,3 +227,10 @@ def test_lc_scale_time(form,field):
 		raise ValueError("Value entered is not a string. Please change input to a string format.")
 	if field.data not in allowed:
 		raise ValueError("Value entered is invalid. Please enter 'H' or 'M', or 'S'.")
+def test_image_view(form,field):
+	allowed=['T','F']
+	if field.data not in allowed:
+		raise ValueError("Value entered is invalid. Please enter 'T' or 'F'.")
+def test_im_shift_time(form,field):
+	if not isinstance(field.data,int):
+		raise ValueError("Value must be an integer. Please change input.")

@@ -1335,7 +1335,7 @@ if failed=='n':
 	    for i in range(0,len(fluxDensity3)):
 	        data.write('{0:.12f} {1:.3f} {2:.3f}\n'.format(mjdTimes[i],fluxDensity3[i],fluxError3[i]))
 	data.close()
-	print dataPath+' is saved.'
+	print dataPath+' is saved.\n'
 	#if only doing ful observation, print out total flux
 	if nums==1:
 		if lc_scale_unit=='m':
@@ -1346,107 +1346,108 @@ if failed=='n':
 			unitp='nJy'
 		else:
 			unitp='Jy'
-		print 'Total Flux: ', "{0:.1f}".format(fluxDensity[0]),'+/-',"{0:.1f}".format(fluxError_real[0]),unitp
+		print 'Total Flux at ',refFrequency,': ', "{0:.1f}".format(fluxDensity[0]),'+/-',"{0:.1f}".format(fluxError_real[0]),unitp,'\n'
 	##################################
 	##################################
 	#Plot Lightcurves
 	##################################
-	print 'Plotting Light curves...\n'
-	minutesElapsed=[]
-	secondsElapsed=[]
-	hoursElapsed=[]
-	for i in range(len(mjdTimes)):
-	    hoursElapsed.append((mjdTimes[i]-mjdTimes[0])*24+intervalSizeS/(60.0*60.0*2.0))
-	    minutesElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60+intervalSizeS/(60.0*2.0))
-	    secondsElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60*60+intervalSizeS/2.0)
+	if nums>1:
+		print 'Plotting Light curves...\n'
+		minutesElapsed=[]
+		secondsElapsed=[]
+		hoursElapsed=[]
+		for i in range(len(mjdTimes)):
+		    hoursElapsed.append((mjdTimes[i]-mjdTimes[0])*24+intervalSizeS/(60.0*60.0*2.0))
+		    minutesElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60+intervalSizeS/(60.0*2.0))
+		    secondsElapsed.append((mjdTimes[i]-mjdTimes[0])*24*60*60+intervalSizeS/2.0)
 
-	if lc_scale_time=='M':
-		Elapsed=minutesElapsed
-	elif lc_scale_time=='S':
-		Elapsed=secondsElapsed
-	elif lc_scale_time=='H':
-		Elapsed=hoursElapsed
-	if runClean != 'U':
-	    if integ_fit == 'B':
-			fig1=pp.figure()
-			ax = pp.gca()
-			ax.get_yaxis().get_major_formatter().set_useOffset(False)
-			ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-			ax.set_xlabel('Time since start of observation (mins)')
-			y_label_name='Flux Density (mJy'+plot_label_unit+')'
-			ax.set_ylabel(y_label_name)
-			ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-			ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-			savestring = os.path.join(path_dir,
-						              'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+
-						              str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.pdf')
-			pp.savefig(savestring)
-			print savestring, ' is saved'
-			fig2=pp.figure()
-			ax = pp.gca()
-			ax.get_yaxis().get_major_formatter().set_useOffset(False)
-			ax.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
-			ax.set_xlabel('Time since start of observation (mins)')
-			y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
-			ax.set_ylabel(y_label_name2)
-			ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-			ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-			savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.pdf')
-			pp.savefig(savestring2)
-			print savestring2, ' is saved'
-			if uv_fit=='T':
-				fig3=pp.figure()
+		if lc_scale_time=='M':
+			Elapsed=minutesElapsed
+		elif lc_scale_time=='S':
+			Elapsed=secondsElapsed
+		elif lc_scale_time=='H':
+			Elapsed=hoursElapsed
+		if runClean != 'U':
+		    if integ_fit == 'B':
+				fig1=pp.figure()
 				ax = pp.gca()
 				ax.get_yaxis().get_major_formatter().set_useOffset(False)
-				ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+				ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
 				ax.set_xlabel('Time since start of observation (mins)')
-				y_label_name='Flux Density (mJy/beam)'
+				y_label_name='Flux Density (mJy'+plot_label_unit+')'
 				ax.set_ylabel(y_label_name)
 				ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
 				ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-				savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.pdf')
+				savestring = os.path.join(path_dir,
+							              'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+
+							              str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_integ.pdf')
 				pp.savefig(savestring)
 				print savestring, ' is saved'
-	    else:
-			fig4=pp.figure()
-			ax = pp.gca()
-			ax.get_yaxis().get_major_formatter().set_useOffset(False)
-			ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
-			ax.set_xlabel('Time since start of observation (mins)')
-			y_label_name='Flux Density (mJy'+plot_label_unit+')'
-			ac.set_ylabel(y_label_name)
-			ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-			ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-			savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.pdf')
-			pp.savefig(savestring)
-			print savestring, ' is saved'
-			if uv_fit=='T':
-				fig5=pp.figure()
+				fig2=pp.figure()
 				ax = pp.gca()
 				ax.get_yaxis().get_major_formatter().set_useOffset(False)
-				ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+				ax.errorbar(Elapsed, fluxDensity2, yerr=fluxError_real, fmt='ro',)
 				ax.set_xlabel('Time since start of observation (mins)')
-				y_label_name='Flux Density (mJy/beam)'
-				ax.set_ylabel(y_label_name)
+				y_label_name2='Flux Density (mJy'+plot_label_unit2+')'
+				ax.set_ylabel(y_label_name2)
 				ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-				ax.setxlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-				savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
+				ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+				savestring2 = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+ str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_peak.pdf')
+				pp.savefig(savestring2)
+				print savestring2, ' is saved'
+				if uv_fit=='T':
+					fig3=pp.figure()
+					ax = pp.gca()
+					ax.get_yaxis().get_major_formatter().set_useOffset(False)
+					ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+					ax.set_xlabel('Time since start of observation (mins)')
+					y_label_name='Flux Density (mJy/beam)'
+					ax.set_ylabel(y_label_name)
+					ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+					ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+					savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_check_lc_uv.pdf')
+					pp.savefig(savestring)
+					print savestring, ' is saved'
+		    else:
+				fig4=pp.figure()
+				ax = pp.gca()
+				ax.get_yaxis().get_major_formatter().set_useOffset(False)
+				ax.errorbar(Elapsed, fluxDensity, yerr=fluxError_real, fmt='ro',)
+				ax.set_xlabel('Time since start of observation (mins)')
+				y_label_name='Flux Density (mJy'+plot_label_unit+')'
+				ac.set_ylabel(y_label_name)
+				ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+				ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+				savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'.pdf')
 				pp.savefig(savestring)
 				print savestring, ' is saved'
-	else:
-		fig6=pp.figure()
-		ax = pp.gca()
-		ax.get_yaxis().get_major_formatter().set_useOffset(False)
-		ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
-		ax.set_xlabel('Time since start of observation (mins)')
-		y_label_name='Flux Density (mJy/beam)'
-		ax.set_ylabel(y_label_name)
-		ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
-		ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
-		savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
-			str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
-		pp.savefig(savestring)
-		print savestring, ' is saved'
+				if uv_fit=='T':
+					fig5=pp.figure()
+					ax = pp.gca()
+					ax.get_yaxis().get_major_formatter().set_useOffset(False)
+					ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+					ax.set_xlabel('Time since start of observation (mins)')
+					y_label_name='Flux Density (mJy/beam)'
+					ax.set_ylabel(y_label_name)
+					ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+					ax.setxlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+					savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
+					pp.savefig(savestring)
+					print savestring, ' is saved'
+		else:
+			fig6=pp.figure()
+			ax = pp.gca()
+			ax.get_yaxis().get_major_formatter().set_useOffset(False)
+			ax.errorbar(Elapsed, fluxDensity3, yerr=fluxError3, fmt='ro',)
+			ax.set_xlabel('Time since start of observation (mins)')
+			y_label_name='Flux Density (mJy/beam)'
+			ax.set_ylabel(y_label_name)
+			ax.set_title('Flux Density vs Time. '+target+' '+refFrequency)
+			ax.set_xlim(0, Elapsed[len(Elapsed)-1]+intervalSizeS/(60.0))
+			savestring = os.path.join(path_dir, 'data_products/'+target+lab+str(intervalSizeH)+'hour_'+str(intervalSizeM)+'min_'+\
+				str(intervalSizeS)+'sec_'+refFrequency+'_'+obsDate+'_uv.pdf')
+			pp.savefig(savestring)
+			print savestring, ' is saved'
 	##################################
 	##################################
 	#Basic Variability Tests

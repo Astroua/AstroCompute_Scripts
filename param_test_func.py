@@ -23,8 +23,8 @@ def test_intervalSizeS(form,field):
 	if field.data < 0. or field.data >= 60.:
 		raise ValueError("Value must be between 0.0 and 59.9. Please change input.")
 def test_interval_set(form,field):
-	if field.data not in ['int','scan']:
-		raise ValueError("Value must be int or scan, please change input")
+	if field.data not in ['int','scan','full']:
+		raise ValueError("Value must be int,scan,or full please change input")
 def test_visibility(form,field):
 	if not isinstance(field.data,str):
 		raise ValueError("Value entered is not a string. Please change input to a string format.")

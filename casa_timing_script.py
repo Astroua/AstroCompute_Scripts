@@ -91,8 +91,12 @@ refFrequency =data_params["refFrequency"]
 label = target + '_' + refFrequency + '_' + obsDate + '_'
 # Name of visibliity
 visibility = os.path.join(path_dir, 'data/' + data_params["visibility"])
+if not os.path.isdir(visibility):
+	raise Exception(visibility+' does not exist. Please check input.')
 # Length of time bins (H,M,S); see below if you want manual input (line 288)
 interval_set=data_params["interval_set"]
+if interval_set not in ['int','scan','full','']:
+	raise ValueError("interval_set must be int, scan, or full, please change input")
 if interval_set=='int':
 	print 'Computing integration time...'
 	intervalSizeS=float(au.getIntegrationTime(visibility, intent='OBSERVE_CHECK_SOURCE#ON_SOURCE,OBSERVE_TARGET#ON_SOURCE,CALIBRATE_PHASE#ON_SOURCE', spw=None, scan=None,method='first', pointingTable=False))
@@ -101,13 +105,22 @@ if interval_set=='int':
 	print 'You have selected the integration timescale of', intervalSizeS, 'seconds.'
 elif interval_set=='scan':
 	print 'Computing scan time...'
-	time_all = au.computeClockTimeOfMS(visibility)*60.
-	numscans=len(au.timeOnSource(visibility,verbose=False)['minutes_on_science_per_scan'].values())
-	intervalSizeS0 = float(time_all)/float(numscans)
+	time_all = au.timeOnSource(visibility,verbose=False)
+	numscans=time_all[time_all['source_ids'][0]]['num_of_scans']
+	intervalSizeS0 = (float(time_all['minutes_on_science'])*60.)/float(numscans)
 	intervalSizeH = int(str(timedelta(seconds=intervalSizeS0)).split(':')[0])
 	intervalSizeM = int(str(timedelta(seconds=intervalSizeS0)).split(':')[1])
 	intervalSizeS = round(float(str(timedelta(seconds=intervalSizeS0)).split(':')[2]),1)
 	print 'You have selected the scan timescale of', intervalSizeM, 'minutes and', "{0:.1f}".format(intervalSizeS),'seconds.'
+elif interval_set=='full':
+	print 'Computing full observation time...'
+	time_all = au.computeClockTimeOfMS(visibility)*60.
+	numscans=len(au.timeOnSource(visibility,verbose=False)['minutes_on_science_per_scan'].values())
+	intervalSizeS0 = float(time_all)
+	intervalSizeH = int(str(timedelta(seconds=intervalSizeS0)).split(':')[0])
+	intervalSizeM = int(str(timedelta(seconds=intervalSizeS0)).split(':')[1])
+	intervalSizeS = round(float(str(timedelta(seconds=intervalSizeS0)).split(':')[2]),1)
+	print 'You have selected the scan timescale of', intervalSizeH, 'hours,', intervalSizeM, 'minutes and', "{0:.1f}".format(intervalSizeS),'seconds.'
 else:
 	intervalSizeH = int(data_params["intervalSizeH"])
 	intervalSizeM = int(data_params["intervalSizeM"])

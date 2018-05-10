@@ -106,7 +106,7 @@ elif interval_set=='scan':
 	intervalSizeS0 = float(time_all)/float(numscans)
 	intervalSizeH = int(str(timedelta(seconds=intervalSizeS0)).split(':')[0])
 	intervalSizeM = int(str(timedelta(seconds=intervalSizeS0)).split(':')[1])
-	intervalSizeS = float(str(timedelta(seconds=intervalSizeS0)).split(':')[2])
+	intervalSizeS = round(float(str(timedelta(seconds=intervalSizeS0)).split(':')[2]),1)
 	print 'You have selected the scan timescale of', intervalSizeM, 'minutes and', "{0:.1f}".format(intervalSizeS),'seconds.'
 else:
 	intervalSizeH = int(data_params["intervalSizeH"])

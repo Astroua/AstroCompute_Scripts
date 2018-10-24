@@ -10,8 +10,8 @@ NOTES: - This script is theoretically compatible with any data that can be impor
          but has only been tested with VLA, ATCA, ALMA, SMA, and NOEMA data.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
-Last Updated: March 2018
-Tested on: CASA version 5.1.2
+Last Updated: MOct 24, 2018
+Tested on: CASA version 5.3
 
 TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
 Uncomment at line 628 if you want time-bins printed to screen.
@@ -222,6 +222,7 @@ if opt_clean == 'T':
 numberIters = int(data_params["numberIters"])
 cellSize = [data_params["cellSize"]] * 2
 taylorTerms = int(data_params["taylorTerms"])
+decon = data_params["decon"]
 myStokes = data_params["myStokes"]
 thre = data_params["thre"]
 robust = float(data_params["robust"])
@@ -258,7 +259,7 @@ if runObj == 'T':
 	seed=int(data_params["seed"])
 	flood=int(data_params["flood"])
 	fits_file=outputPath+label+'whole_dataset.fits'
-	initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,robust,weighting)
+	initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,robust,weighting,decon)
 	src_l,ra_l,dec_l,maj_l,min_l,pos_l=objdet(tele,lat,out_file0,fits_file,seed,flood,tables,catalog_input_name,cellSize[0])
 	if len(src_l)==0:
 		raise Exception('No sources detected.')
@@ -351,7 +352,7 @@ if fix_pos == 'T':
 	if runObj == 'F':
 		print 'Cleaning Full Data Set-->'
 		os.system('rm -rf '+outputPath+label+'whole_dataset.*')
-		initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,robust,weighting)
+		initial_clean(visibility,outputPath,label,imageSize,cellSize,spw_choice,taylorTerms,numberIters,thre,robust,weighting,decon)
 	print 'Fitting full data set in Image Plane-->'
 	os.system('rm -rf '+outputPath+label+'whole_dataset.txt')
 	full_fit=imfit(imagename=outputPath+label+'whole_dataset.image',box=targetBox,logfile=outputPath+label+'whole_datasetfit.txt')
@@ -666,9 +667,9 @@ if runClean == "T":
 		print 'CLEANing interval: ', interval
 		intervalString=interval.replace(':', '.').replace('/','_')
 		if outlierFile == '':
-			clean(vis=visibility, imagename=outputPath+label+intervalString, timerange=interval,mask=maskPath, selectdata=True, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=False)
+			tclean(vis=visibility, imagename=outputPath+label+intervalString, timerange=interval,mask=maskPath, selectdata=True, field='', specmode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=False,deconvolver=decon,gridder='standard')
 		else:
-			clean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=True,timerange=interval, field='', mode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=False,outlierfile=outlierFile)
+			tclean(vis=visibility, imagename=outputPath+label+intervalString,mask=maskPath, selectdata=True,timerange=interval, field='', specmode='mfs', imsize=imageSize, cell=cellSize, weighting=weighting,robust=robust,spw=spw_choice, nterms=taylorTerms, niter=numberIters, gain=0.1, threshold=thre,interactive=False,outlierfile=outlierFile,deconvolver=decon,gridder='standard')
 		if taylorTerms == 1:
 			imSuffix = '.image'
 		else:

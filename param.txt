@@ -10,6 +10,7 @@ imageSize = 256
 numberIters = 5000
 cellSize = '0.3arcsec'
 taylorTerms = 1
+decon='hogbom'#hogbom if nterms=1,mtmfs if nterms>1
 myStokes = 'I'
 thre ='50mJy'
 spw_choice =''

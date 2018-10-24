@@ -20,6 +20,8 @@ cellSize: cell size in arcseconds; string, 'XXarcsec'
 
 taylorTerms: number of taylor terms to use; integer, default is 1
 
+decon: deconvolver for tclean to use; string, hogbom if nterms=1, mtmfs if nterms>1
+
 myStokes: stokes parameter; string, default is 'I'
 
 thre: cleaning threshold; string, default is '1mJy'

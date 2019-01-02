@@ -10,8 +10,8 @@ NOTES: - This script is theoretically compatible with any data that can be impor
          but has only been tested with VLA, ATCA, ALMA, SMA, and NOEMA data.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
-Last Updated: MOct 24, 2018
-Tested on: CASA version 5.3
+Last Updated: Dec 2018
+Tested on: CASA version 5.4
 
 TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
 Uncomment at line 628 if you want time-bins printed to screen.
@@ -46,6 +46,7 @@ import glob
 from astropy.io import fits
 import warnings
 import analysisUtils as au
+import uvmultifit as uvm
 warnings.filterwarnings('ignore')
 
 import sys

@@ -34,18 +34,17 @@ casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://gi
 ```
 casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
 ```
-   * All MSs need to be in path_dir/data, all output goes into path_dir/data_products (directory created by script).
-   * Make sure ot include trailing / in all directory names.
+   * All MSs need to be in `path_dir/data`, all output goes into `path_dir/data_products` (directory created by script).
+   * Make sure to include trailing `/` in all directory names.
    * Please create a split MS, with only the target present.
    * All parameters need to be carefully considered and changed for each new data set.
    * If you have a complicated field with other sources it is recommended that you use your own mask file (with clean boxes around bright sources; `mask_option='file'`) for cleaning, or run object detection, which will create a mask file with a boxed region around each detected source (`mask_option='aegean'`).
-   * If you are using an outlier field file, please follow the example template in *example_outlier_file.txt*.
-   * If you are doing uv-fitting, please follow the example initial parameters template in *uv_init_example.txt*.
-   * Included in *casa_timing_script.py* is the option to run basic variability analysis (`var_anal='T'`):
-      * Calculate weighted mean and do a chi^2 with a constant flux model,
-      * Calculate excess variance,
-      * Calculate fractional RMS ([Vaughan et al. 2003](http://adsabs.harvard.edu/abs/2003MNRAS.345.1271V); [Bell et al., 2015](http://adsabs.harvard.edu/abs/2015MNRAS.450.4221B)), and
-      * Make power spectrum using generalized lomb-periodogram ([Zechmeister and Kurster, 2009](http://adsabs.harvard.edu/abs/2009A%26A...496..577Z))
+   * If you are using an outlier field file, please follow the example template in `example_outlier_file.txt`.
+   * If you are doing uv-fitting, please follow the example initial parameters template in `uv_init_example.txt`.
+   * Included in `casa_timing_script.py` is the option to run basic variability analysis (`var_anal='T'`):
+      * Calculate weighted mean and do a chi^2 with a constant flux model
+      * Calculate excess variance and fractional RMS ([Vaughan et al. 2003](http://adsabs.harvard.edu/abs/2003MNRAS.345.1271V); [Bell et al., 2015](http://adsabs.harvard.edu/abs/2015MNRAS.450.4221B))
+      * Make a power spectrum using the generalized lomb-periodogram algorithm ([Zechmeister and Kurster, 2009](http://adsabs.harvard.edu/abs/2009A%26A...496..577Z))
 
 ####
 Support from the SKA/AWS AstroCompute in the Cloud Program

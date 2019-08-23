@@ -10,7 +10,7 @@ NOTES: - This script is theoretically compatible with any data that can be impor
          but has only been tested with VLA, ATCA, ALMA, SMA, and NOEMA data.
 
 Written by: C. Gough (original version), additions and updates by A. Tetarenko & E. Koch
-Last Updated: Dec 2018
+Last Updated: Aug 2019
 Tested on: CASA version 5.4
 
 TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
@@ -684,13 +684,27 @@ if runClean == "T":
 			beamMinor = str(beamMinor['value'])+'arcsec'
 			beamPA = imhead(imagename=outputPath+label+intervalString+imSuffix,mode='get',hdkey='beampa')
 			beamPA = str(beamPA['value'])+'deg'
-			imstatOut = imstat(imagename=outputPath+label+intervalString+imSuffix,box=targetBox)
+			imstatOut = imstat(imagename=outputPath+label+intervalString+imSuffix)
+			x_range=[float(targetBox.split(',')[0]),float(targetBox.split(',')[2])]
+			y_range=[float(targetBox.split(',')[1]),float(targetBox.split(',')[3])]
 			peak = imstatOut['max']
 			peak = str(peak[0])
 			peakPosValue = imstatOut['maxpos']
 			peakPosX = str(peakPosValue[0])
 			peakPosY = str(peakPosValue[1])
-			if np.isinf([float(peak),float(peakPosX),float(peakPosY),float(beamMajor.strip('arcsec')),float(beamMinor.strip('arcsec')),float(beamPA.strip('deg'))]).any()==True:
+			if not x_range[0] <= float(peakPosX) <= x_range[1]:
+				print '\n Fitting Failed. No fitting done.'
+				counter_fail=counter_fail+1
+				timeIntervals.remove(interval)
+				mjdTimes.remove(time)
+				os.system('sudo rm -rf '+outputPath+label+intervalString+'.*')
+			elif not y_range[0] <= float(peakPosY) <= y_range[1]:
+				print '\n Fitting Failed. No fitting done.'
+				counter_fail=counter_fail+1
+				timeIntervals.remove(interval)
+				mjdTimes.remove(time)
+				os.system('sudo rm -rf '+outputPath+label+intervalString+'.*')
+			elif np.isinf([float(peak),float(peakPosX),float(peakPosY),float(beamMajor.strip('arcsec')),float(beamMinor.strip('arcsec')),float(beamPA.strip('deg'))]).any()==True or float(peak)==0.0:
 				print '\n Fitting Failed. No fitting done.'
 				counter_fail=counter_fail+1
 				timeIntervals.remove(interval)
@@ -702,6 +716,12 @@ if runClean == "T":
 				# the fixed parameter can contain any of the following:
 				#'f' (peak intensity), 'x' (peak x position), 'y' (peak y position), 'a' (major axis), 'b' (minor axis), 'p' (position angle)
 				#tempFile = tempfile.NamedTemporaryFile()
+				imstatOut = imstat(imagename=outputPath+label+intervalString+imSuffix,box=targetBox)
+				peak = imstatOut['max']
+				peak = str(peak[0])
+				peakPosValue = imstatOut['maxpos']
+				peakPosX = str(peakPosValue[0])
+				peakPosY = str(peakPosValue[1])
 				tempFile = open('tempfile.txt','w')
 				mystring = str(peak+', '+peakPosX+', '+peakPosY+', '+beamMajor+', '+beamMinor+', '+beamPA+',abp')
 				tempFile.write(mystring)

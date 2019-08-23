@@ -12,14 +12,14 @@ A collection of python scripts to create high time resolution light curves from 
 * **CASA** (get it [here](https://casa.nrao.edu/casa_obtaining.shtml), scripts are tested up to version 5.4)
 * The following **python packages** need to be installed within CASA; **jdcal, astropy, astroML**<br/>
 For importing python packages into CASA ([detailed instructions](http://docs.astropy.org/en/stable/install.html)),<br/>
-`casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"`<br/>
-
-`casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"`
+```casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"
+casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"
+```
 * **analysisUtils** (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
 * (*optional*) For UV plane fitting, **uvmultifit** (get it [here](http://nordic-alma.se/support/software-tools))
 * (*optional*) To use object detection, you need the **aegean** package (see [here](https://github.com/PaulHancock/Aegean)) <br/>
 To install, 
-`casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"`
+```casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"```
 
 ## To make your own high time-ressolution lightcurves you will need:
 1. **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.

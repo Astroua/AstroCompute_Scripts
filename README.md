@@ -13,27 +13,27 @@ A collection of python scripts to create high time resolution light curves from 
 * The following **python packages** need to be installed within CASA; **jdcal, astropy, astroML**<br/>
 For importing python packages into CASA ([detailed instructions](http://docs.astropy.org/en/stable/install.html)),<br/>
 ```casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"
-casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"
+```
+```casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"
 ```
 * **analysisUtils** (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
 * (*optional*) For UV plane fitting, **uvmultifit** (get it [here](http://nordic-alma.se/support/software-tools))
 * (*optional*) To use object detection, you need the **aegean** package (see [here](https://github.com/PaulHancock/Aegean)) <br/>
-To install, 
 ```casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"```
 
 ## To make your own high time-ressolution lightcurves you will need:
 1. **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.
-2. **param.txt**: All input parameters for casa_timing_script.py are set in this parameter file. A complete description of each parameter is provided in param_description.txt.
-2. **utils.py**: module of tools used in casa_timing_script.py.
+2. **param.txt**: All input parameters for *casa_timing_script.py* are set in this parameter file. A complete description of each parameter is provided in *param_description.txt*.
+2. **utils.py**: module of tools used in *casa_timing_script.py*.
 3. (*optional*), **Aegean_ObjDet.py**: object detection algorithm.
-   * Integrated into casa_timing_script.py.
+   * Integrated into *casa_timing_script.py*.
    * Script can also be run on its own, with a fits image as input. Output is a labelled image and region files (DS9 and CASA format) of detected sources.
 ## How to use the scripts:
    * Please create a split MS, with only the target present.
    * All parameters need to be carefully considered and changed for each new data set.
-   * If you have a complicated field with other sources it is recommended that you use your own mask file (with clean boxes around bright sources; mask_option='file') for cleaning, or run object detection, which will create a mask file with a boxed region around each detected source (mask_option='aegean').
-   * If you are using an outlier field file, please follow the example template in example_outlier_file.txt.
-   * If you are doing uv-fitting, please follow the example initial parameters template in uv_init_example.txt.
+   * If you have a complicated field with other sources it is recommended that you use your own mask file (with clean boxes around bright sources; `mask_option='file'`) for cleaning, or run object detection, which will create a mask file with a boxed region around each detected source (`mask_option='aegean'`).
+   * If you are using an outlier field file, please follow the example template in *example_outlier_file.txt*.
+   * If you are doing uv-fitting, please follow the example initial parameters template in *uv_init_example.txt*.
    * Included in casa_timing_script.py is the option to run basic variability analysis:
       * Calculate weighted mean and do a chi^2 with a constant flux model,
       * Calculate excess variance,

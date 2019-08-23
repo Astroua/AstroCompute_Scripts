@@ -1,33 +1,34 @@
 # AstroCompute CASA Scripts
 A collection of python scripts to create high time resolution light curves from calibrated interferometric data sets. These scripts run in the Common Astronomy Software Application ([CASA](http://casa.nrao.edu)) and have been tested with VLA, ALMA, SMA, ATCA, and NOEMA data sets.
 
-## Links for importing data into CASA
-* VLA: Can be directly imported into CASA.
-* ALMA: Can be directly imported into CASA.
+## Importing data into CASA
+* VLA: Can be directly imported into CASA, and downloaded from the archive in CASA format.
+* ALMA: Can be directly imported into CASA, and downloaded from the archive in CASA format.
 * SMA: Can be imported into CASA with a little extra work. Follow instructions [here](https://www.cfa.harvard.edu/sma/casa) on converting to a CASA MS data set.
-* NOEMA: Must be calibrated beforehand, but can be imaged in CASA. Follow instructions [here](http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf) ton converting to a CASA MS data set.
+* NOEMA: Must be calibrated beforehand, but can be imaged in CASA. Follow instructions [here](http://www.iram.fr/IRAMFR/ARC/documents/filler/casa-gildas.pdf) for converting to a CASA MS data set.
 * ATCA: Can be directly imported into CASA. Follow instructions [here](https://casaguides.nrao.edu/index.php/ATCA_Tutorials) on converting to a CASA MS data set.
 
 ## Requires
 * **CASA** (get it [here](https://casa.nrao.edu/casa_obtaining.shtml), scripts are tested up to version 5.4)
-* The following **python packages** need to be installed within CASA; jdcal, astropy, astroML (use instructions [here](http://docs.astropy.org/en/stable/install.html))<br/>
- `casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"`<br/>
+* The following **python packages** need to be installed within CASA; **jdcal, astropy, astroML**<br/>
+For importing python packages into CASA ([detailed instructions](http://docs.astropy.org/en/stable/install.html)),<br/>
+`casa --no-logger --log2term -c "from setuptools.command import easy_install; easy_install.main(['--user', 'pip'])"`<br/>
+
 `casa --no-logger --log2term -c "import pip; pip.main(['install', 'astropy', '--user']); pip.main(['install', 'astroML', '--user']); pip.main(['install', 'jdcal', '--user'])"`
 * **analysisUtils** (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
 * (*optional*) For UV plane fitting, **uvmultifit** (get it [here](http://nordic-alma.se/support/software-tools))
-* (*optional*) To use object detection,
-   * **aegean** (see [here](https://github.com/PaulHancock/Aegean)) <br/>
-   To install, 
-   `casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"`
+* (*optional*) To use object detection, you need the **aegean** package (see [here](https://github.com/PaulHancock/Aegean)) <br/>
+To install, 
+`casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"`
 
-## To use these scripts on your own machine, you need,
+## To make your own high time-ressolution lightcurves you will need:
 1. **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.
 2. **param.txt**: All input parameters for casa_timing_script.py are set in this parameter file. A complete description of each parameter is provided in param_description.txt.
 2. **utils.py**: module of tools used in casa_timing_script.py.
 3. (*optional*), **Aegean_ObjDet.py**: object detection algorithm.
    * Integrated into casa_timing_script.py.
    * Script can also be run on its own, with a fits image as input. Output is a labelled image and region files (DS9 and CASA format) of detected sources.
-## How to use the scripts,
+## How to use the scripts:
    * Please create a split MS, with only the target present.
    * All parameters need to be carefully considered and changed for each new data set.
    * If you have a complicated field with other sources it is recommended that you use your own mask file (with clean boxes around bright sources; mask_option='file') for cleaning, or run object detection, which will create a mask file with a boxed region around each detected source (mask_option='aegean').

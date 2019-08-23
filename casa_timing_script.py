@@ -14,8 +14,8 @@ Last Updated: Aug 2019
 Tested on: CASA version 5.4
 
 TO RUN SCRIPT-->casa -c casa_timing_script.py [path_to_param_file] [path_dir] [path_to_repo]
-Uncomment at line 628 if you want time-bins printed to screen.
-Uncomment at line 1130 if you want light curve results printed to screen.
+Uncomment at line 644 if you want time-bins printed to screen.
+Uncomment at line 1165 if you want light curve results printed to screen.
 
 NOTE: path_dir is path to input/output directory of your choice
 -MS's need to be in path_dir/data,

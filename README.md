@@ -17,7 +17,9 @@ For importing python packages into CASA ([detailed instructions](http://docs.ast
 * **analysisUtils** (get it [here](https://casaguides.nrao.edu/index.php?title=Analysis_Utilities))
 * (*optional*) For UV plane fitting, **uvmultifit** (get it [here](http://nordic-alma.se/support/software-tools))
 * (*optional*) To use object detection, you need the **aegean** package (see [here](https://github.com/PaulHancock/Aegean)) <br/>
-```casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"```
+```
+casa --no-logger --log2term -c "import pip; pip.main(['install', 'git+https://github.com/PaulHancock/Aegean.git', '--user'])"
+```
 
 ## To make your own high time-ressolution lightcurves you will need:
 1. **casa_timing_script.py**: intended to be run within CASA. This is the script that does all the hard work.

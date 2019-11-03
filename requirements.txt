@@ -1,6 +1,6 @@
 astropy==1.1.1
 boto==2.39.0
-Flask==0.10.1
+Flask==1.0
 Flask-WTF==0.12
 pymysql==0.7.9
 flask-sqlalchemy

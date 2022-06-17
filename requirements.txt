@@ -8,7 +8,7 @@ flask-login==0.4.0
 itsdangerous==0.24
 Jinja2==2.8
 MarkupSafe==0.23
-numpy==1.10.4
+numpy==1.21.0
 Werkzeug==0.15.3
 wheel==0.26.0
 WTForms==2.1
